@@ -287,7 +287,7 @@ export default function Schedule() {
   return (
     <div className="p-4">
       <h1 className="text-2xl font-bold mb-4">Schedule</h1>
-      <div className="mb-4 relative flex justify-end">
+      <div className="mb-4 relative flex justify-end ">
             <button 
             onClick={() => setShowFilters(!showFilters)} 
             className="bg-blue-500 text-white px-4 py-2 rounded-md mb-2"
@@ -296,7 +296,7 @@ export default function Schedule() {
             </button>
             
             {showFilters && (
-            <div className="bg-gray-100 p-4 rounded-md w-96 absolute top-10 z-10">
+            <div className="bg-gray-100 p-4 rounded-md absolute top-10 z-10 max-w-2/3">
                 <div className="mb-2">
                 <label className="block mb-1">Filter by Doctor</label>
                 <select 
