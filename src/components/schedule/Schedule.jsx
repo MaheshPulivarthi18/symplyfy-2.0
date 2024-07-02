@@ -87,7 +87,7 @@ export default function Schedule() {
       const randomEvents = [];
       for (let i = 0; i < 10; i++) {
         const randomDate = new Date(
-          new Date().setDate(new Date().getDate() + Math.floor(Math.random() * 30))
+          new Date().setDate(new Date().getDate() + Math.floor(Math.random() * 10))
         );
         const randomTime = new Date(randomDate.setHours(Math.floor(Math.random() * 24), Math.floor(Math.random() * 60)));
         const duration = durationOptions[Math.floor(Math.random() * durationOptions.length)];
