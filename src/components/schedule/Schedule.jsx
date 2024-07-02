@@ -5,8 +5,8 @@ import parse from 'date-fns/parse';
 import getDay from 'date-fns/getDay';
 import enUS from 'date-fns/locale/en-US';
 import 'react-big-calendar/lib/css/react-big-calendar.css';
-import AppointmentPopup from './schedule/Appointment';
-import './schedule/Schedule.css'
+import AppointmentPopup from './Appointment';
+import './Schedule.css'
 import moment from 'moment';
 import { format, startOfWeek, endOfWeek, startOfMonth, endOfMonth, isSameMonth } from 'date-fns';
 import { addWeeks, addMonths, isBefore } from 'date-fns';
@@ -65,7 +65,8 @@ export default function Schedule() {
           date: event.start,
           time: event.start,
           frequency: 'does not repeat', // Default to non-recurring when rescheduling
-          duration: (event.end - event.start) / (1000 * 60)
+          duration: (event.end - event.start) / (1000 * 60),
+          resourceId: event.doctor
         });
         setIsRescheduling(true);
         setIsModalOpen(true);
@@ -91,6 +92,7 @@ export default function Schedule() {
         const randomTime = new Date(randomDate.setHours(Math.floor(Math.random() * 24), Math.floor(Math.random() * 60)));
         const duration = durationOptions[Math.floor(Math.random() * durationOptions.length)];
         const endDateTime = new Date(randomTime.getTime() + duration * 60000);
+        const doctor = doctors[Math.floor(Math.random() * doctors.length)]
   
         randomEvents.push({
           id: Date.now() + i, // Ensure unique ID
@@ -98,8 +100,9 @@ export default function Schedule() {
           start: randomTime,
           end: endDateTime,
           patient: patients[Math.floor(Math.random() * patients.length)],
-          doctor: doctors[Math.floor(Math.random() * doctors.length)],
+          doctor: doctor,
           service: services[Math.floor(Math.random() * services.length)],
+          resourceId: doctor,
         });
       }
       setEvents(randomEvents);
@@ -162,6 +165,7 @@ export default function Schedule() {
       patient: newEvent.patient,
       doctor: newEvent.doctor,
       service: newEvent.service,
+      resourceId: newEvent.doctor // This links the event to a specific doctor
     });
   
     let eventsToAdd = [];
@@ -201,6 +205,7 @@ export default function Schedule() {
       time: new Date(),
       frequency: 'does not repeat',
       duration: 30,
+      resourceId: '',
     });
   };
 
@@ -216,9 +221,23 @@ export default function Schedule() {
     setSelectedDoctor(e.target.value);
   };
 
+  // const filteredEvents = events.filter(event => 
+  //   (selectedDoctor ? event.doctor === selectedDoctor : true) &&
+  //   (selectedPatient ? event.patient === selectedPatient : true)
+  // );
+
   const filteredEvents = events.filter(event => 
-    (selectedDoctor ? event.doctor === selectedDoctor : true) &&
-    (selectedPatient ? event.patient === selectedPatient : true)
+    (!selectedDoctor || event.resourceId === selectedDoctor) &&
+    (!selectedPatient || event.patient === selectedPatient)
+  );
+
+  const ResourceHeader = ({ label }) => (
+    <div className="resource-header flex flex-row justify-center gap-4 text-center">
+      <div className="avatar">
+        D
+      </div>
+      <span>{label}</span>
+    </div>
   );
 
   const CustomToolbar = (toolbar) => {
@@ -328,7 +347,7 @@ export default function Schedule() {
             )}
         </div>
       <div className="relative bg-white rounded-lg shadow-lg overflow-hidden h-[75vh]">
-        <Calendar
+        {/* <Calendar
             localizer={localizer}
             events={filteredEvents}
             // formats={{dayHeaderFormat:(date)=>moment(date).format("dddd, MMMM, DD")}}
@@ -346,6 +365,28 @@ export default function Schedule() {
             components={{
                 toolbar: CustomToolbar
             }}
+            /> */}
+            <Calendar
+              localizer={localizer}
+              events={filteredEvents}
+              startAccessor="start"
+              endAccessor="end"
+              defaultView={"day"}
+              views={["day", "week", "month"]}
+              selectable
+              resources={doctors.map(doctor => ({ id: doctor, title: doctor }))}
+              resourceIdAccessor="id"
+              resourceTitleAccessor="title"
+              onSelectSlot={handleSelect}
+              onSelectEvent={handleSelectEvent}
+              onView={handleViewChange}
+              date={date}
+              onNavigate={setDate}
+              className="font-sans"
+              components={{
+                toolbar: CustomToolbar,
+                resourceHeader: ResourceHeader,
+              }}
             />
       </div>
       {selectedEvent && (

@@ -240,3 +240,27 @@
   .rbc-btn-group + button {
     margin-left: 10px;
   }
+
+  .rbc-time-header-content {
+    display: flex;
+    flex-direction: column;
+  }
+  
+  .resource-header {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 5px;
+  }
+  
+  .resource-header .avatar {
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    color: white;
+    background-color: blue; /* Placeholder color */
+    margin-bottom: 5px;
+  }

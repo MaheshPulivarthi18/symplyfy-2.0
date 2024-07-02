@@ -4,7 +4,7 @@ import viteLogo from '/vite.svg'
 import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom';
 import Home from './components/Home';
 import Dashboard from './components/Dashboard';
-import Schedule from './components/Schedule';
+import Schedule from './components/schedule/Schedule';
 import './App.css'
 
 function App() {
