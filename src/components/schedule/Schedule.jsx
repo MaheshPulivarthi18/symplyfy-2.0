@@ -60,7 +60,8 @@ export default function Schedule() {
   const [showFilters, setShowFilters] = useState(false);
   const [showCanceled, setShowCanceled] = useState(false);
   const [calendarStartTime, setCalendarStartTime] = useState('09:00');
-  const [calendarEndTime, setCalendarEndTime] = useState('17:00');
+  // const [calendarEndTime, setCalendarEndTime] = useState('21:00');
+  const [calendarEndTime, setCalendarEndTime] = useState('21:00');
 
   const handleStartTimeChange = (e) => {
     setCalendarStartTime(e.target.value);
