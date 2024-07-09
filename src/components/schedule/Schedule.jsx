@@ -8,7 +8,7 @@ import 'react-big-calendar/lib/css/react-big-calendar.css';
 import AppointmentPopup from './Appointment';
 import './Schedule.css'
 import moment from 'moment';
-import { format, startOfWeek, endOfWeek, startOfMonth, endOfMonth, isSameMonth } from 'date-fns';
+import { format, startOfWeek, endOfWeek, startOfMonth, endOfMonth, isSameMonth, startOfDay, endOfDay, isSameDay } from 'date-fns';
 import { addWeeks, addMonths, isBefore } from 'date-fns';
 
 const locales = {
@@ -25,13 +25,21 @@ const localizer = dateFnsLocalizer({
 
 // Sample data - replace with your actual data
 const patients = ['John Doe', 'Jane Smith', 'Bob Johnson'];
-const doctors = ['Dr. Brown', 'Dr. White', 'Dr. Green'];
+const doctors = ['Dr. Brown', 'Dr. White', 'Dr. Green', 'Dr. Yellow', 'Dr. Red', 'Dr. Orange'];
+const doctorColors = {
+  'Dr. Brown': '#C4A484',   // Light brown
+  'Dr. White': '#E0E0E0',   // Light gray
+  'Dr. Green': '#98FB98',   // Pale green
+  'Dr. Yellow': '#FAFAD2',  // Light goldenrod yellow
+  'Dr. Red': '#FFA07A',     // Light salmon
+  'Dr. Orange': '#FFD580'   // Light orange
+};
 const services = ['Checkup', 'Vaccination', 'Consultation'];
 const durationOptions = [30, 45, 60, 90];
 
 export default function Schedule() {
   const [events, setEvents] = useState([]);
-  const [view, setView] = useState('month');
+  const [view, setView] = useState('day');
   const [date, setDate] = useState(new Date());
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isCustomDuration, setIsCustomDuration] = useState(false);
@@ -49,35 +57,83 @@ export default function Schedule() {
   const [selectedDoctor, setSelectedDoctor] = useState('');
   const [isRescheduling, setIsRescheduling] = useState(false);
   const [selectedPatient, setSelectedPatient] = useState('');
-    const [showFilters, setShowFilters] = useState(false);
+  const [showFilters, setShowFilters] = useState(false);
+  const [showCanceled, setShowCanceled] = useState(false);
+  const [calendarStartTime, setCalendarStartTime] = useState('09:00');
+  const [calendarEndTime, setCalendarEndTime] = useState('17:00');
+
+  const handleStartTimeChange = (e) => {
+    setCalendarStartTime(e.target.value);
+  };
+
+  const handleEndTimeChange = (e) => {
+    setCalendarEndTime(e.target.value);
+  };
+
+  // Function to convert time string to minutes
+  const timeToMinutes = (time) => {
+    const [hours, minutes] = time.split(':').map(Number);
+    return hours * 60 + minutes;
+  };
 
 
-    const handlePatientFilterChange = (e) => {
-        setSelectedPatient(e.target.value);
-      };
+  const handleDoctorFilterChange = (e) => {
+    const selectedValue = e.target.value;
+    setSelectedDoctor(selectedValue);
+    if (selectedValue) {
+      setView('week');
+    }
+  };
 
-      const handleReschedule = (event) => {
-        setNewEvent({
-          id: event.id,
-          patient: event.patient,
-          doctor: event.doctor,
-          service: event.service,
-          date: event.start,
-          time: event.start,
-          frequency: 'does not repeat', // Default to non-recurring when rescheduling
-          duration: (event.end - event.start) / (1000 * 60),
-          resourceId: event.doctor
-        });
-        setIsRescheduling(true);
-        setIsModalOpen(true);
-        setSelectedEvent(null);
-      };
+  const handlePatientFilterChange = (e) => {
+    const selectedValue = e.target.value;
+    setSelectedPatient(selectedValue);
+    if (selectedValue) {
+      setView('month');
+    }
+  };
+
+  const handleCanceledToggle = () => {
+    setShowCanceled(!showCanceled);
+    if (!showCanceled) {
+      setView('month');
+      setSelectedDoctor('');
+      setSelectedPatient('');
+    }
+  };
+
+  const handleReschedule = (event) => {
+    setNewEvent({
+      id: event.id,
+      patient: event.patient,
+      doctor: event.doctor,
+      service: event.service,
+      date: event.start,
+      time: event.start,
+      frequency: 'does not repeat', // Default to non-recurring when rescheduling
+      duration: (event.end - event.start) / (1000 * 60),
+      resourceId: event.doctor
+    });
+    setIsRescheduling(true);
+    setIsModalOpen(true);
+    setSelectedEvent(null);
+  };
 
   const handleCancel = (eventToCancel) => {
-    setEvents(prevEvents => prevEvents.filter(event => 
-      event.start !== eventToCancel.start || 
-      event.end !== eventToCancel.end || 
-      event.title !== eventToCancel.title
+    setEvents(prevEvents => prevEvents.map(event => 
+      event.id === eventToCancel.id ? { ...event, status: 'cancelled' } : event
+    ));
+    setSelectedEvent(null);
+  };
+
+  const handleDelete = (eventToDelete) => {
+    setEvents(prevEvents => prevEvents.filter(event => event.id !== eventToDelete.id));
+    setSelectedEvent(null);
+  };
+  
+  const handleMarkVisit = (eventToMark) => {
+    setEvents(prevEvents => prevEvents.map(event => 
+      event.id === eventToMark.id ? { ...event, status: 'completed' } : event
     ));
     setSelectedEvent(null);
   };
@@ -92,16 +148,18 @@ export default function Schedule() {
         const randomTime = new Date(randomDate.setHours(Math.floor(Math.random() * 24), Math.floor(Math.random() * 60)));
         const duration = durationOptions[Math.floor(Math.random() * durationOptions.length)];
         const endDateTime = new Date(randomTime.getTime() + duration * 60000);
-        const doctor = doctors[Math.floor(Math.random() * doctors.length)]
-  
+        const doctor = doctors[Math.floor(Math.random() * doctors.length)];
+        const patient = patients[Math.floor(Math.random() * patients.length)];
+        const service = services[Math.floor(Math.random() * services.length)];
+    
         randomEvents.push({
-          id: Date.now() + i, // Ensure unique ID
-          title: `${patients[Math.floor(Math.random() * patients.length)]} - ${services[Math.floor(Math.random() * services.length)]}`,
+          id: Date.now() + i,
+          title: `${patient} - ${service}`, // Ensure this matches the popup display
           start: randomTime,
           end: endDateTime,
-          patient: patients[Math.floor(Math.random() * patients.length)],
+          patient: patient,
           doctor: doctor,
-          service: services[Math.floor(Math.random() * services.length)],
+          service: service,
           resourceId: doctor,
         });
       }
@@ -110,6 +168,26 @@ export default function Schedule() {
   
     generateRandomEvents();
   }, []);
+
+  const sortDoctorsByAppointments = (date) => {
+    const startDate = startOfDay(date);
+    const endDate = endOfDay(date);
+
+    // Count appointments for each doctor on the given date
+    const doctorAppointmentCounts = doctors.reduce((acc, doctor) => {
+      acc[doctor] = events.filter(event => 
+        event.doctor === doctor && 
+        isSameDay(event.start, date)
+      ).length;
+      return acc;
+    }, {});
+
+    // Sort doctors based on appointment count (descending order)
+    return doctors.sort((a, b) => doctorAppointmentCounts[b] - doctorAppointmentCounts[a]);
+  };
+
+  // Sort doctors whenever the date or events change
+  const sortedDoctors = React.useMemo(() => sortDoctorsByAppointments(date), [date, events]);
 
   const handleSelect = ({ start }) => {
     setNewEvent(prev => ({ ...prev, date: start, time: start }));
@@ -158,14 +236,15 @@ export default function Schedule() {
     const endDateTime = new Date(eventDateTime.getTime() + newEvent.duration * 60000);
   
     const createEvent = (start, end) => ({
-      id: Date.now() + Math.random(), // Ensure unique ID for each event
-      title: `${newEvent.patient} - ${newEvent.service}`,
+      id: Date.now() + Math.random(),
+      title: `${newEvent.patient} - ${newEvent.service}`, // Ensure this matches the popup display
       start,
       end,
       patient: newEvent.patient,
       doctor: newEvent.doctor,
       service: newEvent.service,
-      resourceId: newEvent.doctor // This links the event to a specific doctor
+      resourceId: newEvent.doctor,
+      status: 'scheduled'
     });
   
     let eventsToAdd = [];
@@ -217,8 +296,11 @@ export default function Schedule() {
     setDate(new Date());
   };
 
-  const handleDoctorFilterChange = (e) => {
-    setSelectedDoctor(e.target.value);
+  const getFilteredResources = () => {
+    if (view === 'week' && selectedDoctor) {
+      return [{ id: selectedDoctor, title: selectedDoctor }];
+    }
+    return doctors.map(doctor => ({ id: doctor, title: doctor }));
   };
 
   // const filteredEvents = events.filter(event => 
@@ -226,15 +308,21 @@ export default function Schedule() {
   //   (selectedPatient ? event.patient === selectedPatient : true)
   // );
 
+  // const filteredEvents = events.filter(event => 
+  //   (!selectedDoctor || event.resourceId === selectedDoctor) &&
+  //   (!selectedPatient || event.patient === selectedPatient)
+  // );
+
   const filteredEvents = events.filter(event => 
     (!selectedDoctor || event.resourceId === selectedDoctor) &&
-    (!selectedPatient || event.patient === selectedPatient)
+    (!selectedPatient || event.patient === selectedPatient) &&
+    (showCanceled ? event.status === 'cancelled' : true)
   );
 
   const ResourceHeader = ({ label }) => (
-    <div className="resource-header flex flex-row justify-center gap-4 text-center">
+    <div className="resource-header flex flex-row justify-center gap-4 text-center" style={{ backgroundColor: doctorColors[label] }}>
       <div className="avatar">
-        D
+        {label.charAt(0)}
       </div>
       <span>{label}</span>
     </div>
@@ -304,90 +392,120 @@ export default function Schedule() {
   };
 
   return (
-    <div className="p-4">
+    <div className="p-4 w-[70vw]">
       <h1 className="text-2xl font-bold mb-4">Schedule</h1>
       <div className="mb-4 relative flex justify-end ">
-            <button 
-            onClick={() => setShowFilters(!showFilters)} 
-            className="bg-blue-500 text-white px-4 py-2 rounded-md mb-2"
-            >
-            {showFilters ? 'Hide Filters' : 'Show Filters'}
-            </button>
-            
-            {showFilters && (
-            <div className="bg-gray-100 p-4 rounded-md absolute top-10 z-10 max-w-2/3">
-                <div className="mb-2">
-                <label className="block mb-1">Filter by Doctor</label>
-                <select 
-                    value={selectedDoctor} 
-                    onChange={handleDoctorFilterChange} 
-                    className="w-full p-2 border rounded"
-                >
-                    <option value="">All Doctors</option>
-                    {doctors.map(doctor => (
-                    <option key={doctor} value={doctor}>{doctor}</option>
-                    ))}
-                </select>
-                </div>
-                
-                <div>
-                <label className="block mb-1">Filter by Patient</label>
-                <select 
-                    value={selectedPatient} 
-                    onChange={handlePatientFilterChange} 
-                    className="w-full p-2 border rounded"
-                >
-                    <option value="">All Patients</option>
-                    {patients.map(patient => (
-                    <option key={patient} value={patient}>{patient}</option>
-                    ))}
-                </select>
-                </div>
-            </div>
-            )}
+
+      <div className="mb-4 flex space-x-4 mr-4">
+        <p className='font-bold mt-1'>From</p>
+          <div>
+            {/* <label htmlFor="startTime" className="block text-sm font-medium text-gray-700">Start Time</label> */}
+            <input
+              type="time"
+              id="startTime"
+              value={calendarStartTime}
+              onChange={handleStartTimeChange}
+              className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm"
+            />
+          </div>
+          <p className='font-bold mt-1'>to</p>
+          <div>
+            {/* <label htmlFor="endTime" className="block text-sm font-medium text-gray-700">End Time</label> */}
+            <input
+              type="time"
+              id="endTime"
+              value={calendarEndTime}
+              onChange={handleEndTimeChange}
+              className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm"
+            />
+          </div>
         </div>
-      <div className="relative bg-white rounded-lg shadow-lg overflow-hidden h-[75vh]">
-        {/* <Calendar
+
+        <button 
+          className={`cursor-pointer p-2 rounded ${showCanceled ? 'bg-red-500 text-white' : 'hover:bg-blue-600'} bg-blue-500 text-white px-4 py-2 rounded-md mb-2 mr-4`}
+          onClick={handleCanceledToggle}
+        >
+          View Canceled Events
+        </button>
+
+        <button 
+          onClick={() => setShowFilters(!showFilters)} 
+          className="bg-blue-500 text-white px-4 py-2 rounded-md mb-2 hover:bg-blue-600"
+        >
+          {showFilters ? 'Hide Filters' : 'Show Filters'}
+        </button>
+
+        
+        {showFilters && (
+          <div className="bg-gray-100 p-4 rounded-md absolute top-10 z-10 max-w-2/3">
+            <div className="mb-2">
+              <label className="block mb-1">Filter by Doctor</label>
+              <select 
+                value={selectedDoctor} 
+                onChange={handleDoctorFilterChange} 
+                className="w-full p-2 border rounded"
+              >
+                <option value="">All Doctors</option>
+                {doctors.map(doctor => (
+                  <option key={doctor} value={doctor}>{doctor}</option>
+                ))}
+              </select>
+            </div>
+            
+            <div>
+              <label className="block mb-1">Filter by Patient</label>
+              <select 
+                value={selectedPatient} 
+                onChange={handlePatientFilterChange} 
+                className="w-full p-2 border rounded"
+              >
+                <option value="">All Patients</option>
+                {patients.map(patient => (
+                  <option key={patient} value={patient}>{patient}</option>
+                ))}
+              </select>
+            </div>
+          </div>
+        )}
+      </div>
+      <div className="relative bg-white rounded-lg shadow-lg h-[75vh]">
+          <Calendar
             localizer={localizer}
             events={filteredEvents}
-            // formats={{dayHeaderFormat:(date)=>moment(date).format("dddd, MMMM, DD")}}
             startAccessor="start"
             endAccessor="end"
-            defaultView={'week'}
+            defaultView={"day"}
+            views={["day", "week", "month"]}
             selectable
+            resources={getFilteredResources()}
+            resourceIdAccessor="id"
+            resourceTitleAccessor="title"
             onSelectSlot={handleSelect}
             onSelectEvent={handleSelectEvent}
-            onView={handleViewChange}
+            view={view}
+            onView={setView}
             date={date}
             onNavigate={setDate}
-            views={['day', 'week', 'month']}
             className="font-sans"
             components={{
-                toolbar: CustomToolbar
+              toolbar: CustomToolbar,
+              resourceHeader: ResourceHeader,
             }}
-            /> */}
-            <Calendar
-              localizer={localizer}
-              events={filteredEvents}
-              startAccessor="start"
-              endAccessor="end"
-              defaultView={"day"}
-              views={["day", "week", "month"]}
-              selectable
-              resources={doctors.map(doctor => ({ id: doctor, title: doctor }))}
-              resourceIdAccessor="id"
-              resourceTitleAccessor="title"
-              onSelectSlot={handleSelect}
-              onSelectEvent={handleSelectEvent}
-              onView={handleViewChange}
-              date={date}
-              onNavigate={setDate}
-              className="font-sans"
-              components={{
-                toolbar: CustomToolbar,
-                resourceHeader: ResourceHeader,
-              }}
-            />
+            min={new Date(0, 0, 0, ...calendarStartTime.split(':'))}
+            max={new Date(0, 0, 0, ...calendarEndTime.split(':'))}
+            eventPropGetter={(event) => {
+              let newStyle = {
+                backgroundColor: doctorColors[event.doctor],
+                color: 'black',
+              };
+              if (event.status === 'cancelled') {
+                newStyle.backgroundColor = 'lightgrey';
+              } else if (event.status === 'completed') {
+                newStyle.backgroundColor = 'lightgreen';
+              }
+              return { style: newStyle };
+            }}
+          />
       </div>
       {selectedEvent && (
         <AppointmentPopup 
@@ -395,12 +513,15 @@ export default function Schedule() {
           onClose={() => setSelectedEvent(null)}
           onReschedule={handleReschedule}
           onCancel={handleCancel}
+          onDelete={handleDelete}
+          onMarkVisit={handleMarkVisit}
+          doctorColors={doctorColors}
         />
       )}
       {isModalOpen && (
           <div className="absolute inset-0 bg-transparent z-40" />
         )}
-    {isModalOpen && (
+      {isModalOpen && (
         <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50" 
             onClick={() => setIsModalOpen(false)}>
           <div className="relative top-20 mx-auto p-5 border w-[500px] shadow-lg rounded-md bg-white" onClick={e => e.stopPropagation()}>
