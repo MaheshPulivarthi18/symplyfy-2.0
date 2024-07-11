@@ -8,7 +8,7 @@ import { Badge } from "@/components/ui/badge";
 const AppointmentPopup = ({ event, onClose, onReschedule, onCancel, onDelete, onMarkVisit, doctorColors }) => {
   return (
     <Dialog open={true} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[20%]">
+      <DialogContent className="w-full max-w-md mx-auto">
         <DialogHeader>
           <DialogTitle className="text-xl font-bold text-center">{event.title}</DialogTitle>
         </DialogHeader>
