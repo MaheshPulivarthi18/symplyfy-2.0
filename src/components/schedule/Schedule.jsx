@@ -7,9 +7,25 @@ import enUS from 'date-fns/locale/en-US';
 import 'react-big-calendar/lib/css/react-big-calendar.css';
 import AppointmentPopup from './Appointment';
 import './Schedule.css'
+import '../../index.css'
 import moment from 'moment';
 import { format, startOfWeek, endOfWeek, startOfMonth, endOfMonth, isSameMonth, startOfDay, endOfDay, isSameDay } from 'date-fns';
 import { addWeeks, addMonths, isBefore } from 'date-fns';
+import { Toggle } from '../ui/toggle';
+import { Button } from '../ui/button';
+import { DatePicker } from '../ui/datepicker';
+import TimePicker from '../ui/timepicker';
+import { Label } from '../ui/label';
+import { Input } from '../ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "../ui/dialog"
 
 const locales = {
   'en-US': enUS,
@@ -59,16 +75,15 @@ export default function Schedule() {
   const [selectedPatient, setSelectedPatient] = useState('');
   const [showFilters, setShowFilters] = useState(false);
   const [showCanceled, setShowCanceled] = useState(false);
-  const [calendarStartTime, setCalendarStartTime] = useState('09:00');
-  // const [calendarEndTime, setCalendarEndTime] = useState('21:00');
-  const [calendarEndTime, setCalendarEndTime] = useState('21:00');
+  const [calendarStartTime, setCalendarStartTime] = useState(new Date(0, 0, 0, 9, 0)); // 09:00
+  const [calendarEndTime, setCalendarEndTime] = useState(new Date(0, 0, 0, 21, 0)); // 21:00
 
-  const handleStartTimeChange = (e) => {
-    setCalendarStartTime(e.target.value);
+  const handleStartTimeChange = (time) => {
+    setCalendarStartTime(time);
   };
 
-  const handleEndTimeChange = (e) => {
-    setCalendarEndTime(e.target.value);
+  const handleEndTimeChange = (time) => {
+    setCalendarEndTime(time);
   };
 
   // Function to convert time string to minutes
@@ -78,22 +93,22 @@ export default function Schedule() {
   };
 
 
-  const handleDoctorFilterChange = (e) => {
-    const selectedValue = e.target.value;
-    setSelectedDoctor(selectedValue);
-    if (selectedValue) {
+  const handleDoctorFilterChange = (doctor) => {
+    setSelectedDoctor(prev => prev === doctor ? '' : doctor);
+    // Don't clear patient selection anymore
+    if (doctor) {
       setView('week');
     }
   };
-
-  const handlePatientFilterChange = (e) => {
-    const selectedValue = e.target.value;
-    setSelectedPatient(selectedValue);
-    if (selectedValue) {
+  
+  const handlePatientFilterChange = (patient) => {
+    setSelectedPatient(prev => prev === patient ? '' : patient);
+    // Don't clear doctor selection anymore
+    if (patient) {
       setView('month');
     }
   };
-
+  
   const handleCanceledToggle = () => {
     setShowCanceled(!showCanceled);
     if (!showCanceled) {
@@ -101,6 +116,12 @@ export default function Schedule() {
       setSelectedDoctor('');
       setSelectedPatient('');
     }
+  };
+  
+  const clearAllFilters = () => {
+    setSelectedDoctor('');
+    setSelectedPatient('');
+    setShowCanceled(false);
   };
 
   const handleReschedule = (event) => {
@@ -320,6 +341,12 @@ export default function Schedule() {
     (showCanceled ? event.status === 'cancelled' : true)
   );
 
+  // const filteredEvents = events.filter(event => 
+  //   (selectedDoctor ? event.doctor === selectedDoctor : true) &&
+  //   (selectedPatient ? event.patient === selectedPatient : true) &&
+  //   (showCanceled ? true : event.status !== 'cancelled')
+  // );
+
   const ResourceHeader = ({ label }) => (
     <div className="resource-header flex flex-row justify-center gap-4 text-center" style={{ backgroundColor: doctorColors[label] }}>
       <div className="avatar">
@@ -393,121 +420,101 @@ export default function Schedule() {
   };
 
   return (
-    <div className="p-4 w-[70vw]">
-      <h1 className="text-2xl font-bold mb-4">Schedule</h1>
-      <div className="mb-4 relative flex justify-end ">
-
-      <div className="mb-4 flex space-x-4 mr-4">
-        <p className='font-bold mt-1'>From</p>
-          <div>
-            {/* <label htmlFor="startTime" className="block text-sm font-medium text-gray-700">Start Time</label> */}
-            <input
-              type="time"
-              id="startTime"
-              value={calendarStartTime}
-              onChange={handleStartTimeChange}
-              className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm"
-            />
+    <div className="p-4 w-[90vw] h-full">
+      <div className='flex flex-row-reverse gap-8 w-full'>
+        <div className="mb-4 relative flex flex-col justify-start gap-1 mt-4 w-[10%]">
+          <div className="mb-4 flex flex-col gap-4">
+            <div className='flex gap-4 justify-between items-center'>
+              <Label htmlFor="startTime">From</Label>
+              <TimePicker
+                id="startTime"
+                value={calendarStartTime}
+                onChange={handleStartTimeChange}
+              />
+            </div>
+            <div className='flex gap-4 justify-between items-center'>
+              <Label htmlFor="endTime">To</Label>
+              <TimePicker
+                id="endTime"
+                value={calendarEndTime}
+                onChange={handleEndTimeChange}
+              />
+            </div>
           </div>
-          <p className='font-bold mt-1'>to</p>
-          <div>
-            {/* <label htmlFor="endTime" className="block text-sm font-medium text-gray-700">End Time</label> */}
-            <input
-              type="time"
-              id="endTime"
-              value={calendarEndTime}
-              onChange={handleEndTimeChange}
-              className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm"
-            />
-          </div>
-        </div>
-
-        <button 
-          className={`cursor-pointer p-2 rounded ${showCanceled ? 'bg-red-500 text-white' : 'hover:bg-blue-600'} bg-blue-500 text-white px-4 py-2 rounded-md mb-2 mr-4`}
-          onClick={handleCanceledToggle}
-        >
-          View Canceled Events
-        </button>
-
-        <button 
-          onClick={() => setShowFilters(!showFilters)} 
-          className="bg-blue-500 text-white px-4 py-2 rounded-md mb-2 hover:bg-blue-600"
-        >
-          {showFilters ? 'Hide Filters' : 'Show Filters'}
-        </button>
-
         
-        {showFilters && (
-          <div className="bg-gray-100 p-4 rounded-md absolute top-10 z-10 max-w-2/3">
-            <div className="mb-2">
-              <label className="block mb-1">Filter by Doctor</label>
-              <select 
-                value={selectedDoctor} 
-                onChange={handleDoctorFilterChange} 
-                className="w-full p-2 border rounded"
-              >
-                <option value="">All Doctors</option>
-                {doctors.map(doctor => (
-                  <option key={doctor} value={doctor}>{doctor}</option>
-                ))}
-              </select>
-            </div>
-            
-            <div>
-              <label className="block mb-1">Filter by Patient</label>
-              <select 
-                value={selectedPatient} 
-                onChange={handlePatientFilterChange} 
-                className="w-full p-2 border rounded"
-              >
-                <option value="">All Patients</option>
-                {patients.map(patient => (
-                  <option key={patient} value={patient}>{patient}</option>
-                ))}
-              </select>
-            </div>
-          </div>
-        )}
-      </div>
-      <div className="relative bg-white rounded-lg shadow-lg h-[75vh]">
+          <Toggle
+            pressed={!selectedDoctor && !selectedPatient}
+            onPressedChange={clearAllFilters}
+          >
+            {selectedDoctor === "" && selectedPatient === "" ? "Apply Filter" : "Clear All Filters" }
+          </Toggle>
+
+          <h1 className='font-bold text-lg'>Doctors</h1>
+          {doctors.map(doctor => (
+            <Toggle
+              key={doctor}
+              pressed={selectedDoctor === doctor}
+              onPressedChange={() => handleDoctorFilterChange(doctor)}
+            >
+              {doctor}
+            </Toggle>
+          ))}
+
+          <h1 className='font-bold text-lg'>Patients</h1>
+          {patients.map(patient => (
+            <Toggle
+              key={patient}
+              pressed={selectedPatient === patient}
+              onPressedChange={() => handlePatientFilterChange(patient)}
+            >
+              {patient}
+            </Toggle>
+          ))}
+
+          <Toggle onClick={handleCanceledToggle}>View cancelled Events</Toggle>
+        </div>
+        <div className="relative bg-white rounded-lg shadow-lg h-[75vh] w-[90%]">
           <Calendar
-            localizer={localizer}
-            events={filteredEvents}
-            startAccessor="start"
-            endAccessor="end"
-            defaultView={"day"}
-            views={["day", "week", "month"]}
-            selectable
-            resources={getFilteredResources()}
-            resourceIdAccessor="id"
-            resourceTitleAccessor="title"
-            onSelectSlot={handleSelect}
-            onSelectEvent={handleSelectEvent}
-            view={view}
-            onView={setView}
-            date={date}
-            onNavigate={setDate}
-            className="font-sans"
-            components={{
-              toolbar: CustomToolbar,
-              resourceHeader: ResourceHeader,
-            }}
-            min={new Date(0, 0, 0, ...calendarStartTime.split(':'))}
-            max={new Date(0, 0, 0, ...calendarEndTime.split(':'))}
-            eventPropGetter={(event) => {
-              let newStyle = {
-                backgroundColor: doctorColors[event.doctor],
-                color: 'black',
-              };
-              if (event.status === 'cancelled') {
-                newStyle.backgroundColor = 'lightgrey';
-              } else if (event.status === 'completed') {
-                newStyle.backgroundColor = 'lightgreen';
-              }
-              return { style: newStyle };
-            }}
-          />
+              localizer={localizer}
+              events={filteredEvents}
+              startAccessor="start"
+              endAccessor="end"
+              defaultView={"day"}
+              views={["day", "week", "month"]}
+              selectable
+              resources={getFilteredResources()}
+              resourceIdAccessor="id"
+              resourceTitleAccessor="title"
+              onSelectSlot={handleSelect}
+              onSelectEvent={handleSelectEvent}
+              view={view}
+              onView={setView}
+              date={date}
+              onNavigate={setDate}
+              className="font-sans"
+              components={{
+                toolbar: CustomToolbar,
+                resourceHeader: ResourceHeader,
+              }}
+              min={calendarStartTime}
+              max={calendarEndTime}
+              eventPropGetter={(event) => {
+                let newStyle = {
+                  backgroundColor: doctorColors[event.doctor],
+                  color: 'black',
+                };
+                if (event.status === 'cancelled') {
+                  newStyle.backgroundColor = 'lightgrey';
+                  newStyle.color = 'darkgrey'
+                } else if (event.status === 'completed') {
+                  newStyle.backgroundColor = 'lightgreen';
+                }
+                return { style: newStyle };
+              }}
+            />
+        </div>
       </div>
+
       {selectedEvent && (
         <AppointmentPopup 
           event={selectedEvent} 
@@ -519,97 +526,131 @@ export default function Schedule() {
           doctorColors={doctorColors}
         />
       )}
-      {isModalOpen && (
-          <div className="absolute inset-0 bg-transparent z-40" />
-        )}
-      {isModalOpen && (
-        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50" 
-            onClick={() => setIsModalOpen(false)}>
-          <div className="relative top-20 mx-auto p-5 border w-[500px] shadow-lg rounded-md bg-white" onClick={e => e.stopPropagation()}>
-            <h2 className="text-xl font-bold mb-4">{isRescheduling ? 'Reschedule Appointment' : 'Book Appointment'}</h2>
-            <div className="mb-4 flex items-center">
-              <label className="w-1/3">Patient</label>
-              <select name="patient" value={newEvent.patient} onChange={handleInputChange} className="w-2/3 p-2 border rounded">
-                <option value="">Select Patient</option>
-                {patients.map(patient => (
-                  <option key={patient} value={patient}>{patient}</option>
-                ))}
-              </select>
+      <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{isRescheduling ? 'Reschedule Appointment' : 'Book Appointment'}</DialogTitle>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="patient" className="text-right">
+                Patient
+              </Label>
+              <Select name="patient" value={newEvent.patient} onValueChange={(value) => handleInputChange({ target: { name: 'patient', value }})}>
+                <SelectTrigger className="col-span-3">
+                  <SelectValue placeholder="Select Patient" />
+                </SelectTrigger>
+                <SelectContent>
+                  {patients.map(patient => (
+                    <SelectItem key={patient} value={patient}>{patient}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
-            <div className="mb-4 flex items-center">
-              <label className="w-1/3">Doctor</label>
-              <select name="doctor" value={newEvent.doctor} onChange={handleInputChange} className="w-2/3 p-2 border rounded">
-                <option value="">Select Doctor</option>
-                {doctors.map(doctor => (
-                  <option key={doctor} value={doctor}>{doctor}</option>
-                ))}
-              </select>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="doctor" className="text-right">
+                Doctor
+              </Label>
+              <Select name="doctor" value={newEvent.doctor} onValueChange={(value) => handleInputChange({ target: { name: 'doctor', value }})}>
+                <SelectTrigger className="col-span-3">
+                  <SelectValue placeholder="Select Doctor" />
+                </SelectTrigger>
+                <SelectContent>
+                  {doctors.map(doctor => (
+                    <SelectItem key={doctor} value={doctor}>{doctor}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
-            <div className="mb-4 flex items-center">
-              <label className="w-1/3">Service</label>
-              <select name="service" value={newEvent.service} onChange={handleInputChange} className="w-2/3 p-2 border rounded">
-                <option value="">Select Service</option>
-                {services.map(service => (
-                  <option key={service} value={service}>{service}</option>
-                ))}
-              </select>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="service" className="text-right">
+                Service
+              </Label>
+              <Select name="service" value={newEvent.service} onValueChange={(value) => handleInputChange({ target: { name: 'service', value }})}>
+                <SelectTrigger className="col-span-3">
+                  <SelectValue placeholder="Select Service" />
+                </SelectTrigger>
+                <SelectContent>
+                  {services.map(service => (
+                    <SelectItem key={service} value={service}>{service}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
-            <div className="mb-4 flex items-center">
-              <label className="w-1/3">Date</label>
-              <input type="date" value={newEvent.date.toISOString().split('T')[0]} onChange={handleDateChange} className="w-2/3 p-2 border rounded" />
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="date" className="text-right">
+                Date
+              </Label>
+              <DatePicker
+                value={newEvent.date}
+                onChange={(date) => handleInputChange({ target: { name: 'date', value: date }})}
+              />
             </div>
-            <div className="mb-4 flex items-center">
-                <label className="w-1/3">Time</label>
-                <input type="time" value={`${newEvent.time.getHours().toString().padStart(2, '0')}:${newEvent.time.getMinutes().toString().padStart(2, '0')}`} onChange={handleTimeChange} className="w-2/3 p-2 border rounded" />
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="time" className="text-right">
+                Time
+              </Label>
+              <TimePicker
+                value={newEvent.time}
+                onChange={(time) => handleInputChange({ target: { name: 'time', value: time }})}
+              />
             </div>
-            <div className="mb-4 flex items-center">
-                <label className="w-1/3">Frequency</label>
-                <select 
-                    name="frequency" 
-                    value={newEvent.frequency} 
-                    onChange={handleInputChange} 
-                    className="w-2/3 p-2 border rounded"
-                >
-                    <option value="does not repeat">Does not repeat</option>
-                    <option value="weekly">Weekly</option>
-                </select>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="frequency" className="text-right">
+                Frequency
+              </Label>
+              <Select name="frequency" value={newEvent.frequency} onValueChange={(value) => handleInputChange({ target: { name: 'frequency', value }})}>
+                <SelectTrigger className="col-span-3">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="does not repeat">Does not repeat</SelectItem>
+                  <SelectItem value="weekly">Weekly</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
-            <div className="mb-4 flex items-center">
-              <label className="block mb-2 w-1/3">Duration</label>
-              <div className="flex flex-wrap gap-2 w-2/3">
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label className="text-right">Duration</Label>
+              <div className="col-span-3 flex flex-wrap gap-2">
                 {durationOptions.map(duration => (
-                  <button
+                  <Button
                     key={duration}
+                    variant={newEvent.duration === duration ? "default" : "outline"}
                     onClick={() => handleDurationChange(duration)}
-                    className={`px-4 py-2 rounded ${newEvent.duration === duration ? 'bg-blue-500 text-white' : 'bg-gray-200'}`}
                   >
                     {duration} mins
-                  </button>
+                  </Button>
                 ))}
-                <button
+                <Button
+                  variant={isCustomDuration ? "default" : "outline"}
                   onClick={() => handleDurationChange('custom')}
-                  className={`px-4 py-2 rounded ${isCustomDuration ? 'bg-blue-500 text-white' : 'bg-gray-200'}`}
                 >
                   Custom
-                </button>
+                </Button>
               </div>
-              {isCustomDuration && (
-                <input
+            </div>
+            {isCustomDuration && (
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="customDuration" className="text-right">
+                  Custom Duration
+                </Label>
+                <Input
+                  id="customDuration"
                   type="number"
                   name="duration"
                   value={newEvent.duration}
                   onChange={handleInputChange}
-                  className="mt-2 w-full p-2 border rounded"
                   placeholder="Enter duration in minutes"
+                  className="col-span-3"
                 />
-              )}
-            </div>
-            <button onClick={handleBookAppointment} className="w-full mt-4 bg-blue-500 text-white px-4 py-2 rounded">
-            {isRescheduling ? 'Reschedule Appointment' : 'Book Appointment'}
-            </button>
+              </div>
+            )}
           </div>
-        </div>
-      )}
+          <Button onClick={handleBookAppointment}>
+            {isRescheduling ? 'Reschedule Appointment' : 'Book Appointment'}
+          </Button>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

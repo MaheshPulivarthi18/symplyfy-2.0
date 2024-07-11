@@ -6,6 +6,8 @@ import Home from './components/Home';
 import Dashboard from './components/Dashboard';
 import Schedule from './components/schedule/Schedule';
 import './App.css'
+import './index.css'
+import { Button } from './components/ui/button';
 
 function App() {
   return (
