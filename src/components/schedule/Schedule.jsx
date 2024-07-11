@@ -26,6 +26,8 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "../ui/dialog"
+import { PlusCircle } from "lucide-react"  // Make sure to import this icon
+
 
 const locales = {
   'en-US': enUS,
@@ -310,6 +312,20 @@ export default function Schedule() {
     });
   };
 
+  const handleAddAppointment = () => {
+    setNewEvent({
+      id: null,
+      patient: '',
+      doctor: '',
+      service: '',
+      date: new Date(),
+      time: new Date(),
+      frequency: 'does not repeat',
+      duration: 30,
+    });
+    setIsModalOpen(true);
+  };
+
   const handleViewChange = (newView) => {
     setView(newView);
   };
@@ -423,6 +439,13 @@ export default function Schedule() {
     <div className="p-4 w-[90vw] h-full">
       <div className='flex flex-row-reverse gap-8 w-full'>
         <div className="mb-4 relative flex flex-col justify-start gap-1 mt-4 w-[10%]">
+          <div className="flex justify-between items-center mb-4 w-full">
+            <Button onClick={handleAddAppointment} className="flex items-center w-full">
+              <PlusCircle className="mr-2 h-4 w-4" />
+              Add Appointment
+            </Button>
+            {/* You can move your time range controls here if desired */}
+          </div>
           <div className="mb-4 flex flex-col gap-4">
             <div className='flex gap-4 justify-between items-center'>
               <Label htmlFor="startTime">From</Label>
