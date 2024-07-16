@@ -12,7 +12,6 @@ const Dashboard = () => {
     const doctors = ['Dr. Brown', 'Dr. White', 'Dr. Green', 'Dr. Yellow', 'Dr. Red', 'Dr. Orange'];
     const appointmentsData = [
         { details: "Checkup with John Doe at 10:00 AM", id: 1 },
-        { details: "Consultation with Jane Smith at 11:30 AM", id: 2 }
     ];
 
     const upcomingAppointments = [
@@ -34,6 +33,8 @@ const Dashboard = () => {
         pending: 0,
         recentCancellations: 0,
     });
+
+    const navigate = useNavigate();
 
     useEffect(() => {
         // Simulate fetching data from backend
@@ -62,12 +63,16 @@ const Dashboard = () => {
                   </SelectContent>
                 </Select>
               </CardHeader>
-              <CardContent className="bg-blue-700 text-white p-4 rounded-md">
+              <CardContent className="p-4 rounded-md">
                 {appointmentsData.length === 0 ? "No upcoming appointments" : (
                   // Render today's appointments here
-                  <ul>
+                  <ul className='flex flex-col gap-4'>
                     {appointmentsData.map(appointment => (
-                      <li key={appointment.id}>{appointment.details}</li>
+                      <li key={appointment.id}>
+                      <Button>
+                      {appointment.details}
+                      </Button>
+                      </li>
                     ))}
                   </ul>
                 )}
@@ -87,7 +92,7 @@ const Dashboard = () => {
             </Card>
           </section>
   
-          <Button className="w-full bg-blue-700 hover:bg-blue-800" onClick={() => navigate('/schedule')}>
+          <Button className="w-full" onClick={() => navigate('/schedule')}>
             Schedule appointment
           </Button>
   

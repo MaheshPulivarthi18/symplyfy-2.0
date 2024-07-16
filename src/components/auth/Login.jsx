@@ -16,7 +16,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/componen
 import { Checkbox } from "@/components/ui/checkbox";
 import logo from "../../assets/logo_ai 2.svg";
 import { LogIn } from 'lucide-react';
-import { Link } from 'react-router-dom'; // Assuming you're using react-router for navigation
+import { Link, useNavigate } from 'react-router-dom'; // Assuming you're using react-router for navigation
 
 const formSchema = z.object({
   email: z.string().email("Please enter a valid email address."),
@@ -33,14 +33,16 @@ const Login = () => {
       keepSignedIn: false,
     },
   });
+  const navigate = useNavigate();
 
   function onSubmit(values) {
+      navigate('/dashboard')
     console.log(values);
     // send the data to backend
   }
 
   return (
-    <div className="container mx-auto p-4 max-w-md">
+    <div className="container mx-auto p-4 max-w-md ">
       <Card className="shadow-lg">
         <CardHeader className='items-center gap-4'>
           <img src={logo} className='w-24' alt="Logo" />
