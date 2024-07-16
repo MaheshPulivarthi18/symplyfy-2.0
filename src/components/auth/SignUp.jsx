@@ -172,9 +172,9 @@ const SignUp = () => {
                                     </SelectTrigger>
                                 </FormControl>
                                 <SelectContent>
-                                    <SelectItem value="developer">Developer</SelectItem>
-                                    <SelectItem value="designer">Designer</SelectItem>
-                                    <SelectItem value="manager">Manager</SelectItem>
+                                    <SelectItem value="therapist">Therapist</SelectItem>
+                                    <SelectItem value="doctor">Doctor</SelectItem>
+                                    <SelectItem value="receptionist">Receptionist</SelectItem>
                                 </SelectContent>
                                 </Select>
                                 <FormMessage />
