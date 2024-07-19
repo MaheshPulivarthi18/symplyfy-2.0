@@ -264,3 +264,19 @@
     border: 3px solid white; /* Placeholder color */
     margin-bottom: 5px;
   }
+  
+  @media (max-width: 1023px) {
+    .rbc-calendar {
+      height: 70vh !important;
+    }
+  }
+  
+  @media (min-width: 1024px) {
+    .rbc-calendar {
+      height: 100% !important;
+    }
+  }
+  
+  .rbc-calendar {
+    min-height: 500px;
+  }

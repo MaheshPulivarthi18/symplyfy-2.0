@@ -18,6 +18,7 @@ import TimePicker from '../ui/timepicker';
 import { Label } from '../ui/label';
 import { Input } from '../ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select"
+import { ScrollArea } from "@/components/ui/scroll-area"
 import {
   Dialog,
   DialogContent,
@@ -27,6 +28,7 @@ import {
   DialogTrigger,
 } from "../ui/dialog"
 import { PlusCircle } from "lucide-react"  // Make sure to import this icon
+import { Card } from '../ui/card';
 
 
 const locales = {
@@ -372,6 +374,12 @@ export default function Schedule() {
     </div>
   );
 
+  const [isVisible, setIsVisible] = useState(false);
+
+  useEffect(() => {
+    setIsVisible(true);
+  }, []);
+
   const CustomToolbar = (toolbar) => {
     const goToBack = () => {
       toolbar.onNavigate('PREV');
@@ -436,17 +444,16 @@ export default function Schedule() {
   };
 
   return (
-    <div className="p-4 w-[90vw] h-full">
-      <div className='flex flex-row-reverse gap-8 w-full'>
-        <div className="mb-4 relative flex flex-col justify-start gap-1 mt-4 w-[10%]">
-          <div className="flex justify-between items-center mb-4 w-full">
+    <Card className={`p-4 w-full max-w-[90vw] h-[90vh] shadow-lg transition-all duration-500 ease-out ${isVisible ? 'opacity-100 scale-100' : 'opacity-0 scale-95'}`}>
+      <div className='flex flex-col lg:flex-row-reverse gap-4 lg:gap-8 w-full h-full'>
+        <div className="w-full lg:w-[25%] flex flex-col h-full">
+          <div className="mb-4 flex-shrink-0">
             <Button onClick={handleAddAppointment} className="flex items-center w-full">
               <PlusCircle className="mr-2 h-4 w-4" />
               Add Appointment
             </Button>
-            {/* You can move your time range controls here if desired */}
           </div>
-          <div className="mb-4 flex flex-col gap-4">
+          <div className="mb-4 flex-shrink-0">
             <div className='flex gap-4 justify-between items-center'>
               <Label htmlFor="startTime">From</Label>
               <TimePicker
@@ -455,7 +462,7 @@ export default function Schedule() {
                 onChange={handleStartTimeChange}
               />
             </div>
-            <div className='flex gap-4 justify-between items-center'>
+            <div className='flex gap-4 justify-between items-center mt-2'>
               <Label htmlFor="endTime">To</Label>
               <TimePicker
                 id="endTime"
@@ -464,77 +471,86 @@ export default function Schedule() {
               />
             </div>
           </div>
-        
-          <Toggle
-            pressed={!selectedDoctor && !selectedPatient}
-            onPressedChange={clearAllFilters}
-          >
-            {selectedDoctor === "" && selectedPatient === "" ? "Apply Filter" : "Clear All Filters" }
-          </Toggle>
-
-          <h1 className='font-bold text-lg'>Doctors</h1>
-          {doctors.map(doctor => (
+          <ScrollArea className="flex-grow overflow-y-auto pr-4">
             <Toggle
-              key={doctor}
-              pressed={selectedDoctor === doctor}
-              onPressedChange={() => handleDoctorFilterChange(doctor)}
+              pressed={!selectedDoctor && !selectedPatient}
+              onPressedChange={clearAllFilters}
+              className="mb-4 w-full"
             >
-              {doctor}
+              {selectedDoctor === "" && selectedPatient === "" ? "Apply Filter" : "Clear All Filters" }
             </Toggle>
-          ))}
 
-          <h1 className='font-bold text-lg'>Patients</h1>
-          {patients.map(patient => (
-            <Toggle
-              key={patient}
-              pressed={selectedPatient === patient}
-              onPressedChange={() => handlePatientFilterChange(patient)}
-            >
-              {patient}
+            <h1 className='font-bold text-lg mb-2'>Doctors</h1>
+            <div className="flex flex-col gap-2 mb-4">
+              {doctors.map(doctor => (
+                <Toggle
+                  key={doctor}
+                  pressed={selectedDoctor === doctor}
+                  onPressedChange={() => handleDoctorFilterChange(doctor)}
+                >
+                  {doctor}
+                </Toggle>
+              ))}
+            </div>
+
+            <h1 className='font-bold text-lg mb-2'>Patients</h1>
+            <div className="flex flex-col gap-2 mb-4">
+              {patients.map(patient => (
+                <Toggle
+                  key={patient}
+                  pressed={selectedPatient === patient}
+                  onPressedChange={() => handlePatientFilterChange(patient)}
+                >
+                  {patient}
+                </Toggle>
+              ))}
+            </div>
+
+            <Toggle onClick={handleCanceledToggle} className="w-full">
+              View cancelled Events
             </Toggle>
-          ))}
-
-          <Toggle onClick={handleCanceledToggle}>View cancelled Events</Toggle>
+          </ScrollArea>
         </div>
-        <div className="relative bg-white rounded-lg shadow-lg h-[75vh] w-[90%]">
+        <div className="bg-white rounded-lg shadow-lg h-full w-full lg:w-[75%]">
           <Calendar
-              localizer={localizer}
-              events={filteredEvents}
-              startAccessor="start"
-              endAccessor="end"
-              defaultView={"day"}
-              views={["day", "week", "month"]}
-              selectable
-              resources={getFilteredResources()}
-              resourceIdAccessor="id"
-              resourceTitleAccessor="title"
-              onSelectSlot={handleSelect}
-              onSelectEvent={handleSelectEvent}
-              view={view}
-              onView={setView}
-              date={date}
-              onNavigate={setDate}
-              className="font-sans"
-              components={{
-                toolbar: CustomToolbar,
-                resourceHeader: ResourceHeader,
-              }}
-              min={calendarStartTime}
-              max={calendarEndTime}
-              eventPropGetter={(event) => {
-                let newStyle = {
-                  backgroundColor: doctorColors[event.doctor],
-                  color: 'black',
-                };
-                if (event.status === 'cancelled') {
-                  newStyle.backgroundColor = 'lightgrey';
-                  newStyle.color = 'darkgrey'
-                } else if (event.status === 'completed') {
-                  newStyle.backgroundColor = 'lightgreen';
-                }
-                return { style: newStyle };
-              }}
-            />
+            localizer={localizer}
+            events={filteredEvents}
+            startAccessor="start"
+            endAccessor="end"
+            defaultView={"day"}
+            views={["day", "week", "month"]}
+            selectable
+            resources={getFilteredResources()}
+            resourceIdAccessor="id"
+            resourceTitleAccessor="title"
+            onSelectSlot={handleSelect}
+            onSelectEvent={handleSelectEvent}
+            view={view}
+            onView={setView}
+            date={date}
+            onNavigate={setDate}
+            className="font-sans h-[calc(100%-2rem)]"
+            style={{ minHeight: '500px' }}
+            components={{
+              toolbar: CustomToolbar,
+              resourceHeader: ResourceHeader,
+            }}
+            min={calendarStartTime}
+            max={calendarEndTime}
+            eventPropGetter={(event) => {
+              let newStyle = {
+                backgroundColor: doctorColors[event.doctor],
+                color: 'black',
+              };
+              if (event.status === 'cancelled') {
+                newStyle.backgroundColor = 'lightgrey';
+                newStyle.color = 'darkgrey'
+              } else if (event.status === 'completed') {
+                newStyle.backgroundColor = 'lightgreen';
+              }
+              return { style: newStyle };
+            }}
+          />
         </div>
       </div>
 
@@ -550,7 +566,7 @@ export default function Schedule() {
         />
       )}
       <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
-        <DialogContent>
+        <DialogContent className="sm:max-w-[425px]">
           <DialogHeader>
             <DialogTitle>{isRescheduling ? 'Reschedule Appointment' : 'Book Appointment'}</DialogTitle>
           </DialogHeader>
@@ -674,6 +690,6 @@ export default function Schedule() {
           </Button>
         </DialogContent>
       </Dialog>
-    </div>
+    </Card>
   );
 }

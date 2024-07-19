@@ -1,5 +1,5 @@
-import React from 'react';
 import { useForm } from 'react-hook-form';
+import React, { useState, useEffect } from 'react';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { Button } from "@/components/ui/button";
@@ -32,9 +32,15 @@ const ForgotPassword = () => {
     // send the reset password link to email
   }
 
+  const [isVisible, setIsVisible] = useState(false);
+
+  useEffect(() => {
+    setIsVisible(true);
+  }, []);
+
   return (
     <div className="container mx-auto p-4 max-w-md">
-      <Card className="shadow-lg">
+      <Card className={`shadow-lg transition-all duration-500 ease-out ${isVisible ? 'opacity-100 scale-100' : 'opacity-0 scale-95'}`}>
         <CardHeader className='items-center gap-4'>
           <img src={logo} className='w-24' alt="Symplify Logo" />
           <CardTitle className="text-2xl font-semibold text-center">Symplify</CardTitle>

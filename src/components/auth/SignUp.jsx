@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -66,27 +66,33 @@ const SignUp = () => {
     // send the data to backend
   }
 
+  const [isVisible, setIsVisible] = useState(false);
+
+  useEffect(() => {
+    setIsVisible(true);
+  }, []);
+
   return (
     <div className="container mx-auto p-4 max-w-5xl">
-      <Card className="shadow-lg">
+      <Card className={`shadow-lg w-full transition-all duration-500 ease-out ${isVisible ? 'opacity-100 scale-100' : 'opacity-0 scale-95'}`}>
         <CardHeader className=' items-center gap-4'>
             <img src={logo} className='w-24'></img>
           <CardTitle className="text-2xl font-semibold items-center">
             Sign up
           </CardTitle>
         </CardHeader>
-        <CardContent>
+        <CardContent className='w-full'>
           <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
-                <div className='flex gap-8'>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8 w-full">
+                <div className='flex gap-8 w-full'>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8 w-2/3">
                         <div className="space-y-4">
                         <h3 className="text-lg font-semibold">Personal details</h3>
                         <FormField
                             control={form.control}
                             name="firstName"
                             render={({ field }) => (
-                            <FormItem className="w-64">
+                            <FormItem>
                                 <FormLabel>First name</FormLabel>
                                 <FormControl>
                                 <Input placeholder="First name" {...field} />
@@ -99,7 +105,7 @@ const SignUp = () => {
                             control={form.control}
                             name="lastName"
                             render={({ field }) => (
-                            <FormItem className="w-64">
+                            <FormItem>
                                 <FormLabel>Last name</FormLabel>
                                 <FormControl>
                                 <Input placeholder="Last name" {...field} />
@@ -112,7 +118,7 @@ const SignUp = () => {
                             control={form.control}
                             name="dateOfBirth"
                             render={({ field }) => (
-                            <FormItem className="w-64">
+                            <FormItem>
                                 <FormLabel>Date of birth</FormLabel>
                                 <FormControl>
                                 <Input type="date" {...field} />
@@ -125,7 +131,7 @@ const SignUp = () => {
                             control={form.control}
                             name="gender"
                             render={({ field }) => (
-                            <FormItem className="w-64">
+                            <FormItem>
                                 <FormLabel>Gender</FormLabel>
                                 <Select onValueChange={field.onChange} defaultValue={field.value}>
                                 <FormControl>
@@ -150,7 +156,7 @@ const SignUp = () => {
                             control={form.control}
                             name="experience"
                             render={({ field }) => (
-                            <FormItem className="w-64">
+                            <FormItem>
                                 <FormLabel>Experience (in years)</FormLabel>
                                 <FormControl>
                                 <Input type="number" {...field} />
@@ -163,7 +169,7 @@ const SignUp = () => {
                             control={form.control}
                             name="role"
                             render={({ field }) => (
-                            <FormItem className="w-64">
+                            <FormItem>
                                 <FormLabel>Role in organization</FormLabel>
                                 <Select onValueChange={field.onChange} defaultValue={field.value}>
                                 <FormControl>
@@ -183,13 +189,13 @@ const SignUp = () => {
                         />
                         </div>
                     </div>
-                    <div className="space-y-4">
+                    <div className="space-y-4 w-1/3">
                         <h3 className="text-lg font-semibold">Account details</h3>
                         <FormField
                         control={form.control}
                         name="email"
                         render={({ field }) => (
-                            <FormItem className="w-64">
+                            <FormItem>
                             <FormLabel>Email</FormLabel>
                             <FormControl>
                                 <Input type="email" placeholder="Email" {...field} />
@@ -202,7 +208,7 @@ const SignUp = () => {
                         control={form.control}
                         name="mobileNumber"
                         render={({ field }) => (
-                            <FormItem className="w-64">
+                            <FormItem>
                             <FormLabel>Mobile number</FormLabel>
                             <FormControl>
                                 <Input type="tel" placeholder="Mobile number" {...field} />
@@ -215,7 +221,7 @@ const SignUp = () => {
                         control={form.control}
                         name="password"
                         render={({ field }) => (
-                            <FormItem className="w-64">
+                            <FormItem>
                             <FormLabel>Password</FormLabel>
                             <FormControl>
                                 <Input type="password" placeholder="Password" {...field} />
@@ -228,7 +234,7 @@ const SignUp = () => {
                         control={form.control}
                         name="reEnterPassword"
                         render={({ field }) => (
-                            <FormItem className="w-64">
+                            <FormItem>
                             <FormLabel>Re-enter password</FormLabel>
                             <FormControl>
                                 <Input type="password" placeholder="Re-enter password" {...field} />

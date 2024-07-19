@@ -11,19 +11,12 @@ import { Button } from './components/ui/button';
 import SignUp from './components/auth/SignUp';
 import Login from './components/auth/Login';
 import ForgotPassword from './components/auth/ForgotPassword';
+import Employees from './components/profile/employees/Employees';
+import Patients from './components/patient/Patients';
 
 function App() {
   return (
     <Router>
-      <div>
-        <nav>
-          <ul>
-            {/* <li><Link to="/">Home</Link></li> */}
-            {/* <li><Link to="/dashboard">Dashboard</Link></li> */}
-            {/* <li><Link to="/schedule">Schedule</Link></li> */}
-          </ul>
-        </nav>
-
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path='/signup' element={<SignUp />}/>
@@ -31,8 +24,9 @@ function App() {
           <Route path='/forgotpassword' element={<ForgotPassword />}/>
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/schedule" element={<Schedule />} />
+          <Route path="/employees" element={<Employees />} />
+          <Route path="/patients" element={<Patients />} />
         </Routes>
-      </div>
     </Router>
   );
 }

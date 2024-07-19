@@ -4,7 +4,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Bell, Menu, RefreshCw } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import logo from "../../assets/logo_ai 2.svg"; // Adjust the path as needed
+import employee from "../../assets/employee.svg"; // Adjust the path as needed
+import patient from "../../assets/patient.svg"; // Adjust the path as needed
 // Import necessary components from shadcn/ui here
 
 const Dashboard = () => {
@@ -34,6 +35,16 @@ const Dashboard = () => {
         recentCancellations: 0,
     });
 
+    const refreshAppointments = () => {
+      console.log(appointments)
+    }
+
+    const [isVisible, setIsVisible] = useState(false);
+
+    useEffect(() => {
+      setIsVisible(true);
+    }, []);
+
     const navigate = useNavigate();
 
     useEffect(() => {
@@ -43,14 +54,14 @@ const Dashboard = () => {
     }, []);
 
     return (
-      <div className="container mx-auto p-4">  
-        <main className="space-y-6">
+      <Card className={`container mx-auto p-4 w-full shadow-xl transition-all duration-500 ease-out ${isVisible ? 'opacity-100 scale-100' : 'opacity-0 scale-90'}`}>  
+        <main className={`space-y-6`}>
           <section className="flex gap-4">
-            <Card className="flex-1">
+            <Card className="flex-1 shadow-inner bg-gray-50">
               <CardHeader>
                 <CardTitle className="text-lg font-semibold flex items-center gap-2">
                   Today's Appointments ({appointmentsData.length}) 
-                  {/* <RefreshCw size={18} onClick={refreshAppointments} className="cursor-pointer" /> */}
+                  <RefreshCw size={18} onClick={() => refreshAppointments()} className="cursor-pointer" />
                 </CardTitle>
                 <Select value={selectedDoctor} onValueChange={setSelectedDoctor}>
                   <SelectTrigger className="w-full">
@@ -79,9 +90,9 @@ const Dashboard = () => {
               </CardContent>
             </Card>
   
-            <Card className="flex-1">
+            <Card className="flex-1 shadow-inner bg-gray-50">
               <CardHeader>
-                <CardTitle className="text-lg font-semibold flex items-center justify-between">
+                <CardTitle className="text-lg font-semibold flex items-center gap-6 justify-between">
                   Upcoming appointments
                   <span className="text-sm text-blue-600 cursor-pointer" onClick={() => navigate('/appointments')}>View all</span>
                 </CardTitle>
@@ -89,45 +100,46 @@ const Dashboard = () => {
               <CardContent className="text-center text-4xl font-bold">
                 {upcomingAppointments.length}
               </CardContent>
+              <Button className="" onClick={() => navigate('/schedule')}>
+                Schedule appointment
+              </Button>
+            </Card>
+
+            <Card className='flex-1 shadow-inner bg-gray-50'>
+              <CardHeader>
+                <CardTitle className="text-lg font-semibold">Summary</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-2 gap-4">
+                  {Object.entries(summary).map(([key, value]) => (
+                    <div key={key} className="border rounded-md p-2 shadow-inner">
+                      <div className="text-sm text-gray-600">{key}</div>
+                      <div className="text-2xl font-bold">{value}</div>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
             </Card>
           </section>
   
-          <Button className="w-full" onClick={() => navigate('/schedule')}>
-            Schedule appointment
-          </Button>
   
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg font-semibold">Summary</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-2 gap-4">
-                {Object.entries(summary).map(([key, value]) => (
-                  <div key={key} className="border rounded-md p-2">
-                    <div className="text-sm text-gray-600">{key}</div>
-                    <div className="text-2xl font-bold">{value}</div>
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
   
           <div className="grid grid-cols-2 gap-4">
-            <Card className="text-center cursor-pointer" onClick={() => navigate('/employees')}>
+            <Card className="text-center cursor-pointer shadow-inner bg-gray-50" onClick={() => navigate('/employees')}>
               <CardContent className="p-4">
-                <img src="/path-to-employees-image.png" alt="Employees" className="mx-auto mb-2" />
-                <div className="bg-gray-200 rounded-md py-1">Employees</div>
+                <img src={employee} alt="Employees" className="mx-auto mb-2" />
+                <Button className="w-full rounded-md py-1">Employees</Button>
               </CardContent>
             </Card>
-            <Card className="text-center cursor-pointer" onClick={() => navigate('/patients')}>
+            <Card className="text-center cursor-pointer shadow-inner bg-gray-50" onClick={() => navigate('/patients')}>
               <CardContent className="p-4">
-                <img src="/path-to-patients-image.png" alt="Patients" className="mx-auto mb-2" />
-                <div className="bg-gray-200 rounded-md py-1">Patients</div>
+                <img src={patient} alt="Patients" className="mx-auto mb-2" />
+                <Button className="w-full rounded-md py-1">Patients</Button>
               </CardContent>
             </Card>
           </div>
         </main>
-      </div>
+      </Card>
     );
   };
   

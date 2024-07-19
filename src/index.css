@@ -67,3 +67,45 @@
       @apply bg-background text-foreground;
     }
   }
+
+body {
+  display: grid;
+  justify-content: center;
+  align-content: center;
+  align-items: center;
+  justify-items: center;
+}
+
+/* Custom scrollbar styles */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+  background: white;
+}
+
+::-webkit-scrollbar-track {
+  background: white;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #e3e8ef;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #a1a1a1;
+}
+
+/* Horizontal scrollbar specific styles */
+.scroll-area {
+  overflow-y: hidden; /* Prevent horizontal scrollbar */
+  overflow-x: auto;   /* Enable vertical scrollbar */
+}
+
+.scroll-area::-webkit-scrollbar:horizontal {
+  height: 6px;
+}
+
+.scroll-area::-webkit-scrollbar-thumb:horizontal {
+  border-radius: 3px;
+}
