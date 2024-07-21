@@ -1,7 +1,11 @@
+// signup.jsx
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
+import { useToast } from "@/components/ui/use-toast"
+import { useAuth } from '@/contexts/AuthContext';
 import { Button } from "@/components/ui/button";
 import {
   Form,
@@ -22,12 +26,9 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import logo from "../../assets/logo_ai 2.svg"
 
-const formSchema = z.object({
-  firstName: z.string().min(2, "First name must be at least 2 characters.").max(50),
+const signupSchema = z.object({
+  first_name: z.string().min(2, "First name must be at least 2 characters.").max(50),
   lastName: z.string().min(2, "Last name must be at least 2 characters.").max(50),
-  dateOfBirth: z.string().refine((date) => {
-    return new Date(date) < new Date() && new Date(date) > new Date('1900-01-01');
-  }, "Please enter a valid date of birth."),
   gender: z.string().min(1, "Please select a gender."),
   experience: z.string().refine((val) => !isNaN(parseInt(val)) && parseInt(val) >= 0, {
     message: "Experience must be a non-negative number."
@@ -44,13 +45,18 @@ const formSchema = z.object({
   path: ["reEnterPassword"],
 });
 
+const verificationSchema = z.object({
+  email: z.string().email("Please enter a valid email address."),
+  verificationCode: z.string().min(1, "Verification code is required"),
+});
+
 const SignUp = () => {
+  const [isVerifying, setIsVerifying] = useState(false);
   const form = useForm({
-    resolver: zodResolver(formSchema),
+    resolver: zodResolver(isVerifying ? verificationSchema : signupSchema),
     defaultValues: {
-      firstName: "",
+      first_name: "",
       lastName: "",
-      dateOfBirth: "",
       gender: "",
       experience: "",
       role: "",
@@ -58,13 +64,68 @@ const SignUp = () => {
       mobileNumber: "",
       password: "",
       reEnterPassword: "",
+      verificationCode: "",
     },
   });
+  const { preRegister, verifyEmail, register } = useAuth();
+  const { toast } = useToast()
+  const navigate = useNavigate();
+  const [oldValues, setOldValues] = useState(null)
 
-  function onSubmit(values) {
-    console.log(values);
-    // send the data to backend
-  }
+  const onSubmit = async (values) => {
+    console.log("Form submitted", values);
+    try {
+      if (!isVerifying) {
+        // Step 1: Pre-registration
+        await preRegister(values.email);
+        setIsVerifying(true);
+        setOldValues(values)
+        toast({
+          title: "Verification Code Sent",
+          description: "Please check your email for the verification code.",
+        });
+        // Reset form validation schema
+        form.clearErrors();
+      } else {
+        // Step 2: Email verification and Step 3: Final registration
+        const verificationCode = values.verificationCode;
+        
+        if (!verificationCode) {
+          toast({
+            title: "Error",
+            description: "Please enter the verification code sent to your email.",
+            variant: "destructive",
+          });
+          return;
+        }
+        
+        // await verifyEmail(values.email, verificationCode);
+        await register(oldValues, verificationCode);
+        
+        toast({
+          title: "Success",
+          description: "You have successfully registered.",
+        });
+        navigate('/login');
+      }
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: error.message || "Registration failed. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+
+
+  const onError = (errors) => {
+    console.log("Form errors", errors); // Add this line
+    toast({
+      title: "Error",
+      description: "Please correct the errors in the form.",
+      variant: "destructive",
+    });
+  };
 
   const [isVisible, setIsVisible] = useState(false);
 
@@ -90,7 +151,7 @@ const SignUp = () => {
                         <h3 className="text-lg font-semibold">Personal details</h3>
                         <FormField
                             control={form.control}
-                            name="firstName"
+                            name="first_name"
                             render={({ field }) => (
                             <FormItem>
                                 <FormLabel>First name</FormLabel>
@@ -109,19 +170,6 @@ const SignUp = () => {
                                 <FormLabel>Last name</FormLabel>
                                 <FormControl>
                                 <Input placeholder="Last name" {...field} />
-                                </FormControl>
-                                <FormMessage />
-                            </FormItem>
-                            )}
-                        />
-                        <FormField
-                            control={form.control}
-                            name="dateOfBirth"
-                            render={({ field }) => (
-                            <FormItem>
-                                <FormLabel>Date of birth</FormLabel>
-                                <FormControl>
-                                <Input type="date" {...field} />
                                 </FormControl>
                                 <FormMessage />
                             </FormItem>
@@ -245,7 +293,25 @@ const SignUp = () => {
                         />
                     </div>
                 </div>
-                <Button type="submit" className="w-full">Create Account</Button>
+                {isVerifying && (
+                  <FormField
+                    control={form.control}
+                    name="verificationCode"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Verification Code</FormLabel>
+                        <FormControl>
+                          <Input {...field} placeholder="Enter verification code" />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                )}
+                
+                <Button type="submit" disabled={form.formState.isSubmitting}>
+                  {form.formState.isSubmitting ? 'Submitting...' : isVerifying ? 'Complete Registration' : 'Sign Up'}
+                </Button>
             </form>
           </Form>
         </CardContent>

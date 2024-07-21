@@ -1,7 +1,9 @@
+// forgotPassword.jsx
 import { useForm } from 'react-hook-form';
 import React, { useState, useEffect } from 'react';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
+import { useToast } from "@/components/ui/use-toast"
 import { Button } from "@/components/ui/button";
 import {
   Form,
@@ -27,9 +29,36 @@ const ForgotPassword = () => {
     },
   });
 
-  function onSubmit(values) {
-    console.log(values);
-    // send the reset password link to email
+  const { toast } = useToast()
+
+  async function onSubmit(values) {
+    try {
+      const response = await fetch(`${import.meta.env.VITE_BASE_URL}/api/accounts/password/forgot/`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(values),
+      });
+
+      if (!response.ok) {
+        throw new Error('Password reset request failed');
+      }
+
+      const data = await response.json();
+      console.log(data);
+      toast({
+        title: "Success",
+        description: "Password reset link has been sent to your email.",
+      });
+    } catch (error) {
+      console.error('Password reset request failed:', error);
+      toast({
+        title: "Error",
+        description: "Password reset request failed. Please try again.",
+        variant: "destructive",
+      });
+    }
   }
 
   const [isVisible, setIsVisible] = useState(false);

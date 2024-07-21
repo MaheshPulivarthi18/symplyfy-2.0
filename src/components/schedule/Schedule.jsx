@@ -444,9 +444,9 @@ export default function Schedule() {
   };
 
   return (
-    <Card className={`p-4 w-full max-w-[90vw] h-[90vh] shadow-lg transition-all duration-500 ease-out ${isVisible ? 'opacity-100 scale-100' : 'opacity-0 scale-95'}`}>
-      <div className='flex flex-col lg:flex-row-reverse gap-4 lg:gap-8 w-full h-full'>
-        <div className="w-full lg:w-[25%] flex flex-col h-full">
+    <Card className={`p-4 w-full max-w-[90vw] lg:h-[90vh] shadow-lg transition-all duration-500 ease-out ${isVisible ? 'opacity-100 scale-100' : 'opacity-0 scale-95'}`}>
+      <div className='flex flex-col-reverse lg:flex-row-reverse gap-8 lg:gap-8 w-full h-full'>
+        <div className="w-full lg:w-[17.75%] flex flex-col h-full">
           <div className="mb-4 flex-shrink-0">
             <Button onClick={handleAddAppointment} className="flex items-center w-full">
               <PlusCircle className="mr-2 h-4 w-4" />
@@ -511,7 +511,7 @@ export default function Schedule() {
             </Toggle>
           </ScrollArea>
         </div>
-        <div className="bg-white rounded-lg shadow-lg h-full w-full lg:w-[75%]">
+        <div className="bg-white rounded-lg shadow-lg w-full lg:w-[80%]">
           <Calendar
             localizer={localizer}
             events={filteredEvents}
@@ -529,7 +529,7 @@ export default function Schedule() {
             onView={setView}
             date={date}
             onNavigate={setDate}
-            className="font-sans h-[calc(100%-2rem)]"
+            className="font-sans"
             style={{ minHeight: '500px' }}
             components={{
               toolbar: CustomToolbar,

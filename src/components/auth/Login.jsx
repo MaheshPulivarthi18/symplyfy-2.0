@@ -1,7 +1,9 @@
+// login.jsx
 import React, { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
+import { useToast } from "@/components/ui/use-toast"
 import { Button } from "@/components/ui/button";
 import {
   Form,
@@ -17,6 +19,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import logo from "../../assets/logo_ai 2.svg";
 import { LogIn } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
+import { useAuth } from '../../contexts/AuthContext'; // Make sure this path is correct
 
 const formSchema = z.object({
   email: z.string().email("Please enter a valid email address."),
@@ -26,6 +29,9 @@ const formSchema = z.object({
 
 const Login = () => {
   const [isVisible, setIsVisible] = useState(false);
+  const { login } = useAuth(); // Use the login function from AuthContext
+  const navigate = useNavigate();
+  const { toast } = useToast();
 
   useEffect(() => {
     setIsVisible(true);
@@ -40,12 +46,22 @@ const Login = () => {
     },
   });
 
-  const navigate = useNavigate()
-
-  function onSubmit(values) {
-    navigate('/dashboard')
-    console.log(values);
-    // Here you would typically send the data to your backend
+  async function onSubmit(values) {
+    try {
+      await login(values.email, values.password);
+      toast({
+        title: "Success",
+        description: "You have successfully logged in.",
+      });
+      navigate('/dashboard');
+    } catch (error) {
+      console.error('Login failed:', error);
+      toast({
+        title: "Error",
+        description: "Login failed. Please try again.",
+        variant: "destructive",
+      });
+    }
   }
 
   return (
@@ -59,7 +75,6 @@ const Login = () => {
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
               <FormField
-
                 control={form.control}
                 name="email"
                 render={({ field }) => (
