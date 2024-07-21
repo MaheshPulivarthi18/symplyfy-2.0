@@ -4,7 +4,7 @@ import { AuthProvider } from './contexts/AuthContext';
 import { Toaster } from "./components/ui/toaster";
 import Navbar from './components/navbar/NavBar';
 import ProtectedRoute from './components/auth/ProtectedRoute';
-// import Home from './components/Home';
+import Home from './components/Home';
 import Dashboard from './components/dashboard/Dashboard';
 import Schedule from './components/schedule/Schedule';
 import SignUp from './components/auth/SignUp';
@@ -25,7 +25,7 @@ function App() {
     <Router>
       <AuthProvider>
           <Routes>
-            {/* <Route path="/" element={<Home />} /> */}
+            <Route path="/" element={<Home />} />
             <Route path='/signup' element={<SignUp />}/>
             <Route path='/login' element={<Login />}/>
             <Route path='/forgotpassword' element={<ForgotPassword />}/>
