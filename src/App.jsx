@@ -27,6 +27,8 @@ import Roles from './components/profile/roles/Roles';
 import RoleSettings from './components/profile/roles/RoleSetting';
 import Product from './components/profile/product/Product';
 import UpdateProduct from './components/profile/product/UpdateProduct';
+import ScheduleSettings from './components/profile/schedulesettings/ScheduleSettings';
+import WorkingHours from './components/profile/schedulesettings/WorkingHours';
 
 function App() {
   return (
@@ -59,6 +61,18 @@ function App() {
               <ProtectedRoute>
                 <Navbar />
                 <ClinicSettings />
+              </ProtectedRoute>
+            } />
+            <Route path="/clinic/:clinic_id/schedulesettings" element={
+              <ProtectedRoute>
+                <Navbar />
+                <ScheduleSettings />
+              </ProtectedRoute>
+            } />
+            <Route path="/clinic/:clinic_id/workinghours" element={
+              <ProtectedRoute>
+                <Navbar />
+                <WorkingHours />
               </ProtectedRoute>
             } />
             <Route path="/add-clinic" element={
