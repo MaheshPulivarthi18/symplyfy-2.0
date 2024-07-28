@@ -21,6 +21,7 @@ import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { parseISO, format, addMinutes, addHours } from 'date-fns';
 import { CalendarIcon, Clock } from "lucide-react";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 
 const PatientProfile = () => {
   const { clinic_id, patient_id } = useParams();
@@ -199,13 +200,12 @@ const PatientProfile = () => {
   };
 
   
-  const fetchVisits = async () => {
+  const fetchBookings = async () => {
     try {
-      const data = await fetchWithTokenHandling(`${import.meta.env.VITE_BASE_URL}/api/emp/clinic/${clinic_id}/patient/${patient_id}/visit/`);
-      setVisits(data);
-      console.log(visits)
+      const data = await fetchWithTokenHandling(`${import.meta.env.VITE_BASE_URL}/api/emp/clinic/${clinic_id}/patient/${patient_id}/booking/`);
+      setVisits(data); // We'll keep using the 'visits' state variable for now
     } catch (error) {
-      console.error("Failed to fetch visits:", error);
+      console.error("Failed to fetch bookings:", error);
       setVisits([]);
     }
   };
@@ -353,7 +353,7 @@ const PatientProfile = () => {
         therapist: '',
       });
       toast({ title: "Success", description: "Appointment booked successfully" });
-      fetchVisits();
+      fetchBookings();
       setIsVisitDialogOpen(false); // Close the dialog
     } catch (error) {
       toast({ title: "Error", description: error.message, variant: "destructive" });
@@ -423,7 +423,7 @@ const PatientProfile = () => {
     fetchNotes();
     fetchGoals();
     fetchTasks();
-    fetchVisits();
+    fetchBookings();
     fetchTherapists();
     fetchSellables();
   }, [clinic_id, patient_id]);
@@ -575,7 +575,7 @@ const PatientProfile = () => {
           <TabsList className='w-full justify-around'>
             <TabsTrigger className='px-12' value="notes">Notes</TabsTrigger>
             <TabsTrigger className='px-12' value="goals">Goals</TabsTrigger>
-            <TabsTrigger className='px-12' value="visits">Upcoming Visits</TabsTrigger>
+            <TabsTrigger className='px-12' value="visits">Upcoming Appointments</TabsTrigger>
             <TabsTrigger className='px-12' value="payments">Payments</TabsTrigger>
             <TabsTrigger className='px-12' value="tasks">Tasks</TabsTrigger>
           </TabsList>
@@ -771,7 +771,7 @@ const PatientProfile = () => {
               )}
             <Dialog open={isTaskDialogOpen} onOpenChange={setIsTaskDialogOpen}>
               <DialogTrigger asChild>
-                <Button className="absolute bottom-0 left-0">Add New Task</Button>
+                <Button className="absolute bottom-0 right-0"><PlusCircle className="h-4 w-4" /></Button>
               </DialogTrigger>
               <DialogContent>
                 <DialogHeader>
@@ -809,24 +809,34 @@ const PatientProfile = () => {
           </TabsContent>
           
           {/* Visits TabsContent */}
-          <TabsContent value="visits" className="relative min-h-[300px] p-4 pb-16">
-            {visits.length === 0 ? (
-              <p>No visits scheduled for this patient.</p>
+          <TabsContent value="visits" className="relative min-h-[300px] max-h-[600px] p-4 pb-16 overflow-scroll">
+              {visits.length === 0 ? (
+                <p>No upcoming appointments for this patient.</p>
               ) : (
-                visits.map(visit => (
-                  <div key={visit.id} className="p-2 bg-gray-100 rounded mb-2">
-                    <p>Date: {visit.date}</p>
-                    <p>Time: {visit.time}</p>
-                    <p>Comment: {visit.comment}</p>
-                    <p>Employee ID: {visit.employee}</p>
-                    <p>Walk-in: {visit.walk_in ? 'Yes' : 'No'}</p>
-                    <p>Penalty: {visit.penalty ? 'Yes' : 'No'}</p>
-                  </div>
-                ))
-            )}
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead className='text-center'>Therapist</TableHead>
+                        <TableHead className='text-center'>Date</TableHead>
+                        <TableHead className='text-center'>Start Time</TableHead>
+                        <TableHead className='text-center'>End Time</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {visits.map(booking => (
+                        <TableRow key={booking.id}>
+                          <TableCell>{booking.employee.first_name + " " + booking.employee.last_name}</TableCell>
+                          <TableCell>{format(parseISO(booking.start), 'yyyy-MM-dd')}</TableCell>
+                          <TableCell>{format(parseISO(booking.start), 'HH:mm')}</TableCell>
+                          <TableCell>{format(parseISO(booking.end), 'HH:mm')}</TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+              )}
             <Dialog open={isVisitDialogOpen} onOpenChange={setIsVisitDialogOpen}>
               <DialogTrigger asChild>
-                <Button>Add Appointment</Button>
+                <Button className='sticky bottom-0 right-0 flex self-end ml-auto mt-4' ><PlusCircle className="h-4 w-4" /></Button>
               </DialogTrigger>
               <DialogContent className="sm:max-w-[425px]">
                 <DialogHeader>
