@@ -129,7 +129,7 @@ const Navbar = () => {
             </Avatar>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
-            <DropdownMenuItem onClick={() => navigate('/profile')}>
+            <DropdownMenuItem onClick={() => navigate(`/clinic/${clinicId}/profile`)}>
               Profile
             </DropdownMenuItem>
             <DropdownMenuItem onClick={() => navigate(`/clinic/${clinicId}/settings`)}>

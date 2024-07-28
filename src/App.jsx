@@ -53,7 +53,6 @@ function App() {
             } />
             <Route path="/clinic" element={
               <ProtectedRoute>
-                <Navbar />
                 <Clinic />
               </ProtectedRoute>
               } />
@@ -147,7 +146,7 @@ function App() {
                 <NewPatient />
               </ProtectedRoute>
               } />
-            <Route path="/profile" element={
+            <Route path="/clinic/:clinic_id/profile" element={
               <ProtectedRoute>
                 <Navbar />
                 <Profile />
