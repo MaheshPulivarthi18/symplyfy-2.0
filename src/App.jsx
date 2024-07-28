@@ -1,3 +1,4 @@
+// App.jsx
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { AuthProvider } from './contexts/AuthContext';
@@ -19,6 +20,13 @@ import NewPatient from './components/patient/profile/NewPatient';
 import PatientSchedule from './components/patient/patientschedule/PatienSchedule';
 import PatientProfile from './components/patient/profile/PatientProfile';
 import PatientList from './components/patient/Patients';
+import ClinicSettings from './components/clinic/ClinicSettings';
+import Clinic from './components/clinic/Clinic';
+import AddClinic from './components/clinic/AddClinic';
+import Roles from './components/profile/roles/Roles';
+import RoleSettings from './components/profile/roles/RoleSetting';
+import Product from './components/profile/product/Product';
+import UpdateProduct from './components/profile/product/UpdateProduct';
 
 function App() {
   return (
@@ -29,37 +37,85 @@ function App() {
             <Route path='/signup' element={<SignUp />}/>
             <Route path='/login' element={<Login />}/>
             <Route path='/forgotpassword' element={<ForgotPassword />}/>
-            <Route path="/dashboard" element={
+            <Route path="/clinic/:clinic_id"element={
               <ProtectedRoute>
                 <Navbar />
                 <Dashboard />
               </ProtectedRoute>
             } />
-            <Route path="/schedule" element={
+            <Route path="/clinic/:clinic_id/schedule" element={
               <ProtectedRoute>
                 <Navbar />
                 <Schedule />
               </ProtectedRoute>
             } />
-            <Route path="/employees" element={
+            <Route path="/clinic" element={
+              <ProtectedRoute>
+                <Navbar />
+                <Clinic />
+              </ProtectedRoute>
+              } />
+            <Route path="/clinic/:clinic_id/settings" element={
+              <ProtectedRoute>
+                <Navbar />
+                <ClinicSettings />
+              </ProtectedRoute>
+            } />
+            <Route path="/add-clinic" element={
+              <ProtectedRoute>
+                <Navbar />
+                <AddClinic />
+              </ProtectedRoute>
+            } />
+            <Route path="/clinic/:clinic_id/roles" element={
+                <ProtectedRoute>
+                  <Navbar />
+                  <Roles />
+                </ProtectedRoute>
+              } />
+            <Route path="/clinic/:clinic_id/roles/:role_id" element={
+                <ProtectedRoute>
+                  <Navbar />
+                  <RoleSettings />
+                </ProtectedRoute>
+              } />
+            <Route path="/clinic/:clinic_id/employees" element={
               <ProtectedRoute>
                 <Navbar />
                 <Employees />
               </ProtectedRoute>
             } />
-            <Route path="/employees/settings/:id" element={
+            <Route path="/clinic/:clinic_id/employees/:employee_id" element={
               <ProtectedRoute>
                 <Navbar />
                 <EmployeeSettings />
               </ProtectedRoute>
               } />
-            <Route path="/patients" element={
+            <Route path="/clinic/:clinic_id/sellable" element={
+              <ProtectedRoute>
+                <Navbar />
+                <Product />
+              </ProtectedRoute>
+              } />
+            <Route path="/clinic/:clinic_id/sellable/:sellable_id" element={
+              <ProtectedRoute>
+                <Navbar />
+                <UpdateProduct />
+              </ProtectedRoute>
+              } />
+            <Route path="/clinic/:clinic_id/employees/:employee_id" element={
+              <ProtectedRoute>
+                <Navbar />
+                <EmployeeSettings />
+              </ProtectedRoute>
+              } />
+            <Route path="/clinic/:clinic_id/patients" element={
               <ProtectedRoute>
                 <Navbar />
                 <PatientList />
               </ProtectedRoute>
             } />
-            <Route path="/patient/profile/:id" element={
+            <Route path="/clinic/:clinic_id/patients/:patient_id" element={
               <ProtectedRoute>
                 <Navbar />
                 <PatientProfile />
@@ -71,7 +127,7 @@ function App() {
                 <PatientSchedule />
               </ProtectedRoute>
               } />
-            <Route path="/patient/new" element={
+            <Route path="/clinic/:clinic_id/patients/new" element={
               <ProtectedRoute>
                 <Navbar />
                 <NewPatient />

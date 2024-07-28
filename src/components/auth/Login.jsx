@@ -53,7 +53,7 @@ const Login = () => {
         title: "Success",
         description: "You have successfully logged in.",
       });
-      navigate('/dashboard');
+      navigate('/clinic');
     } catch (error) {
       console.error('Login failed:', error);
       toast({

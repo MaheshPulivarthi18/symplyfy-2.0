@@ -32,7 +32,7 @@ const Profile = () => {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
+          'Authorization': `JWT ${token}`,
         },
         body: JSON.stringify(formData),
       });

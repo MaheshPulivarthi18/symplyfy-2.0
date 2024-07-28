@@ -1,57 +1,90 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Bell, Menu, RefreshCw } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import employee from "../../assets/employee.svg"; // Adjust the path as needed
-import patient from "../../assets/patient.svg"; // Adjust the path as needed
-// Import necessary components from shadcn/ui here
+import { Progress } from "@/components/ui/progress";
+import employee from "../../assets/employee.svg";
+import patient from "../../assets/patient.svg";
 
 const Dashboard = () => {
-    // Dummy data
-    const doctors = ['Dr. Brown', 'Dr. White', 'Dr. Green', 'Dr. Yellow', 'Dr. Red', 'Dr. Orange'];
-    const appointmentsData = [
-        { details: "Checkup with John Doe at 10:00 AM", id: 1 },
-    ];
+  const { clinic_id } = useParams();
+  const navigate = useNavigate();
 
-    const upcomingAppointments = [
-      { details: "Checkup with John Doe at 10:00 AM" },
-      { details: "Consultation with Jane Smith at 11:30 AM" }
+  const [loading, setLoading] = useState(true);
+  const [progress, setProgress] = useState(0);
+  const [isVisible, setIsVisible] = useState(false);
+  const [selectedDoctor, setSelectedDoctor] = useState(null);
+  const [appointments, setAppointments] = useState([]);
+  const [summary, setSummary] = useState({
+    visits: 0,
+    received: 0,
+    pending: 0,
+    recentCancellations: 0,
+  });
+
+  // Dummy data
+  const doctors = ['Dr. Brown', 'Dr. White', 'Dr. Green', 'Dr. Yellow', 'Dr. Red', 'Dr. Orange'];
+  const appointmentsData = [
+    { details: "Checkup with John Doe at 10:00 AM", id: 1 },
   ];
-    const summaryData = {
-        visits: 5,
-        received: 10,
-        pending: 3,
-        recentCancellations: 2
+  const upcomingAppointments = [
+    { details: "Checkup with John Doe at 10:00 AM" },
+    { details: "Consultation with Jane Smith at 11:30 AM" }
+  ];
+  const summaryData = {
+    visits: 5,
+    received: 10,
+    pending: 3,
+    recentCancellations: 2
+  };
+
+  useEffect(() => {
+    let interval;
+    if (loading) {
+      interval = setInterval(() => {
+        setProgress((oldProgress) => {
+          if (oldProgress === 100) {
+            clearInterval(interval);
+            return 100;
+          }
+          const newProgress = oldProgress + Math.random() * 10;
+          return Math.min(newProgress, 90);
+        });
+      }, 50);
+    }
+    return () => clearInterval(interval);
+  }, [loading]);
+
+  useEffect(() => {
+    // Simulate fetching data from backend
+    const fetchData = async () => {
+      setLoading(true);
+      // Simulate API call
+      await new Promise(resolve => setTimeout(resolve, 2000));
+      setAppointments(appointmentsData);
+      setSummary(summaryData);
+      setProgress(100);
+      setLoading(false);
+      setIsVisible(true);
     };
 
-    const [selectedDoctor, setSelectedDoctor] = useState(null)
-    const [appointments, setAppointments] = useState([]);
-    const [summary, setSummary] = useState({
-        visits: 0,
-        received: 0,
-        pending: 0,
-        recentCancellations: 0,
-    });
+    fetchData();
+  }, []);
 
-    const refreshAppointments = () => {
-      console.log(appointments)
-    }
+  const refreshAppointments = () => {
+    console.log(appointments);
+  };
 
-    const [isVisible, setIsVisible] = useState(false);
-
-    useEffect(() => {
-      setIsVisible(true);
-    }, []);
-
-    const navigate = useNavigate();
-
-    useEffect(() => {
-        // Simulate fetching data from backend
-        setAppointments(appointmentsData);
-        setSummary(summaryData);
-    }, []);
+  if (loading) {
+    return (
+      <div className="w-full flex flex-col items-center justify-center">
+        <Progress value={progress} className="w-[60%]" />
+        <p className="mt-4 text-sm text-gray-500">Loading dashboard... {Math.round(progress)}%</p>
+      </div>
+    );
+  }
 
     return (
       <Card className={`container mx-auto p-4 w-full shadow-xl transition-all duration-500 ease-out ${isVisible ? 'opacity-100 scale-100' : 'opacity-0 scale-90'}`}>  
@@ -100,7 +133,7 @@ const Dashboard = () => {
               <CardContent className="text-center text-4xl font-bold">
                 {upcomingAppointments.length}
               </CardContent>
-              <Button className="" onClick={() => navigate('/schedule')}>
+              <Button className="" onClick={() => navigate(`/clinic/${clinic_id}/schedule`)}>
                 Schedule appointment
               </Button>
             </Card>
@@ -125,13 +158,13 @@ const Dashboard = () => {
   
   
           <div className="grid grid-cols-2 gap-4">
-            <Card className="text-center cursor-pointer shadow-inner bg-gray-50" onClick={() => navigate('/employees')}>
+            <Card className="text-center cursor-pointer shadow-inner bg-gray-50" onClick={() => navigate(`/clinic/${clinic_id}/employees`)}>
               <CardContent className="p-4">
                 <img src={employee} alt="Employees" className="mx-auto mb-2" />
                 <Button className="w-full rounded-md py-1">Employees</Button>
               </CardContent>
             </Card>
-            <Card className="text-center cursor-pointer shadow-inner bg-gray-50" onClick={() => navigate('/patients')}>
+            <Card className="text-center cursor-pointer shadow-inner bg-gray-50" onClick={() => navigate(`/clinic/${clinic_id}/patients`)}>
               <CardContent className="p-4">
                 <img src={patient} alt="Patients" className="mx-auto mb-2" />
                 <Button className="w-full rounded-md py-1">Patients</Button>

@@ -1,8 +1,7 @@
 // contexts/AuthContext.jsx
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useToast } from "@/components/ui/use-toast";
-
 const AuthContext = createContext();
 
 export const AuthProvider = ({ children }) => {
@@ -10,6 +9,11 @@ export const AuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
   const { toast } = useToast();
+
+  // Add a state to track if a token refresh is in progress
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  // Add a queue to store pending requests
+  const [refreshQueue, setRefreshQueue] = useState([]);
 
   useEffect(() => {
     const storedUser = localStorage.getItem('user');
@@ -51,7 +55,15 @@ export const AuthProvider = ({ children }) => {
     navigate('/login');
   };
 
-  const refreshToken = async () => {
+  const refreshToken = useCallback(async () => {
+    if (isRefreshing) {
+      return new Promise((resolve, reject) => {
+        setRefreshQueue(queue => [...queue, { resolve, reject }]);
+      });
+    }
+  
+    setIsRefreshing(true);
+  
     try {
       const refreshToken = localStorage.getItem('refreshToken');
       const response = await fetch(`${import.meta.env.VITE_BASE_URL}/api/accounts/refresh/`, {
@@ -59,17 +71,78 @@ export const AuthProvider = ({ children }) => {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ refresh: refreshToken }),
       });
-
-      if (!response.ok) throw new Error('Token refresh failed');
-
+  
+      if (!response.ok) {
+        const errorData = await response.json();
+        if (errorData.code === "token_not_valid" && errorData.detail === "Token is blacklisted") {
+          // Token is blacklisted, force logout
+          throw new Error('Session expired. Please log in again.');
+        }
+        throw new Error('Token refresh failed');
+      }
+  
       const data = await response.json();
       localStorage.setItem('accessToken', data.access);
+      localStorage.setItem('refreshToken', data.refresh);
+  
+      refreshQueue.forEach(({ resolve }) => resolve(data.access));
+      setRefreshQueue([]);
+  
       return data.access;
     } catch (error) {
+      refreshQueue.forEach(({ reject }) => reject(error));
+      setRefreshQueue([]);
       logout();
       throw error;
+    } finally {
+      setIsRefreshing(false);
     }
+  }, [isRefreshing, logout, refreshQueue]);
+
+  const isTokenExpired = (token) => {
+    if (!token) return true;
+    const expiry = JSON.parse(atob(token.split('.')[1])).exp;
+    return Math.floor(new Date().getTime() / 1000) >= expiry;
   };
+  
+  const getAccessToken = useCallback(async () => {
+    let accessToken = localStorage.getItem('accessToken');
+    
+    if (isTokenExpired(accessToken)) {
+      try {
+        accessToken = await refreshToken();
+      } catch (error) {
+        console.error('Failed to refresh token:', error);
+        logout();
+        throw error;
+      }
+    }
+    
+    return accessToken;
+  }, [refreshToken, logout]);
+
+  // Wrapper for authenticated API calls
+  const authenticatedFetch = useCallback(async (url, options = {}) => {
+    const token = await getAccessToken();
+    const headers = {
+      ...options.headers,
+      'Authorization': `JWT ${token}`,
+    };
+    
+    try {
+      const response = await fetch(url, { ...options, headers });
+      if (response.status === 401) {
+        // Token might be invalid, try refreshing
+        const newToken = await refreshToken();
+        headers['Authorization'] = `JWT ${newToken}`;
+        return fetch(url, { ...options, headers });
+      }
+      return response;
+    } catch (error) {
+      console.error('Fetch error:', error);
+      throw error;
+    }
+  }, [getAccessToken, refreshToken]);
 
   const preRegister = async (email) => {
     try {
@@ -117,13 +190,19 @@ export const AuthProvider = ({ children }) => {
 
   const register = async (userData, verificationCode) => {
     try {
-    console.log(verificationCode, userData)
       const response = await fetch(`${import.meta.env.VITE_BASE_URL}/api/accounts/register/`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ ...userData, code: verificationCode }),
+        body: JSON.stringify({
+          email: userData.email,
+          mobile: userData.mobileNumber,
+          first_name: userData.first_name,
+          last_name: userData.lastName,
+          password: userData.password,
+          code: verificationCode
+        }),
       });
 
       if (!response.ok) {
@@ -132,7 +211,6 @@ export const AuthProvider = ({ children }) => {
       }
 
       const data = await response.json();
-      // Handle successful registration
       return data;
     } catch (error) {
       console.error('Registration error:', error);
@@ -140,8 +218,16 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  const value = { user, login, logout, preRegister, verifyEmail, register, refreshToken, loading };
-
+  const value = {
+    user,
+    login,
+    logout,
+    preRegister,
+    verifyEmail,
+    register,
+    authenticatedFetch,
+    loading
+  };
   return (
     <AuthContext.Provider value={value}>
       {children}

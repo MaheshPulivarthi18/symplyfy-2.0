@@ -6,7 +6,7 @@ import { Button } from './ui/button'
 const Home = () => {
   const navigate = useNavigate()
   useEffect(() => {
-    navigate('/dashboard')
+    navigate('/clinic')
   })
   return (
     <div className='flex flex-col items-center'>

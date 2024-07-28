@@ -29,6 +29,8 @@ import {
 } from "../ui/dialog"
 import { PlusCircle } from "lucide-react"  // Make sure to import this icon
 import { Card } from '../ui/card';
+import { useToast } from "@/components/ui/use-toast";
+import { Toaster } from "@/components/ui/toaster";
 
 
 const locales = {
@@ -81,6 +83,32 @@ export default function Schedule() {
   const [showCanceled, setShowCanceled] = useState(false);
   const [calendarStartTime, setCalendarStartTime] = useState(new Date(0, 0, 0, 9, 0)); // 09:00
   const [calendarEndTime, setCalendarEndTime] = useState(new Date(0, 0, 0, 21, 0)); // 21:00
+  const [breakStartTime, setBreakStartTime] = useState(new Date(0, 0, 0, 12, 0)); // 12:00 PM
+  const [breakEndTime, setBreakEndTime] = useState(new Date(0, 0, 0, 13, 0));   // 1:00 PM
+  const { toast } = useToast();
+
+  const showToast = (title, description, variant = "default") => {
+    toast({
+      variant,
+      title,
+      description,
+    });
+  };
+
+  const handleBreakStartTimeChange = (time) => {
+    setBreakStartTime(time);
+  };
+  
+  const handleBreakEndTimeChange = (time) => {
+    setBreakEndTime(time);
+  };
+
+  const isWithinBreakTime = (time) => {
+    const timeMinutes = time.getHours() * 60 + time.getMinutes();
+    const breakStartMinutes = breakStartTime.getHours() * 60 + breakStartTime.getMinutes();
+    const breakEndMinutes = breakEndTime.getHours() * 60 + breakEndTime.getMinutes();
+    return timeMinutes >= breakStartMinutes && timeMinutes < breakEndMinutes;
+  };
 
   const handleStartTimeChange = (time) => {
     setCalendarStartTime(time);
@@ -215,7 +243,15 @@ export default function Schedule() {
   // Sort doctors whenever the date or events change
   const sortedDoctors = React.useMemo(() => sortDoctorsByAppointments(date), [date, events]);
 
-  const handleSelect = ({ start }) => {
+  const handleSelect = ({ start, end }) => {
+    if (isWithinBreakTime(start) || isWithinBreakTime(end)) {
+      showToast(
+        "Invalid Selection", 
+        "You cannot schedule appointments during break time.",
+        "destructive"
+      );
+      return;
+    }
     setNewEvent(prev => ({ ...prev, date: start, time: start }));
     setIsModalOpen(true);
   };
@@ -260,6 +296,15 @@ export default function Schedule() {
     );
   
     const endDateTime = new Date(eventDateTime.getTime() + newEvent.duration * 60000);
+
+    if (isWithinBreakTime(eventDateTime) || isWithinBreakTime(endDateTime)) {
+      showToast(
+        "Invalid Appointment Time", 
+        "Appointments cannot be scheduled during break time.",
+        "destructive"
+      );
+      return;
+    }
   
     const createEvent = (start, end) => ({
       id: Date.now() + Math.random(),
@@ -279,9 +324,11 @@ export default function Schedule() {
       const monthLater = addMonths(eventDateTime, 1);
       let currentStart = eventDateTime;
       let currentEnd = endDateTime;
-  
+    
       while (isBefore(currentStart, monthLater)) {
-        eventsToAdd.push(createEvent(currentStart, currentEnd));
+        if (!isWithinBreakTime(currentStart) && !isWithinBreakTime(currentEnd)) {
+          eventsToAdd.push(createEvent(currentStart, currentEnd));
+        }
         currentStart = addWeeks(currentStart, 1);
         currentEnd = addWeeks(currentEnd, 1);
       }
@@ -312,6 +359,11 @@ export default function Schedule() {
       duration: 30,
       resourceId: '',
     });
+    showToast(
+      "Appointment Booked",
+      "Your appointment has been successfully scheduled.",
+      "success"
+    );
   };
 
   const handleAddAppointment = () => {
@@ -444,252 +496,289 @@ export default function Schedule() {
   };
 
   return (
-    <Card className={`p-4 w-full max-w-[90vw] lg:h-[90vh] shadow-lg transition-all duration-500 ease-out ${isVisible ? 'opacity-100 scale-100' : 'opacity-0 scale-95'}`}>
-      <div className='flex flex-col-reverse lg:flex-row-reverse gap-8 lg:gap-8 w-full h-full'>
-        <div className="w-full lg:w-[17.75%] flex flex-col h-full">
-          <div className="mb-4 flex-shrink-0">
-            <Button onClick={handleAddAppointment} className="flex items-center w-full">
-              <PlusCircle className="mr-2 h-4 w-4" />
-              Add Appointment
-            </Button>
-          </div>
-          <div className="mb-4 flex-shrink-0">
-            <div className='flex gap-4 justify-between items-center'>
-              <Label htmlFor="startTime">From</Label>
-              <TimePicker
-                id="startTime"
-                value={calendarStartTime}
-                onChange={handleStartTimeChange}
-              />
+    <>
+      <Card className={`p-4 w-full max-w-[90vw] lg:h-[90vh] shadow-lg transition-all duration-500 ease-out ${isVisible ? 'opacity-100 scale-100' : 'opacity-0 scale-95'}`}>
+        <div className='flex flex-col-reverse lg:flex-row-reverse gap-8 lg:gap-8 w-full h-full'>
+          <div className="w-full lg:w-[17.75%] flex flex-col h-full">
+            <div className="mb-4 flex-shrink-0">
+              <Button onClick={handleAddAppointment} className="flex items-center w-full">
+                <PlusCircle className="mr-2 h-4 w-4" />
+                Add Appointment
+              </Button>
             </div>
-            <div className='flex gap-4 justify-between items-center mt-2'>
-              <Label htmlFor="endTime">To</Label>
-              <TimePicker
-                id="endTime"
-                value={calendarEndTime}
-                onChange={handleEndTimeChange}
-              />
-            </div>
-          </div>
-          <ScrollArea className="flex-grow overflow-y-auto pr-4">
-            <Toggle
-              pressed={!selectedDoctor && !selectedPatient}
-              onPressedChange={clearAllFilters}
-              className="mb-4 w-full"
-            >
-              {selectedDoctor === "" && selectedPatient === "" ? "Apply Filter" : "Clear All Filters" }
-            </Toggle>
-
-            <h1 className='font-bold text-lg mb-2'>Doctors</h1>
-            <div className="flex flex-col gap-2 mb-4">
-              {doctors.map(doctor => (
-                <Toggle
-                  key={doctor}
-                  pressed={selectedDoctor === doctor}
-                  onPressedChange={() => handleDoctorFilterChange(doctor)}
-                >
-                  {doctor}
-                </Toggle>
-              ))}
-            </div>
-
-            <h1 className='font-bold text-lg mb-2'>Patients</h1>
-            <div className="flex flex-col gap-2 mb-4">
-              {patients.map(patient => (
-                <Toggle
-                  key={patient}
-                  pressed={selectedPatient === patient}
-                  onPressedChange={() => handlePatientFilterChange(patient)}
-                >
-                  {patient}
-                </Toggle>
-              ))}
-            </div>
-
-            <Toggle onClick={handleCanceledToggle} className="w-full">
-              View cancelled Events
-            </Toggle>
-          </ScrollArea>
-        </div>
-        <div className="bg-white rounded-lg shadow-lg w-full lg:w-[80%]">
-          <Calendar
-            localizer={localizer}
-            events={filteredEvents}
-            startAccessor="start"
-            endAccessor="end"
-            defaultView={"day"}
-            views={["day", "week", "month"]}
-            selectable
-            resources={getFilteredResources()}
-            resourceIdAccessor="id"
-            resourceTitleAccessor="title"
-            onSelectSlot={handleSelect}
-            onSelectEvent={handleSelectEvent}
-            view={view}
-            onView={setView}
-            date={date}
-            onNavigate={setDate}
-            className="font-sans"
-            style={{ minHeight: '500px' }}
-            components={{
-              toolbar: CustomToolbar,
-              resourceHeader: ResourceHeader,
-            }}
-            min={calendarStartTime}
-            max={calendarEndTime}
-            eventPropGetter={(event) => {
-              let newStyle = {
-                backgroundColor: doctorColors[event.doctor],
-                color: 'black',
-              };
-              if (event.status === 'cancelled') {
-                newStyle.backgroundColor = 'lightgrey';
-                newStyle.color = 'darkgrey'
-              } else if (event.status === 'completed') {
-                newStyle.backgroundColor = 'lightgreen';
-              }
-              return { style: newStyle };
-            }}
-          />
-        </div>
-      </div>
-
-      {selectedEvent && (
-        <AppointmentPopup 
-          event={selectedEvent} 
-          onClose={() => setSelectedEvent(null)}
-          onReschedule={handleReschedule}
-          onCancel={handleCancel}
-          onDelete={handleDelete}
-          onMarkVisit={handleMarkVisit}
-          doctorColors={doctorColors}
-        />
-      )}
-      <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
-        <DialogContent className="sm:max-w-[425px]">
-          <DialogHeader>
-            <DialogTitle>{isRescheduling ? 'Reschedule Appointment' : 'Book Appointment'}</DialogTitle>
-          </DialogHeader>
-          <div className="grid gap-4 py-4">
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="patient" className="text-right">
-                Patient
-              </Label>
-              <Select name="patient" value={newEvent.patient} onValueChange={(value) => handleInputChange({ target: { name: 'patient', value }})}>
-                <SelectTrigger className="col-span-3">
-                  <SelectValue placeholder="Select Patient" />
-                </SelectTrigger>
-                <SelectContent>
-                  {patients.map(patient => (
-                    <SelectItem key={patient} value={patient}>{patient}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="doctor" className="text-right">
-                Doctor
-              </Label>
-              <Select name="doctor" value={newEvent.doctor} onValueChange={(value) => handleInputChange({ target: { name: 'doctor', value }})}>
-                <SelectTrigger className="col-span-3">
-                  <SelectValue placeholder="Select Doctor" />
-                </SelectTrigger>
-                <SelectContent>
-                  {doctors.map(doctor => (
-                    <SelectItem key={doctor} value={doctor}>{doctor}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="service" className="text-right">
-                Service
-              </Label>
-              <Select name="service" value={newEvent.service} onValueChange={(value) => handleInputChange({ target: { name: 'service', value }})}>
-                <SelectTrigger className="col-span-3">
-                  <SelectValue placeholder="Select Service" />
-                </SelectTrigger>
-                <SelectContent>
-                  {services.map(service => (
-                    <SelectItem key={service} value={service}>{service}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="date" className="text-right">
-                Date
-              </Label>
-              <DatePicker
-                value={newEvent.date}
-                onChange={(date) => handleInputChange({ target: { name: 'date', value: date }})}
-              />
-            </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="time" className="text-right">
-                Time
-              </Label>
-              <TimePicker
-                value={newEvent.time}
-                onChange={(time) => handleInputChange({ target: { name: 'time', value: time }})}
-              />
-            </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="frequency" className="text-right">
-                Frequency
-              </Label>
-              <Select name="frequency" value={newEvent.frequency} onValueChange={(value) => handleInputChange({ target: { name: 'frequency', value }})}>
-                <SelectTrigger className="col-span-3">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="does not repeat">Does not repeat</SelectItem>
-                  <SelectItem value="weekly">Weekly</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label className="text-right">Duration</Label>
-              <div className="col-span-3 flex flex-wrap gap-2">
-                {durationOptions.map(duration => (
-                  <Button
-                    key={duration}
-                    variant={newEvent.duration === duration ? "default" : "outline"}
-                    onClick={() => handleDurationChange(duration)}
-                  >
-                    {duration} mins
-                  </Button>
-                ))}
-                <Button
-                  variant={isCustomDuration ? "default" : "outline"}
-                  onClick={() => handleDurationChange('custom')}
-                >
-                  Custom
-                </Button>
-              </div>
-            </div>
-            {isCustomDuration && (
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="customDuration" className="text-right">
-                  Custom Duration
-                </Label>
-                <Input
-                  id="customDuration"
-                  type="number"
-                  name="duration"
-                  value={newEvent.duration}
-                  onChange={handleInputChange}
-                  placeholder="Enter duration in minutes"
-                  className="col-span-3"
+            <div className="mb-4 flex-shrink-0">
+              <div className='flex gap-4 justify-between items-center'>
+                <Label htmlFor="startTime">From</Label>
+                <TimePicker
+                  id="startTime"
+                  value={calendarStartTime}
+                  onChange={handleStartTimeChange}
                 />
               </div>
-            )}
+              <div className='flex gap-4 justify-between items-center mt-2'>
+                <Label htmlFor="endTime">To</Label>
+                <TimePicker
+                  id="endTime"
+                  value={calendarEndTime}
+                  onChange={handleEndTimeChange}
+                />
+              </div>
+              <div className='flex gap-4 justify-between items-center mt-2'>
+                <Label htmlFor="breakStartTime">Break Start</Label>
+                <TimePicker
+                  id="breakStartTime"
+                  value={breakStartTime}
+                  onChange={handleBreakStartTimeChange}
+                />
+              </div>
+              <div className='flex gap-4 justify-between items-center mt-2'>
+                <Label htmlFor="breakEndTime">Break End</Label>
+                <TimePicker
+                  id="breakEndTime"
+                  value={breakEndTime}
+                  onChange={handleBreakEndTimeChange}
+                />
+              </div>
+            </div>
+            <ScrollArea className="flex-grow overflow-y-auto pr-4">
+              <Toggle
+                pressed={!selectedDoctor && !selectedPatient}
+                onPressedChange={clearAllFilters}
+                className="mb-4 w-full"
+              >
+                {selectedDoctor === "" && selectedPatient === "" ? "Apply Filter" : "Clear All Filters" }
+              </Toggle>
+
+              <h1 className='font-bold text-lg mb-2'>Doctors</h1>
+              <div className="flex flex-col gap-2 mb-4">
+                {doctors.map(doctor => (
+                  <Toggle
+                    key={doctor}
+                    pressed={selectedDoctor === doctor}
+                    onPressedChange={() => handleDoctorFilterChange(doctor)}
+                  >
+                    {doctor}
+                  </Toggle>
+                ))}
+              </div>
+
+              <h1 className='font-bold text-lg mb-2'>Patients</h1>
+              <div className="flex flex-col gap-2 mb-4">
+                {patients.map(patient => (
+                  <Toggle
+                    key={patient}
+                    pressed={selectedPatient === patient}
+                    onPressedChange={() => handlePatientFilterChange(patient)}
+                  >
+                    {patient}
+                  </Toggle>
+                ))}
+              </div>
+
+              <Toggle onClick={handleCanceledToggle} className="w-full">
+                View cancelled Events
+              </Toggle>
+            </ScrollArea>
           </div>
-          <Button onClick={handleBookAppointment}>
-            {isRescheduling ? 'Reschedule Appointment' : 'Book Appointment'}
-          </Button>
-        </DialogContent>
-      </Dialog>
-    </Card>
+          <div className="bg-white rounded-lg shadow-lg w-full lg:w-[80%]">
+            <Calendar
+              localizer={localizer}
+              events={filteredEvents}
+              startAccessor="start"
+              endAccessor="end"
+              defaultView={"day"}
+              views={["day", "week", "month"]}
+              selectable
+              resources={getFilteredResources()}
+              resourceIdAccessor="id"
+              resourceTitleAccessor="title"
+              onSelectSlot={handleSelect}
+              onSelectEvent={handleSelectEvent}
+              view={view}
+              onView={setView}
+              date={date}
+              onNavigate={setDate}
+              className="font-sans"
+              style={{ minHeight: '500px' }}
+              components={{
+                toolbar: CustomToolbar,
+                resourceHeader: ResourceHeader,
+              }}
+              min={calendarStartTime}
+              max={calendarEndTime}
+              eventPropGetter={(event) => {
+                let newStyle = {
+                  backgroundColor: doctorColors[event.doctor],
+                  color: 'black',
+                };
+                if (event.status === 'cancelled') {
+                  newStyle.backgroundColor = 'lightgrey';
+                  newStyle.color = 'darkgrey'
+                } else if (event.status === 'completed') {
+                  newStyle.backgroundColor = 'lightgreen';
+                }
+                return { style: newStyle };
+              }}
+              dayPropGetter={(date) => ({
+                style: {
+                  backgroundColor: 'white',
+                },
+              })}
+              slotPropGetter={(date) => {
+                if (isWithinBreakTime(date)) {
+                  return {
+                    style: {
+                      backgroundColor: '#f0f0f0',
+                      pointerEvents: 'none',
+                      cursor: 'not-allowed',
+                    }
+                  };
+                }
+                return {};
+              }}
+            />
+          </div>
+        </div>
+
+        {selectedEvent && (
+          <AppointmentPopup 
+            event={selectedEvent} 
+            onClose={() => setSelectedEvent(null)}
+            onReschedule={handleReschedule}
+            onCancel={handleCancel}
+            onDelete={handleDelete}
+            onMarkVisit={handleMarkVisit}
+            doctorColors={doctorColors}
+          />
+        )}
+        <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
+          <DialogContent className="sm:max-w-[425px]">
+            <DialogHeader>
+              <DialogTitle>{isRescheduling ? 'Reschedule Appointment' : 'Book Appointment'}</DialogTitle>
+            </DialogHeader>
+            <div className="grid gap-4 py-4">
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="patient" className="text-right">
+                  Patient
+                </Label>
+                <Select name="patient" value={newEvent.patient} onValueChange={(value) => handleInputChange({ target: { name: 'patient', value }})}>
+                  <SelectTrigger className="col-span-3">
+                    <SelectValue placeholder="Select Patient" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {patients.map(patient => (
+                      <SelectItem key={patient} value={patient}>{patient}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="doctor" className="text-right">
+                  Doctor
+                </Label>
+                <Select name="doctor" value={newEvent.doctor} onValueChange={(value) => handleInputChange({ target: { name: 'doctor', value }})}>
+                  <SelectTrigger className="col-span-3">
+                    <SelectValue placeholder="Select Doctor" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {doctors.map(doctor => (
+                      <SelectItem key={doctor} value={doctor}>{doctor}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="service" className="text-right">
+                  Service
+                </Label>
+                <Select name="service" value={newEvent.service} onValueChange={(value) => handleInputChange({ target: { name: 'service', value }})}>
+                  <SelectTrigger className="col-span-3">
+                    <SelectValue placeholder="Select Service" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {services.map(service => (
+                      <SelectItem key={service} value={service}>{service}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="date" className="text-right">
+                  Date
+                </Label>
+                <DatePicker
+                  value={newEvent.date}
+                  onChange={(date) => handleInputChange({ target: { name: 'date', value: date }})}
+                />
+              </div>
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="time" className="text-right">
+                  Time
+                </Label>
+                <TimePicker
+                  value={newEvent.time}
+                  onChange={(time) => handleInputChange({ target: { name: 'time', value: time }})}
+                />
+              </div>
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="frequency" className="text-right">
+                  Frequency
+                </Label>
+                <Select name="frequency" value={newEvent.frequency} onValueChange={(value) => handleInputChange({ target: { name: 'frequency', value }})}>
+                  <SelectTrigger className="col-span-3">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="does not repeat">Does not repeat</SelectItem>
+                    <SelectItem value="weekly">Weekly</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label className="text-right">Duration</Label>
+                <div className="col-span-3 flex flex-wrap gap-2">
+                  {durationOptions.map(duration => (
+                    <Button
+                      key={duration}
+                      variant={newEvent.duration === duration ? "default" : "outline"}
+                      onClick={() => handleDurationChange(duration)}
+                    >
+                      {duration} mins
+                    </Button>
+                  ))}
+                  <Button
+                    variant={isCustomDuration ? "default" : "outline"}
+                    onClick={() => handleDurationChange('custom')}
+                  >
+                    Custom
+                  </Button>
+                </div>
+              </div>
+              {isCustomDuration && (
+                <div className="grid grid-cols-4 items-center gap-4">
+                  <Label htmlFor="customDuration" className="text-right">
+                    Custom Duration
+                  </Label>
+                  <Input
+                    id="customDuration"
+                    type="number"
+                    name="duration"
+                    value={newEvent.duration}
+                    onChange={handleInputChange}
+                    placeholder="Enter duration in minutes"
+                    className="col-span-3"
+                  />
+                </div>
+              )}
+            </div>
+            <Button onClick={handleBookAppointment}>
+              {isRescheduling ? 'Reschedule Appointment' : 'Book Appointment'}
+            </Button>
+          </DialogContent>
+        </Dialog>
+      </Card>
+      <Toaster />
+    </>
+
   );
 }
