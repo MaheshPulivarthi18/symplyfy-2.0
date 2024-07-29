@@ -16,6 +16,7 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import logo from "../../assets/logo_ai 2.svg"; // Adjust the path as needed
 import { Link } from 'react-router-dom'; // Assuming you're using react-router for navigation
+import { useNavigate } from 'react-router-dom';
 
 const formSchema = z.object({
   email: z.string().email("Please enter a valid email address."),
@@ -29,6 +30,7 @@ const ForgotPassword = () => {
     },
   });
 
+  const navigate = useNavigate();
   const { toast } = useToast()
 
   async function onSubmit(values) {
@@ -38,19 +40,21 @@ const ForgotPassword = () => {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(values),
+        body: JSON.stringify({"username": values.email}),
       });
-
+  
       if (!response.ok) {
         throw new Error('Password reset request failed');
       }
-
+  
       const data = await response.json();
       console.log(data);
       toast({
         title: "Success",
         description: "Password reset link has been sent to your email.",
       });
+      // Navigate to the reset password page
+      navigate('/reset-password');
     } catch (error) {
       console.error('Password reset request failed:', error);
       toast({

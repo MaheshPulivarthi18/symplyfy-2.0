@@ -23,7 +23,7 @@ const signupSchema = z.object({
   first_name: z.string().min(2, "First name must be at least 2 characters.").max(50),
   lastName: z.string().min(2, "Last name must be at least 2 characters.").max(50),
   email: z.string().email("Please enter a valid email address."),
-  mobileNumber: z.string().regex(/^\+?[1-9]\d{1,14}$/, "Please enter a valid mobile number."),
+  mobile: z.string().regex(/^\+?91?\d{10}$/, "Mobile number must be 10 digits, optionally preceded by +91."),
   password: z.string().min(8, "Password must be at least 8 characters.")
     .regex(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/, 
       "Password must contain at least one uppercase letter, one lowercase letter, one number, and one special character."),
@@ -46,7 +46,7 @@ const SignUp = () => {
       first_name: "",
       lastName: "",
       email: "",
-      mobileNumber: "",
+      mobile: "",
       password: "",
       reEnterPassword: "",
       verificationCode: "",
@@ -62,7 +62,7 @@ const SignUp = () => {
       if (!isVerifying) {
         await preRegister(values.email);
         setIsVerifying(true);
-        setOldValues(values)
+        setOldValues(values);
         toast({
           title: "Verification Code Sent",
           description: "Please check your email for the verification code.",
@@ -80,8 +80,9 @@ const SignUp = () => {
           return;
         }
         
+        console.log(oldValues)
         await register(oldValues, verificationCode);
-        
+
         toast({
           title: "Success",
           description: "You have successfully registered.",
@@ -157,7 +158,7 @@ const SignUp = () => {
                 />
                 <FormField
                   control={form.control}
-                  name="mobileNumber"
+                  name="mobile"
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Mobile number</FormLabel>

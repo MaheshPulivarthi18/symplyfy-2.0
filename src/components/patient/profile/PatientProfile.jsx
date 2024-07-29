@@ -10,7 +10,7 @@ import { useToast } from '@/components/ui/use-toast';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useAuth } from '@/contexts/AuthContext';
 import { Progress } from '@/components/ui/progress';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from '@/components/ui/dialog';
 import { Textarea } from '@/components/ui/textarea';
 import { PlusCircle, Check } from "lucide-react"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -22,6 +22,16 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { parseISO, format, addMinutes, addHours } from 'date-fns';
 import { CalendarIcon, Clock } from "lucide-react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { date } from 'zod';
+import { MoreVertical, FileText, Phone, Mail, Edit } from "lucide-react"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
 
 const PatientProfile = () => {
   const { clinic_id, patient_id } = useParams();
@@ -35,36 +45,60 @@ const PatientProfile = () => {
   const [notes, setNotes] = useState([]);
   const [goals, setGoals] = useState([]);
   const [tasks, setTasks] = useState([]);
-  const [visits, setVisits] = useState([]);
+  const [appointments, setAppointments] = useState([]);
   const [therapists, setTherapists] = useState([]);
   const [selectedNote, setSelectedNote] = useState(null);
   const [selectedGoal, setSelectedGoal] = useState(null);
   const [sellables, setSellables] = useState([]);
+  const [employeeDetails, setEmployeeDetails] = useState({});
+  const [sellableDetails, setSellableDetails] = useState({});
   
   const [progress, setProgress] = useState(0);
   const [newNote, setNewNote] = useState({ description: '', visible_to_patient: false });
   const [newGoal, setNewGoal] = useState({ title: '', description: '', complete_by: '' });
   const [newTask, setNewTask] = useState({ name: '', description: '', repetitions: 0, goal: '' });
-  const [newVisit, setNewVisit] = useState({
-    patient: '',
-    sellable: '',
+  const [newAppointment, setNewAppointment] = useState({
     date: '',
     time: '',
+    employee: '',
+    sellable: '',
+    duration: 30,
     frequency: 'does_not_repeat',
     weekdays: [],
     endsOn: '',
     sessions: '',
-    duration: 30,
-    customDuration: '',
-    therapist: '', // Add this line
   });
 
   const [isNoteDialogOpen, setIsNoteDialogOpen] = useState(false);
   const [isGoalDialogOpen, setIsGoalDialogOpen] = useState(false);
   const [isTaskDialogOpen, setIsTaskDialogOpen] = useState(false);
-  const [isVisitDialogOpen, setIsVisitDialogOpen] = useState(false);
+  const [isAppointmentDialogOpen, setIsAppointmentDialogOpen] = useState(false);
   const [openNoteDialogs, setOpenNoteDialogs] = useState({});
   const [openGoalDialogs, setOpenGoalDialogs] = useState({});
+
+  const [visits, setVisits] = useState([]);
+  const [isVisitDialogOpen, setIsVisitDialogOpen] = useState(false);
+  const [newVisit, setNewVisit] = useState({
+    date: '',
+    time: '',
+    comment: '',
+    employee: '',
+    sellable: '',
+    sellable_reduce_balance: false,
+    walk_in: false,
+    penalty: false,
+    duration: ''
+  });
+
+  const [payments, setPayments] = useState([]);
+  const [paymentChannels, setPaymentChannels] = useState([]);
+  const [isPaymentDialogOpen, setIsPaymentDialogOpen] = useState(false);
+  const [newPayment, setNewPayment] = useState({
+    amount_paid: '',
+    amount_refunded: '0',
+    date: new Date().toISOString().split('T')[0],
+    channel: ''
+  });
 
   useEffect(() => {
     let interval;
@@ -163,6 +197,26 @@ const PatientProfile = () => {
     }
   };
 
+  const fetchPayments = async () => {
+    try {
+      const data = await fetchWithTokenHandling(`${import.meta.env.VITE_BASE_URL}/api/emp/clinic/${clinic_id}/patient/${patient_id}/payment/`);
+      setPayments(data);
+    } catch (error) {
+      console.error("Failed to fetch payments:", error);
+      setPayments([]);
+    }
+  };
+  
+  const fetchPaymentChannels = async () => {
+    try {
+      const data = await fetchWithTokenHandling(`${import.meta.env.VITE_BASE_URL}/api/emp/clinic/${clinic_id}/payment/channel/`);
+      setPaymentChannels(data);
+    } catch (error) {
+      console.error("Failed to fetch payment channels:", error);
+      setPaymentChannels([]);
+    }
+  };
+
   const updateNote = async (noteId, updatedData) => {
     try {
       const data = await fetchWithTokenHandling(`${import.meta.env.VITE_BASE_URL}/api/emp/clinic/${clinic_id}/patient/${patient_id}/note/${noteId}/`, {
@@ -203,10 +257,10 @@ const PatientProfile = () => {
   const fetchBookings = async () => {
     try {
       const data = await fetchWithTokenHandling(`${import.meta.env.VITE_BASE_URL}/api/emp/clinic/${clinic_id}/patient/${patient_id}/booking/`);
-      setVisits(data); // We'll keep using the 'visits' state variable for now
+      setAppointments(data);
     } catch (error) {
       console.error("Failed to fetch bookings:", error);
-      setVisits([]);
+      setAppointments([]);
     }
   };
 
@@ -275,91 +329,6 @@ const PatientProfile = () => {
     }
   };
 
-  const addVisit = async () => {
-    try {
-      // Indian time zone offset is UTC+5:30
-      const indianTimeZoneOffset = 330; // 5 hours and 30 minutes in minutes
-      
-      // Parse the date and time and adjust for Indian time zone
-      const localStartDateTime = parseISO(`${newVisit.date}T${newVisit.time}`);
-      const startDateTime = addMinutes(localStartDateTime, -indianTimeZoneOffset);
-      const endDateTime = addMinutes(startDateTime, newVisit.duration || parseInt(newVisit.customDuration));
-  
-      // Convert weekdays to the format expected by the backend (e.g., "MO,TU,WE")
-      const weekdayMap = {
-        'Mon': 'MO', 'Tue': 'TU', 'Wed': 'WE', 'Thu': 'TH', 'Fri': 'FR', 'Sat': 'SA', 'Sun': 'SU'
-      };
-      const formattedWeekdays = newVisit.weekdays.map(day => weekdayMap[day]).join(',');
-  
-      let recurrenceRule = null;
-      if (newVisit.frequency === 'weekly') {
-        recurrenceRule = `RRULE:FREQ=WEEKLY;BYDAY=${formattedWeekdays}`;
-        if (newVisit.endsOn) {
-          const endDate = addMinutes(parseISO(newVisit.endsOn), -indianTimeZoneOffset);
-          recurrenceRule += `;UNTIL=${format(endDate, "yyyyMMdd'T'HHmmss'Z'")}`;
-        } else if (newVisit.sessions) {
-          recurrenceRule += `;COUNT=${newVisit.sessions}`;
-        }
-      }
-  
-      const bookingData = {
-        start: format(startDateTime, "yyyy-MM-dd'T'HH:mm:ss'Z'"),
-        end: format(endDateTime, "yyyy-MM-dd'T'HH:mm:ss'Z'"),
-        patient: patient.id,
-        employee: newVisit.therapist,
-        sellable: newVisit.sellable,
-        recurrence: recurrenceRule,
-      };
-  
-      const bookings = await createBooking(bookingData);
-      
-      // Ensure bookings is an array
-      if (!Array.isArray(bookings)) {
-        throw new Error('Unexpected response format from createBooking');
-      }
-  
-      // Extract the ID of the last (most recent) booking
-      const lastBookingId = bookings[bookings.length - 1].id;
-  
-      // Now create the visit with the last booking ID
-      const visitData = {
-        booking: lastBookingId,
-        date: format(localStartDateTime, 'yyyy-MM-dd'),
-        time: format(localStartDateTime, 'HH:mm'),
-        sellable_reduce_balance: true, // You might want to add a checkbox for this
-      };
-  
-      const response = await fetchWithTokenHandling(`${import.meta.env.VITE_BASE_URL}/api/emp/clinic/${clinic_id}/patient/${patient.id}/visit/`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(visitData),
-      });
-  
-      const newVisitData = await response;
-      setVisits([...visits, newVisitData]);
-      setNewVisit({
-        patient: '',
-        sellable: '',
-        date: '',
-        time: '',
-        frequency: 'does_not_repeat',
-        weekdays: [],
-        endsOn: '',
-        sessions: '',
-        duration: 30,
-        customDuration: '',
-        therapist: '',
-      });
-      toast({ title: "Success", description: "Appointment booked successfully" });
-      fetchBookings();
-      setIsVisitDialogOpen(false); // Close the dialog
-    } catch (error) {
-      toast({ title: "Error", description: error.message, variant: "destructive" });
-    }
-  };
-
   const fetchTasks = async () => {
     try {
       const data = await fetchWithTokenHandling(`${import.meta.env.VITE_BASE_URL}/api/emp/clinic/${clinic_id}/patient/${patient_id}/task/`);
@@ -367,6 +336,37 @@ const PatientProfile = () => {
     } catch (error) {
       console.error("Failed to fetch tasks:", error);
       setTasks([]);
+    }
+  };
+
+  const fetchVisits = async () => {
+    try {
+      const data = await fetchWithTokenHandling(`${import.meta.env.VITE_BASE_URL}/api/emp/clinic/${clinic_id}/patient/${patient_id}/visit/`);
+      setVisits(data);
+  
+      const employeeIds = new Set();
+      const sellableIds = new Set();
+  
+      data.forEach(visit => {
+        if (visit.employee) {
+          employeeIds.add(visit.employee);
+        }
+        if (visit.sellable) {
+          sellableIds.add(visit.sellable);
+        }
+      });
+  
+      const fetchEmployeePromises = Array.from(employeeIds).map(id => fetchEmployeeDetails(id));
+      const fetchSellablePromises = Array.from(sellableIds).map(id => fetchSellableDetails(id));
+  
+      await Promise.all([...fetchEmployeePromises, ...fetchSellablePromises]);
+  
+      console.log(employeeIds);
+      console.log(sellableIds);
+  
+    } catch (error) {
+      console.error("Failed to fetch visits:", error);
+      setVisits([]);
     }
   };
 
@@ -416,6 +416,188 @@ const PatientProfile = () => {
     }
   };
 
+  const fetchAppointments = async () => {
+    try {
+      const data = await fetchWithTokenHandling(`${import.meta.env.VITE_BASE_URL}/api/emp/clinic/${clinic_id}/patient/${patient_id}/booking/`);
+      setAppointments(data);
+      
+      const employeeIds = new Set();
+      const sellableIds = new Set();
+  
+      data.forEach(appointment => {
+        if (appointment.employee?.id) {
+          employeeIds.add(appointment.employee.id);
+        }
+        if (appointment.sellable) {
+          sellableIds.add(appointment.sellable);
+        }
+      });
+  
+      const fetchEmployeePromises = Array.from(employeeIds).map(id => fetchEmployeeDetails(id));
+      const fetchSellablePromises = Array.from(sellableIds).map(id => fetchSellableDetails(id));
+      
+      await Promise.all([...fetchEmployeePromises, ...fetchSellablePromises]);
+      
+      console.log(employeeIds);
+      console.log(sellableIds);
+  
+    } catch (error) {
+      console.error("Failed to fetch appointments:", error);
+      setAppointments([]);
+    }
+  };
+
+  const handleAddAppointment = async (e) => {
+    e.preventDefault();
+    try {
+      const indianTimeZoneOffset = 330; // 5 hours and 30 minutes in minutes
+      
+      const localStartDateTime = parseISO(`${newAppointment.date}T${newAppointment.time}`);
+      const startDateTime = addMinutes(localStartDateTime, -indianTimeZoneOffset);
+      const endDateTime = addMinutes(startDateTime, newAppointment.duration);
+  
+      const weekdayMap = {
+        'Mon': 'MO', 'Tue': 'TU', 'Wed': 'WE', 'Thu': 'TH', 'Fri': 'FR', 'Sat': 'SA', 'Sun': 'SU'
+      };
+      const formattedWeekdays = newAppointment.weekdays.map(day => weekdayMap[day]).join(',');
+  
+      let recurrenceRule = null;
+      if (newAppointment.frequency === 'weekly') {
+        recurrenceRule = `RRULE:FREQ=WEEKLY;BYDAY=${formattedWeekdays}`;
+        if (newAppointment.endsOn) {
+          const endDate = addMinutes(parseISO(newAppointment.endsOn), -indianTimeZoneOffset);
+          recurrenceRule += `;UNTIL=${format(endDate, "yyyyMMdd'T'HHmmss'Z'")}`;
+        } else if (newAppointment.sessions) {
+          recurrenceRule += `;COUNT=${newAppointment.sessions}`;
+        }
+      }
+  
+      const bookingData = {
+        start: format(startDateTime, "yyyy-MM-dd'T'HH:mm:ss'Z'"),
+        end: format(endDateTime, "yyyy-MM-dd'T'HH:mm:ss'Z'"),
+        patient: patient.id,
+        employee: newAppointment.employee,
+        sellable: newAppointment.sellable,
+        recurrence: recurrenceRule,
+      };
+  
+      const response = await createBooking(bookingData);
+      setAppointments([...appointments, response]);
+      setNewAppointment({
+        date: '',
+        time: '',
+        employee: '',
+        sellable: '',
+        duration: 30,
+        frequency: 'does_not_repeat',
+        weekdays: [],
+        endsOn: '',
+        sessions: '',
+      });
+      setIsAppointmentDialogOpen(false);
+      toast({ title: "Success", description: "Appointment booked successfully" });
+    } catch (error) {
+      console.log(error.message, "ERROR MESSAGE AT HANDLEADDAPPOINTMENT")
+      toast({ title: "Error", description: error.message, variant: "destructive" });
+    }
+  };
+
+  const handleAddVisit = async (e) => {
+    e.preventDefault();
+    try {
+      const response = await fetchWithTokenHandling(`${import.meta.env.VITE_BASE_URL}/api/emp/clinic/${clinic_id}/patient/${patient_id}/visit/`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(newVisit),
+      });
+      setVisits(prevVisits => [...prevVisits, response]);
+      
+      // Fetch details for the new visit
+      if (response.employee) fetchEmployeeDetails(response.employee);
+      if (response.sellable) fetchSellableDetails(response.sellable);
+  
+      setNewVisit({
+        date: '',
+        time: '',
+        comment: '',
+        employee: '',
+        sellable: '',
+        sellable_reduce_balance: false,
+        walk_in: false,
+        penalty: false,
+        duration: ''
+      });
+      setIsVisitDialogOpen(false);
+      toast({ title: "Success", description: "Visit added successfully" });
+    } catch (error) {
+      toast({ title: "Error", description: error.message, variant: "destructive" });
+    }
+  };
+
+  const fetchEmployeeDetails = async (employeeId) => {
+    try {
+      const data = await fetchWithTokenHandling(`${import.meta.env.VITE_BASE_URL}/api/emp/clinic/${clinic_id}/employee/${employeeId}/`);
+      setEmployeeDetails(prevDetails => ({
+        ...prevDetails,
+        [employeeId]: data
+      }));
+    } catch (error) {
+      console.error("Failed to fetch employee details:", error);
+    }
+  };
+  
+  const fetchSellableDetails = async (sellableId) => {
+    try {
+      const data = await fetchWithTokenHandling(`${import.meta.env.VITE_BASE_URL}/api/emp/clinic/${clinic_id}/sellable/${sellableId}/`);
+      setSellableDetails(prevDetails => ({
+        ...prevDetails,
+        [sellableId]: data
+      }));
+    } catch (error) {
+      console.error("Failed to fetch sellable details:", error);
+    }
+  };
+
+  const handleAddPayment = async (e) => {
+    e.preventDefault();
+    try {
+      const response = await fetchWithTokenHandling(`${import.meta.env.VITE_BASE_URL}/api/emp/clinic/${clinic_id}/patient/${patient_id}/payment/`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(newPayment),
+      });
+      setPayments([...payments, response]);
+      setNewPayment({
+        amount_paid: '',
+        amount_refunded: '0',
+        date: new Date().toISOString().split('T')[0],
+        channel: ''
+      });
+      setIsPaymentDialogOpen(false);
+      toast({ title: "Success", description: "Payment added successfully" });
+    } catch (error) {
+      toast({ title: "Error", description: error.message, variant: "destructive" });
+    }
+  };
+
+
+  useEffect(() => {
+    fetchPatientData();
+    fetchNotes();
+    fetchGoals();
+    fetchTasks();
+    fetchAppointments();
+    fetchTherapists();
+    fetchSellables();
+    fetchPayments();
+    fetchPaymentChannels();
+    fetchVisits();
+  }, [clinic_id, patient_id]);
+
 
 
   useEffect(() => {
@@ -445,6 +627,54 @@ const PatientProfile = () => {
       setPatient(updatedPatient);
       setIsEditing(false);
       toast({ title: "Success", description: "Patient information updated successfully" });
+    } catch (error) {
+      toast({ title: "Error", description: error.message, variant: "destructive" });
+    }
+  };
+
+  const [isInvoiceDialogOpen, setIsInvoiceDialogOpen] = useState(false);
+  const [invoiceItems, setInvoiceItems] = useState([]);
+  const [selectedSellable, setSelectedSellable] = useState('');
+  const [finalAmount, setFinalAmount] = useState(0);
+
+  const handleAddInvoiceItem = () => {
+    const sellable = sellables.find(s => s.id === selectedSellable);
+    console.log(sellable)
+    if (sellable) {
+      setInvoiceItems([...invoiceItems, {
+        sellable: sellable.id,
+        name: sellable.name,
+        quantity: 1,
+        rate: sellable.rate,
+        gross: sellable.rate,
+        discount: 0,
+        net: sellable.rate,
+        tax: 0,
+        add_balance: true
+      }]);
+      setFinalAmount(prevAmount => parseInt(prevAmount) + parseInt(sellable.rate));
+    }
+  };
+
+  const handleGenerateInvoice = async () => {
+    try {
+      const response = await fetchWithTokenHandling(`${import.meta.env.VITE_BASE_URL}/api/emp/clinic/${clinic_id}/patient/${patient_id}/invoice/`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          date: new Date().toISOString().split('T')[0],
+          status: 'd',
+          gross_amount: finalAmount.toString(),
+          final_amount: finalAmount.toString(),
+          items: invoiceItems
+        }),
+      });
+      toast({ title: "Success", description: "Invoice generated successfully" });
+      setIsInvoiceDialogOpen(false);
+      setInvoiceItems([]);
+      setFinalAmount(0);
     } catch (error) {
       toast({ title: "Error", description: error.message, variant: "destructive" });
     }
@@ -489,8 +719,39 @@ const PatientProfile = () => {
   return (
     <div className="flex w-full gap-8 p-8 container mx-auto shadow-xl">
       <Card className="w-[45%]">
-        <CardHeader>
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
           <CardTitle>Patient Information</CardTitle>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" className="h-8 w-8 p-0">
+                <span className="sr-only">Open menu</span>
+                <MoreVertical className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={() => setIsInvoiceDialogOpen(true)}>
+                <FileText className="mr-2 h-4 w-4" />
+                <span>Generate Invoice</span>
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setIsVisitDialogOpen(true)}>
+                <PlusCircle className="mr-2 h-4 w-4" />
+                <span>Mark New Visit</span>
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setIsEditing(true)}>
+                <Edit className="mr-2 h-4 w-4" />
+                <span>Edit Patient Details</span>
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={() => window.location.href = `tel:${patient.mobile}`}>
+                <Phone className="mr-2 h-4 w-4" />
+                <span>Call {patient.mobile}</span>
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => window.location.href = `mailto:${patient.email}`}>
+                <Mail className="mr-2 h-4 w-4" />
+                <span>Email {patient.email}</span>
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit}>
@@ -562,7 +823,7 @@ const PatientProfile = () => {
                 ) : (
                   <Button type="button" onClick={() => setIsEditing(true)}>Edit Patient</Button>
                 )}
-                <Link to={`/clinic/${clinic_id}/patient/${patient_id}/schedule`}>
+                <Link to={`/clinic/${clinic_id}/patients/${patient_id}/schedule`}>
                   <Button variant="outline">View Schedule</Button>
                 </Link>
               </div>
@@ -570,12 +831,88 @@ const PatientProfile = () => {
           </form>
         </CardContent>
       </Card>
+        <Dialog open={isInvoiceDialogOpen} onOpenChange={setIsInvoiceDialogOpen}>
+          <DialogContent className="sm:max-w-[600px]">
+            <DialogHeader>
+              <DialogTitle>Generate Invoice</DialogTitle>
+            </DialogHeader>
+            <div className="grid gap-4 py-4">
+              <div className="gap-4">
+                <Label htmlFor="sellable" className="text-right">
+                  Product/Service
+                </Label>
+                <Select 
+                  onValueChange={setSelectedSellable} 
+                  value={selectedSellable}
+                  className="col-span-3"
+                >
+                  <SelectTrigger id="sellable">
+                    <SelectValue placeholder="Select product/service" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {sellables.map(sellable => (
+                      <SelectItem key={sellable.id} value={sellable.id}>
+                        {sellable.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <Button onClick={handleAddInvoiceItem}>+ Add Item</Button>
+              <div className="border p-2">
+                <table className="w-full">
+                  <thead>
+                    <tr>
+                      <th>Product/Service</th>
+                      <th>Quantity</th>
+                      <th>Rate</th>
+                      <th>Discount</th>
+                      <th>Amount</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {invoiceItems.length === 0 ? (
+                      <tr>
+                        <td colSpan="5" className="text-center">No items added</td>
+                      </tr>
+                    ) : (
+                      invoiceItems.map((item, index) => (
+                        <tr key={index}>
+                          <td>{item.name}</td>
+                          <td>{item.quantity}</td>
+                          <td>{item.rate}</td>
+                          <td>{item.discount}</td>
+                          <td>{item.net}</td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
+              </div>
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="finalAmount" className="text-right">
+                  Final Amount
+                </Label>
+                <Input 
+                  id="finalAmount" 
+                  value={finalAmount} 
+                  onChange={(e) => setFinalAmount(parseFloat(e.target.value))} 
+                  className="col-span-3"
+                />
+              </div>
+            </div>
+            <DialogFooter>
+              <Button onClick={handleGenerateInvoice}>Generate Invoice</Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       <div className="w-full space-y-8">
         <Tabs className='w-full' defaultValue="notes">
           <TabsList className='w-full justify-around'>
             <TabsTrigger className='px-12' value="notes">Notes</TabsTrigger>
             <TabsTrigger className='px-12' value="goals">Goals</TabsTrigger>
-            <TabsTrigger className='px-12' value="visits">Upcoming Appointments</TabsTrigger>
+            <TabsTrigger className='px-12' value="appointments">Appointments</TabsTrigger>
+            <TabsTrigger className='px-12' value="visits">Visits</TabsTrigger>
             <TabsTrigger className='px-12' value="payments">Payments</TabsTrigger>
             <TabsTrigger className='px-12' value="tasks">Tasks</TabsTrigger>
           </TabsList>
@@ -808,201 +1145,537 @@ const PatientProfile = () => {
             </Dialog>
           </TabsContent>
           
-          {/* Visits TabsContent */}
-          <TabsContent value="visits" className="relative min-h-[300px] max-h-[600px] p-4 pb-16 overflow-scroll">
-              {visits.length === 0 ? (
-                <p>No upcoming appointments for this patient.</p>
-              ) : (
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead className='text-center'>Therapist</TableHead>
-                        <TableHead className='text-center'>Date</TableHead>
-                        <TableHead className='text-center'>Start Time</TableHead>
-                        <TableHead className='text-center'>End Time</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {visits.map(booking => (
-                        <TableRow key={booking.id}>
-                          <TableCell>{booking.employee.first_name + " " + booking.employee.last_name}</TableCell>
-                          <TableCell>{format(parseISO(booking.start), 'yyyy-MM-dd')}</TableCell>
-                          <TableCell>{format(parseISO(booking.start), 'HH:mm')}</TableCell>
-                          <TableCell>{format(parseISO(booking.end), 'HH:mm')}</TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-              )}
-            <Dialog open={isVisitDialogOpen} onOpenChange={setIsVisitDialogOpen}>
+          {/* Appointment TabsContent */}
+          <TabsContent value="appointments" className="relative min-h-[300px] max-h-[600px] p-4 pb-16 overflow-scroll">
+            {appointments.length === 0 ? (
+              <p>No upcoming appointments for this patient.</p>
+            ) : (
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className='text-center'>Therapist</TableHead>
+                    <TableHead className='text-center'>Date</TableHead>
+                    <TableHead className='text-center'>Start Time</TableHead>
+                    <TableHead className='text-center'>End Time</TableHead>
+                    <TableHead className='text-center'>Service</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {appointments.map(appointment => (
+                    <TableRow key={appointment.id}>
+                      <TableCell>{appointment.employee.first_name} {appointment.employee.last_name}</TableCell>
+                      <TableCell>{format(parseISO(appointment.start), 'yyyy-MM-dd')}</TableCell>
+                      <TableCell>{format(parseISO(appointment.start), 'HH:mm')}</TableCell>
+                      <TableCell>{format(parseISO(appointment.end), 'HH:mm')}</TableCell>
+                      <TableCell>
+                        {sellableDetails[appointment.sellable]
+                          ? sellableDetails[appointment.sellable].name
+                          : 'N/A'}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            )}
+            <Dialog open={isAppointmentDialogOpen} onOpenChange={setIsAppointmentDialogOpen}>
               <DialogTrigger asChild>
-                <Button className='sticky bottom-0 right-0 flex self-end ml-auto mt-4' ><PlusCircle className="h-4 w-4" /></Button>
+                <Button className='sticky bottom-0 right-0 flex self-end ml-auto mt-4' >
+                  <PlusCircle className="h-4 w-4" />
+                </Button>
               </DialogTrigger>
               <DialogContent className="sm:max-w-[425px]">
                 <DialogHeader>
                   <DialogTitle>Add Appointment</DialogTitle>
                 </DialogHeader>
-                <div className="grid gap-4 py-4">
-                  <Select onValueChange={(value) => setNewVisit({...newVisit, patient: value})}>
-                    <SelectTrigger className="w-full">
-                      <SelectValue placeholder="Select Patient" />
-                    </SelectTrigger>
-                    <SelectContent>
-                        <SelectItem key={patient.id} value={patient.id}>
-                          {patient.first_name} {patient.last_name}
-                        </SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <p className="text-sm text-muted-foreground">Add patient before scheduling Appointment</p>
+                <form onSubmit={handleAddAppointment}>
+                  <div className="grid gap-4 py-4">
+                    <Select onValueChange={(value) => setNewAppointment({...newAppointment, employee: value})}>
+                      <SelectTrigger className="w-full">
+                        <SelectValue placeholder="Select Therapist" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {therapists.map(therapist => (
+                          <SelectItem key={therapist.id} value={therapist.id}>
+                            {therapist.first_name} {therapist.last_name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
 
-                  <Select onValueChange={(value) => setNewVisit({...newVisit, therapist: value})}>
-                    <SelectTrigger className="w-full">
-                      <SelectValue placeholder="Select Therapist" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {therapists.map(therapist => (
-                        <SelectItem key={therapist.id} value={therapist.id}>
-                          {therapist.first_name} {therapist.last_name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                    <Select onValueChange={(value) => setNewAppointment({...newAppointment, sellable: value})}>
+                      <SelectTrigger className="w-full">
+                        <SelectValue placeholder="Product / Service" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {sellables.map(sellable => (
+                          <SelectItem key={sellable.id} value={sellable.id}>
+                            {sellable.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
 
-                  <Select onValueChange={(value) => setNewVisit({...newVisit, sellable: value})}>
-                    <SelectTrigger className="w-full">
-                      <SelectValue placeholder="Product / Service" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {sellables.map(sellable => (
-                        <SelectItem key={sellable.id} value={sellable.id}>
-                          {sellable.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-
-                  <div className="flex flex-col space-y-2">
-                    <div className="flex space-x-2">
-                      <div className="flex-grow">
-                        <Label htmlFor="date">Starts On (DD/MM/YYYY)</Label>
-                        <DatePicker
-                          id="date"
-                          selected={newVisit.date ? new Date(newVisit.date) : null}
-                          onChange={(date) => setNewVisit({...newVisit, date: date.toISOString().split('T')[0]})}
-                          dateFormat="dd/MM/yyyy"
-                        />
-                      </div>
-                      <div>
-                        <Label htmlFor="time">Time</Label>
-                        <TimeSelect
-                          id="time"
-                          value={newVisit.time}
-                          onChange={(time) => setNewVisit({...newVisit, time: time})}
-                        />
+                    <div className="flex flex-col space-y-2">
+                      <div className="flex space-x-2">
+                        <div className="flex-grow">
+                          <Label htmlFor="date">Starts On (DD/MM/YYYY)</Label>
+                          <DatePicker
+                            id="date"
+                            selected={newAppointment.date ? new Date(newAppointment.date) : null}
+                            onChange={(date) => setNewAppointment({...newAppointment, date: date.toISOString().split('T')[0]})}
+                            dateFormat="dd/MM/yyyy"
+                          />
+                        </div>
+                        <div>
+                          <Label htmlFor="time">Time</Label>
+                          <TimeSelect
+                            id="time"
+                            value={newAppointment.time}
+                            onChange={(time) => setNewAppointment({...newAppointment, time: time})}
+                          />
+                        </div>
                       </div>
                     </div>
-                  </div>
 
-                  <Select onValueChange={(value) => setNewVisit({...newVisit, frequency: value})}>
-                    <SelectTrigger className="w-full">
-                      <SelectValue placeholder="Frequency" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="does_not_repeat">Does not repeat</SelectItem>
-                      <SelectItem value="weekly">Weekly</SelectItem>
-                    </SelectContent>
-                  </Select>
+                    <Select onValueChange={(value) => setNewAppointment({...newAppointment, frequency: value})}>
+                      <SelectTrigger className="w-full">
+                        <SelectValue placeholder="Frequency" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="does_not_repeat">Does not repeat</SelectItem>
+                        <SelectItem value="weekly">Weekly</SelectItem>
+                      </SelectContent>
+                    </Select>
 
-                  {newVisit.frequency === 'weekly' && (
-                    <>
-                      <div>
-                        <Label className="mb-2 block">Select Weekdays</Label>
-                        <div className="flex flex-wrap gap-2">
-                          {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map((day) => (
-                            <Button
-                              key={day}
-                              variant={newVisit.weekdays.includes(day) ? "default" : "outline"}
-                              size="sm"
-                              onClick={() => {
-                                const updatedWeekdays = newVisit.weekdays.includes(day)
-                                  ? newVisit.weekdays.filter(d => d !== day)
-                                  : [...newVisit.weekdays, day];
-                                setNewVisit({...newVisit, weekdays: updatedWeekdays});
-                              }}
-                            >
-                              {day}
-                            </Button>
-                          ))}
-                        </div>
-                      </div>
-
-                      <div className="space-y-2">
-                        <Label>Ends On (DD/MM/YYYY)</Label>
-                        <Popover>
-                          <PopoverTrigger asChild>
-                            <Button variant="outline" className="w-full justify-start text-left font-normal">
-                              <CalendarIcon className="mr-2 h-4 w-4" />
-                              {newVisit.endsOn ? format(new Date(newVisit.endsOn), "PPP") : <span>Pick an end date</span>}
-                            </Button>
-                          </PopoverTrigger>
-                          <PopoverContent className="w-auto p-0">
-                            <Calendar
-                              mode="single"
-                              selected={newVisit.endsOn ? new Date(newVisit.endsOn) : undefined}
-                              onSelect={(date) => setNewVisit({...newVisit, endsOn: date ? date.toISOString().split('T')[0] : ''})}
-                            />
-                          </PopoverContent>
-                        </Popover>
-                      </div>
-
-                      <div className="space-y-2">
-                        <Label htmlFor="sessions">OR</Label>
-                        <Input
-                          id="sessions"
-                          type="number"
-                          placeholder="For next 'X' sessions"
-                          value={newVisit.sessions}
-                          onChange={(e) => setNewVisit({...newVisit, sessions: e.target.value})}
-                        />
-                      </div>
-                    </>
-                  )}
-
-                  <div className="space-y-2">
-                    <Label>Duration</Label>
-                    <RadioGroup onValueChange={(value) => setNewVisit({...newVisit, duration: parseInt(value), customDuration: ''})}>
-                      <div className="flex flex-wrap gap-2">
-                        {[30, 45, 60, 90].map((duration) => (
-                          <div key={duration} className="flex items-center space-x-2">
-                            <RadioGroupItem value={duration.toString()} id={`duration-${duration}`} />
-                            <Label htmlFor={`duration-${duration}`}>{duration} Mins</Label>
+                    {newAppointment.frequency === 'weekly' && (
+                      <>
+                        <div>
+                          <Label className="mb-2 block">Select Weekdays</Label>
+                          <div className="flex flex-wrap gap-2">
+                            {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map((day) => (
+                              <Button
+                                key={day}
+                                variant={newAppointment.weekdays.includes(day) ? "default" : "outline"}
+                                size="sm"
+                                onClick={() => {
+                                  const updatedWeekdays = newAppointment.weekdays.includes(day)
+                                    ? newAppointment.weekdays.filter(d => d !== day)
+                                    : [...newAppointment.weekdays, day];
+                                  setNewAppointment({...newAppointment, weekdays: updatedWeekdays});
+                                }}
+                              >
+                                {day}
+                              </Button>
+                            ))}
                           </div>
-                        ))}
-                        <div className="flex items-center space-x-2">
-                          <RadioGroupItem value="0" id="duration-custom" />
-                          <Label htmlFor="duration-custom">Custom</Label>
                         </div>
-                      </div>
-                    </RadioGroup>
-                  </div>
 
-                  {newVisit.duration === 0 && (
-                    <Input
-                      type="number"
-                      placeholder="Custom Duration in mins"
-                      value={newVisit.customDuration}
-                      onChange={(e) => setNewVisit({...newVisit, customDuration: e.target.value})}
-                    />
-                  )}
-                </div>
-                <Button onClick={addVisit} className="w-full">Book Appointment</Button>
+                        <div className="space-y-2">
+                          <Label>Ends On (DD/MM/YYYY)</Label>
+                          <Popover>
+                            <PopoverTrigger asChild>
+                              <Button variant="outline" className="w-full justify-start text-left font-normal">
+                                <CalendarIcon className="mr-2 h-4 w-4" />
+                                {newAppointment.endsOn ? format(new Date(newAppointment.endsOn), "PPP") : <span>Pick an end date</span>}
+                              </Button>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-auto p-0">
+                              <Calendar
+                                mode="single"
+                                selected={newAppointment.endsOn ? new Date(newAppointment.endsOn) : undefined}
+                                onSelect={(date) => setNewAppointment({...newAppointment, endsOn: date ? date.toISOString().split('T')[0] : ''})}
+                              />
+                            </PopoverContent>
+                          </Popover>
+                        </div>
+
+                        <div className="space-y-2">
+                          <Label htmlFor="sessions">OR</Label>
+                          <Input
+                            id="sessions"
+                            type="number"
+                            placeholder="For next 'X' sessions"
+                            value={newAppointment.sessions}
+                            onChange={(e) => setNewAppointment({...newAppointment, sessions: e.target.value})}
+                          />
+                        </div>
+                      </>
+                    )}
+
+                    <div className="space-y-2">
+                      <Label>Duration</Label>
+                      <RadioGroup onValueChange={(value) => setNewAppointment({...newAppointment, duration: parseInt(value)})}>
+                        <div className="flex flex-wrap gap-2">
+                          {[30, 45, 60, 90].map((duration) => (
+                            <div key={duration} className="flex items-center space-x-2">
+                              <RadioGroupItem value={duration.toString()} id={`duration-${duration}`} />
+                              <Label htmlFor={`duration-${duration}`}>{duration} Mins</Label>
+                            </div>
+                          ))}
+                          <div className="flex items-center space-x-2">
+                            <RadioGroupItem value="custom" id="duration-custom" />
+                            <Label htmlFor="duration-custom">Custom</Label>
+                          </div>
+                        </div>
+                      </RadioGroup>
+                    </div>
+
+                    {newAppointment.duration === 'custom' && (
+                      <Input
+                        type="number"
+                        placeholder="Custom Duration in mins"
+                        value={newAppointment.duration}
+                        onChange={(e) => setNewAppointment({...newAppointment, duration: parseInt(e.target.value)})}
+                      />
+                    )}
+                  </div>
+                  <Button type="submit" className="w-full">Book Appointment</Button>
+                </form>
               </DialogContent>
             </Dialog>
           </TabsContent>
-          <TabsContent value="payments">
-            <p>Payment information is not available at the moment.</p>
+          
+          <TabsContent value="payments" className="relative min-h-[300px] p-4 pb-16">
+            {payments.length === 0 ? (
+              <p>No payments recorded for this patient.</p>
+            ) : (
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Date</TableHead>
+                    <TableHead>Amount Paid</TableHead>
+                    <TableHead>Amount Refunded</TableHead>
+                    <TableHead>Channel</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {payments.map(payment => (
+                    <TableRow key={payment.id}>
+                      <TableCell>{payment.date}</TableCell>
+                      <TableCell>{payment.amount_paid}</TableCell>
+                      <TableCell>{payment.amount_refunded}</TableCell>
+                      <TableCell>{paymentChannels.find(ch => ch.id === payment.channel)?.name || 'Unknown'}</TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            )}
+            <Dialog open={isPaymentDialogOpen} onOpenChange={setIsPaymentDialogOpen}>
+              <DialogTrigger asChild>
+                <Button className="absolute bottom-0 right-0">
+                  <PlusCircle className="h-4 w-4" />
+                </Button>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Add New Payment</DialogTitle>
+                </DialogHeader>
+                <form onSubmit={handleAddPayment}>
+                  <div className="space-y-4">
+                    <div>
+                      <Label htmlFor="amount_paid">Amount Paid</Label>
+                      <Input
+                        id="amount_paid"
+                        type="number"
+                        value={newPayment.amount_paid}
+                        onChange={(e) => setNewPayment({...newPayment, amount_paid: e.target.value})}
+                        required
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="date">Payment Date</Label>
+                      <DatePicker
+                        id="date"
+                        selected={newPayment.date}
+                        onChange={(date) => setNewPayment({...newPayment, date: date.toISOString().split('T')[0]})}
+                        required
+                      />
+                      {/* 
+                      <DatePicker
+                        id="date"
+                        selected={newVisit.date ? new Date(newVisit.date) : null}
+                        dateFormat="dd/MM/yyyy"
+                        onChange={(date) => setNewVisit({...newVisit, date: date.toISOString().split('T')[0]})}
+                       /> */}
+                    </div>
+                    <div>
+                      <Label htmlFor="channel">Payment Channel</Label>
+                      <Select onValueChange={(value) => setNewPayment({...newPayment, channel: value})}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select payment channel" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {paymentChannels.map(channel => (
+                            <SelectItem key={channel.id} value={channel.id}>
+                              {channel.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                  <DialogFooter>
+                    <Button type="submit" className="mt-4">Add Payment</Button>
+                  </DialogFooter>
+                </form>
+              </DialogContent>
+            </Dialog>
+          </TabsContent>
+
+          <TabsContent value="visits" className="relative min-h-[300px] p-4 pb-16">
+            {visits.length === 0 ? (
+              <p>No visits recorded for this patient.</p>
+            ) : (
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Date</TableHead>
+                    <TableHead>Time</TableHead>
+                    <TableHead>Doctor</TableHead>
+                    <TableHead>Service</TableHead>
+                    <TableHead>Walk-in</TableHead>
+                    <TableHead>Penalty</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {visits.map(visit => (
+                    <TableRow key={visit.id}>
+                      <TableCell>{visit.date}</TableCell>
+                      <TableCell>{visit.time || 'N/A'}</TableCell>
+                      <TableCell>
+                        {employeeDetails[visit.employee] 
+                          ? `${employeeDetails[visit.employee].first_name} ${employeeDetails[visit.employee].last_name}`
+                          : 'Loading...'}
+                      </TableCell>
+                      <TableCell>
+                        {sellableDetails[visit.sellable]
+                          ? sellableDetails[visit.sellable].name
+                          : 'Loading...'}
+                      </TableCell>
+                      <TableCell>{visit.walk_in ? 'Yes' : 'No'}</TableCell>
+                      <TableCell>{visit.penalty ? 'Yes' : 'No'}</TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            )}
+            <Dialog open={isVisitDialogOpen} onOpenChange={setIsVisitDialogOpen}>
+              <DialogTrigger asChild>
+                <Button className="absolute bottom-0 right-0">
+                  <PlusCircle className="h-4 w-4" />
+                </Button>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Add New Visit</DialogTitle>
+                </DialogHeader>
+                <form onSubmit={handleAddVisit}>
+                  <div className="space-y-4">
+                    <div>
+                      <Label htmlFor="date">Visit Date</Label>
+                      <DatePicker
+                        id="date"
+                        selected={newVisit.date ? new Date(newVisit.date) : null}
+                        dateFormat="dd/MM/yyyy"
+                        onChange={(date) => setNewVisit({...newVisit, date: date.toISOString().split('T')[0]})}
+                        />
+                    </div>
+                    <div>
+                      <Label htmlFor="time">Visit Time</Label>
+                      <TimeSelect
+                        id="time"
+                        value={newVisit.time}
+                        onChange={(time) => setNewVisit({...newVisit, time: time})}
+                      />
+                      {/*
+                        id="time"
+                          value={newVisit.time}
+                          onChange={(time) => setNewVisit({...newVisit, time: time})} 
+                        */}
+                    </div>
+                    <div>
+                      <Label htmlFor="employee">Doctor</Label>
+                      <Select onValueChange={(value) => setNewVisit({...newVisit, employee: value})}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select doctor" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {therapists.map(therapist => (
+                            <SelectItem key={therapist.id} value={therapist.id}>
+                              {therapist.first_name} {therapist.last_name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div>
+                      <Label htmlFor="sellable">Product/Service</Label>
+                      <Select onValueChange={(value) => setNewVisit({...newVisit, sellable: value})}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select product/service" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {sellables.map(sellable => (
+                            <SelectItem key={sellable.id} value={sellable.id}>
+                              {sellable.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div>
+                      <Label htmlFor="duration">Duration (minutes)</Label>
+                      <Input
+                        id="duration"
+                        type="number"
+                        value={newVisit.duration}
+                        onChange={(e) => setNewVisit({...newVisit, duration: e.target.value})}
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="comment">Comment</Label>
+                      <Textarea
+                        id="comment"
+                        value={newVisit.comment}
+                        onChange={(e) => setNewVisit({...newVisit, comment: e.target.value})}
+                      />
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <Checkbox
+                        id="sellable_reduce_balance"
+                        checked={newVisit.sellable_reduce_balance}
+                        onCheckedChange={(checked) => setNewVisit({...newVisit, sellable_reduce_balance: checked})}
+                      />
+                      <Label htmlFor="sellable_reduce_balance">Reduce sellable balance</Label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <Checkbox
+                        id="walk_in"
+                        checked={newVisit.walk_in}
+                        onCheckedChange={(checked) => setNewVisit({...newVisit, walk_in: checked})}
+                      />
+                      <Label htmlFor="walk_in">Walk-in</Label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <Checkbox
+                        id="penalty"
+                        checked={newVisit.penalty}
+                        onCheckedChange={(checked) => setNewVisit({...newVisit, penalty: checked})}
+                      />
+                      <Label htmlFor="penalty">Penalty</Label>
+                    </div>
+                  </div>
+                  <Button type="submit" className="mt-4">Add Visit</Button>
+                </form>
+              </DialogContent>
+            </Dialog>
           </TabsContent>
         </Tabs>
+        <Dialog open={isVisitDialogOpen} onOpenChange={setIsVisitDialogOpen}>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Add New Visit</DialogTitle>
+                </DialogHeader>
+                <form onSubmit={handleAddVisit}>
+                  <div className="space-y-4">
+                    <div>
+                      <Label htmlFor="date">Visit Date</Label>
+                      <DatePicker
+                        id="date"
+                        selected={newVisit.date ? new Date(newVisit.date) : null}
+                        dateFormat="dd/MM/yyyy"
+                        onChange={(date) => setNewVisit({...newVisit, date: date.toISOString().split('T')[0]})}
+                        />
+                    </div>
+                    <div>
+                      <Label htmlFor="time">Visit Time</Label>
+                      <TimeSelect
+                        id="time"
+                        value={newVisit.time}
+                        onChange={(time) => setNewVisit({...newVisit, time: time})}
+                      />
+                      {/*
+                        id="time"
+                          value={newVisit.time}
+                          onChange={(time) => setNewVisit({...newVisit, time: time})} 
+                        */}
+                    </div>
+                    <div>
+                      <Label htmlFor="employee">Doctor</Label>
+                      <Select onValueChange={(value) => setNewVisit({...newVisit, employee: value})}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select doctor" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {therapists.map(therapist => (
+                            <SelectItem key={therapist.id} value={therapist.id}>
+                              {therapist.first_name} {therapist.last_name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div>
+                      <Label htmlFor="sellable">Product/Service</Label>
+                      <Select onValueChange={(value) => setNewVisit({...newVisit, sellable: value})}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select product/service" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {sellables.map(sellable => (
+                            <SelectItem key={sellable.id} value={sellable.id}>
+                              {sellable.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div>
+                      <Label htmlFor="duration">Duration (minutes)</Label>
+                      <Input
+                        id="duration"
+                        type="number"
+                        value={newVisit.duration}
+                        onChange={(e) => setNewVisit({...newVisit, duration: e.target.value})}
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="comment">Comment</Label>
+                      <Textarea
+                        id="comment"
+                        value={newVisit.comment}
+                        onChange={(e) => setNewVisit({...newVisit, comment: e.target.value})}
+                      />
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <Checkbox
+                        id="sellable_reduce_balance"
+                        checked={newVisit.sellable_reduce_balance}
+                        onCheckedChange={(checked) => setNewVisit({...newVisit, sellable_reduce_balance: checked})}
+                      />
+                      <Label htmlFor="sellable_reduce_balance">Reduce sellable balance</Label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <Checkbox
+                        id="walk_in"
+                        checked={newVisit.walk_in}
+                        onCheckedChange={(checked) => setNewVisit({...newVisit, walk_in: checked})}
+                      />
+                      <Label htmlFor="walk_in">Walk-in</Label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <Checkbox
+                        id="penalty"
+                        checked={newVisit.penalty}
+                        onCheckedChange={(checked) => setNewVisit({...newVisit, penalty: checked})}
+                      />
+                      <Label htmlFor="penalty">Penalty</Label>
+                    </div>
+                  </div>
+                  <Button type="submit" className="mt-4">Add Visit</Button>
+                </form>
+              </DialogContent>
+        </Dialog>
       </div>
     </div>
   );

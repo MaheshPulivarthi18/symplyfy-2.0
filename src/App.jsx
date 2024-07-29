@@ -29,6 +29,7 @@ import Product from './components/profile/product/Product';
 import UpdateProduct from './components/profile/product/UpdateProduct';
 import ScheduleSettings from './components/profile/schedulesettings/ScheduleSettings';
 import WorkingHours from './components/profile/schedulesettings/WorkingHours';
+import ResetPassword from './components/auth/ResetPassword';
 
 function App() {
   return (
@@ -39,6 +40,7 @@ function App() {
             <Route path='/signup' element={<SignUp />}/>
             <Route path='/login' element={<Login />}/>
             <Route path='/forgotpassword' element={<ForgotPassword />}/>
+            <Route path="/reset-password" element={<ResetPassword />} />
             <Route path="/clinic/:clinic_id"element={
               <ProtectedRoute>
                 <Navbar />
@@ -134,7 +136,7 @@ function App() {
                 <PatientProfile />
               </ProtectedRoute>
               } />
-            <Route path="/patient/profile/:id/schedule" element={
+            <Route path="/clinic/:clinic_id/patients/:patient_id/schedule" element={
               <ProtectedRoute>
                 <Navbar />
                 <PatientSchedule />

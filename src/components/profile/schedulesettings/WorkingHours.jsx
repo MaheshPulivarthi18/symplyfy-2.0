@@ -4,94 +4,27 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/components/ui/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
-import { useForm, useFieldArray } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import * as z from 'zod';
-import { Form, FormControl, FormField, FormItem, FormLabel } from '@/components/ui/form';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from "@/components/ui/switch"
-
-const timeSchema = z.object({
-  start: z.string().regex(/^([01]\d|2[0-3]):([0-5]\d)$/, "Invalid time format"),
-  end: z.string().regex(/^([01]\d|2[0-3]):([0-5]\d)$/, "Invalid time format"),
-});
-
-const workingHoursSchema = z.object({
-  everyday: z.array(timeSchema).min(1, "At least one time slot is required"),
-  monday: z.array(timeSchema),
-  tuesday: z.array(timeSchema),
-  wednesday: z.array(timeSchema),
-  thursday: z.array(timeSchema),
-  friday: z.array(timeSchema),
-  saturday: z.array(timeSchema),
-  sunday: z.array(timeSchema),
-});
-
-const TimeSelect = ({ value, onChange }) => {
-  const generateTimeOptions = () => {
-    const options = [];
-    for (let i = 0; i < 24; i++) {
-      for (let j = 0; j < 60; j += 30) {
-        const hour = i.toString().padStart(2, '0');
-        const minute = j.toString().padStart(2, '0');
-        const time = `${hour}:${minute}`;
-        options.push(<SelectItem key={time} value={time}>{time}</SelectItem>);
-      }
-    }
-    return options;
-  };
-
-  return (
-    <Select value={value} onValueChange={onChange}>
-      <SelectTrigger>
-        <SelectValue placeholder="Select time" />
-      </SelectTrigger>
-      <SelectContent>
-        {generateTimeOptions()}
-      </SelectContent>
-    </Select>
-  );
-};
+import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 const WorkingHours = () => {
   const { clinic_id } = useParams();
   const { toast } = useToast();
   const { authenticatedFetch } = useAuth();
   const [useEverydaySchedule, setUseEverydaySchedule] = useState(true);
-
-  const form = useForm({
-    resolver: zodResolver(workingHoursSchema),
-    defaultValues: {
-      everyday: [{ start: '', end: '' }],
-      monday: [{ start: '', end: '' }],
-      tuesday: [{ start: '', end: '' }],
-      wednesday: [{ start: '', end: '' }],
-      thursday: [{ start: '', end: '' }],
-      friday: [{ start: '', end: '' }],
-      saturday: [{ start: '', end: '' }],
-      sunday: [{ start: '', end: '' }],
-    },
+  const [workingHours, setWorkingHours] = useState({
+    everyday: { morning: { start: '', end: '' }, afternoon: { start: '', end: '' } },
+    monday: { morning: { start: '', end: '' }, afternoon: { start: '', end: '' } },
+    tuesday: { morning: { start: '', end: '' }, afternoon: { start: '', end: '' } },
+    wednesday: { morning: { start: '', end: '' }, afternoon: { start: '', end: '' } },
+    thursday: { morning: { start: '', end: '' }, afternoon: { start: '', end: '' } },
+    friday: { morning: { start: '', end: '' }, afternoon: { start: '', end: '' } },
+    saturday: { morning: { start: '', end: '' }, afternoon: { start: '', end: '' } },
+    sunday: { morning: { start: '', end: '' }, afternoon: { start: '', end: '' } },
   });
 
-  const { fields: everydayFields, append: appendEveryday, remove: removeEveryday } = useFieldArray({
-    control: form.control,
-    name: "everyday",
-  });
-
-  const days = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
-  const dayFields = {};
-  const dayAppend = {};
-  const dayRemove = {};
-
-  days.forEach(day => {
-    const { fields, append, remove } = useFieldArray({
-      control: form.control,
-      name: day,
-    });
-    dayFields[day] = fields;
-    dayAppend[day] = append;
-    dayRemove[day] = remove;
-  });
+  const days = ['everyday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
 
   useEffect(() => {
     fetchSettings();
@@ -103,14 +36,17 @@ const WorkingHours = () => {
       if (!response.ok) throw new Error('Failed to fetch settings');
       const data = await response.json();
       if (data.working_hours) {
-        const isEverydaySchedule = days.every(day => 
-          JSON.stringify(data.working_hours[day]) === JSON.stringify(data.working_hours.monday)
+        const isEverydaySchedule = Object.values(data.working_hours).every(day => 
+          JSON.stringify(day) === JSON.stringify(data.working_hours[0])
         );
         setUseEverydaySchedule(isEverydaySchedule);
         if (isEverydaySchedule) {
-          form.reset({ everyday: data.working_hours.monday });
+          setWorkingHours(prev => ({ ...prev, everyday: data.working_hours[0] }));
         } else {
-          form.reset(data.working_hours);
+          setWorkingHours(prev => ({
+            ...prev,
+            ...Object.fromEntries(days.slice(1).map((day, index) => [day, data.working_hours[index]]))
+          }));
         }
       }
     } catch (error) {
@@ -122,19 +58,27 @@ const WorkingHours = () => {
     }
   };
 
-  const onSubmit = async (values) => {
+  const handleTimeChange = (day, period, timeType, value) => {
+    setWorkingHours(prev => ({
+      ...prev,
+      [day]: {
+        ...prev[day],
+        [period]: {
+          ...prev[day][period],
+          [timeType]: value
+        }
+      }
+    }));
+  };
+
+  const onSubmit = async (e) => {
+    e.preventDefault();
     try {
-      let workingHours;
+      let submissionData;
       if (useEverydaySchedule) {
-        workingHours = days.reduce((acc, day) => {
-          acc[day] = values.everyday;
-          return acc;
-        }, {});
+        submissionData = Object.fromEntries(days.slice(1).map((_, index) => [index, workingHours.everyday]));
       } else {
-        workingHours = days.reduce((acc, day) => {
-          acc[day] = values[day];
-          return acc;
-        }, {});
+        submissionData = Object.fromEntries(days.slice(1).map((day, index) => [index, workingHours[day]]));
       }
 
       const response = await authenticatedFetch(`${import.meta.env.VITE_BASE_URL}/api/emp/clinic/${clinic_id}/schedule/settings/`, {
@@ -142,7 +86,7 @@ const WorkingHours = () => {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ working_hours: workingHours }),
+        body: JSON.stringify({ working_hours: submissionData }),
       });
 
       if (!response.ok) throw new Error('Failed to update working hours');
@@ -161,89 +105,72 @@ const WorkingHours = () => {
     }
   };
 
+  const TimeSelect = ({ value, onChange }) => {
+    const generateTimeOptions = () => {
+      const options = [];
+      for (let i = 0; i < 24; i++) {
+        for (let j = 0; j < 60; j += 30) {
+          const hour = i.toString().padStart(2, '0');
+          const minute = j.toString().padStart(2, '0');
+          const time = `${hour}:${minute}`;
+          options.push(<SelectItem key={time} value={time}>{time}</SelectItem>);
+        }
+      }
+      return options;
+    };
+
+    return (
+      <Select value={value} onValueChange={onChange}>
+        <SelectTrigger>
+          <SelectValue placeholder="Select time" />
+        </SelectTrigger>
+        <SelectContent>
+          {generateTimeOptions()}
+        </SelectContent>
+      </Select>
+    );
+  };
+
   return (
     <Card className="w-full max-w-4xl mx-auto mt-8">
       <CardHeader>
         <CardTitle className="text-2xl font-bold">Working Hours</CardTitle>
       </CardHeader>
       <CardContent>
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-            <p className="text-sm text-gray-500">Note: Time format should be in 24:00 hours</p>
+        <form onSubmit={onSubmit} className="space-y-6">
+          <p className="text-sm text-gray-500">Note: Time format should be in 24:00 hours</p>
 
-            <div className="flex items-center space-x-2">
-              <Switch
-                checked={useEverydaySchedule}
-                onCheckedChange={setUseEverydaySchedule}
-              />
-              <FormLabel>Use same schedule for every day</FormLabel>
-            </div>
+          <div className="flex items-center space-x-2">
+            <Switch
+              checked={useEverydaySchedule}
+              onCheckedChange={setUseEverydaySchedule}
+            />
+            <Label>Use same schedule for every day</Label>
+          </div>
 
-            {useEverydaySchedule ? (
-              <div className="space-y-4">
-                <h3 className="font-semibold mb-2">Every day</h3>
-                {everydayFields.map((field, index) => (
-                  <div key={field.id} className="flex space-x-2 mb-2">
-                    <FormField
-                      control={form.control}
-                      name={`everyday.${index}.start`}
-                      render={({ field }) => (
-                        <FormItem>
-                          <TimeSelect value={field.value} onChange={field.onChange} />
-                        </FormItem>
-                      )}
-                    />
-                    <FormField
-                      control={form.control}
-                      name={`everyday.${index}.end`}
-                      render={({ field }) => (
-                        <FormItem>
-                          <TimeSelect value={field.value} onChange={field.onChange} />
-                        </FormItem>
-                      )}
-                    />
-                    <Button type="button" variant="outline" onClick={() => removeEveryday(index)}>Remove</Button>
-                  </div>
-                ))}
-                <Button type="button" onClick={() => appendEveryday({ start: '', end: '' })}>Add Time Slot</Button>
-              </div>
-            ) : (
-              days.map(day => (
-                <div key={day} className="space-y-4">
-                  <h3 className="font-semibold mb-2 capitalize">{day}</h3>
-                  {dayFields[day].map((field, index) => (
-                    <div key={field.id} className="flex space-x-2 mb-2">
-                      <FormField
-                        control={form.control}
-                        name={`${day}.${index}.start`}
-                        render={({ field }) => (
-                          <FormItem>
-                            <TimeSelect value={field.value} onChange={field.onChange} />
-                          </FormItem>
-                        )}
+          {(useEverydaySchedule ? ['everyday'] : days.slice(1)).map((day) => (
+            <div key={day} className="space-y-4">
+              <h3 className="font-semibold mb-2">{day}</h3>
+              <div className="grid grid-cols-2 gap-4">
+                {['morning', 'afternoon'].map((period) => (
+                  ['start', 'end'].map((time) => (
+                    <div key={`${day}-${period}-${time}`}>
+                      <Label>{`${period.charAt(0).toUpperCase() + period.slice(1)} ${time}`}</Label>
+                      <TimeSelect 
+                        value={workingHours[day][period][time]}
+                        onChange={(value) => handleTimeChange(day, period, time, value)}
                       />
-                      <FormField
-                        control={form.control}
-                        name={`${day}.${index}.end`}
-                        render={({ field }) => (
-                          <FormItem>
-                            <TimeSelect value={field.value} onChange={field.onChange} />
-                          </FormItem>
-                        )}
-                      />
-                      <Button type="button" variant="outline" onClick={() => dayRemove[day](index)}>Remove</Button>
                     </div>
-                  ))}
-                  <Button type="button" onClick={() => dayAppend[day]({ start: '', end: '' })}>Add Time Slot</Button>
-                </div>
-              ))
-            )}
+                  ))
+                ))}
+              </div>
+            </div>
+          ))}
 
-            <Button type="submit" className="w-full">
-              Update Settings
-            </Button>
-          </form>
-        </Form>
+          <Button type="submit" className="w-full">
+            Update Settings
+          </Button>
+        </form>
       </CardContent>
     </Card>
   );

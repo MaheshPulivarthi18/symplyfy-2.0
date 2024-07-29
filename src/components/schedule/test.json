@@ -1,0 +1,988 @@
+[
+    {
+        "id": "37320eaa-e24e-4644-af9d-6ea9b4c88e9e",
+        "start": "2024-07-31T08:00:00Z",
+        "end": "2024-07-31T08:30:00Z",
+        "patient": {
+            "id": "bf5b6384-4f5c-4cb0-8fb9-2dedb6ef0406",
+            "first_name": "Badri",
+            "last_name": "Dint",
+            "mobile": "+917075811476"
+        },
+        "employee": {
+            "id": "403d1c74-e982-4593-ab06-8ae5816020ec",
+            "first_name": "Kusalava",
+            "last_name": "Dint",
+            "is_therapist": true
+        },
+        "status_patient": "P",
+        "status_employee": "P",
+        "status_patient_updated_on": null,
+        "status_employee_updated_on": null,
+        "status_patient_updated_by": null,
+        "status_employee_updated_by": null,
+        "sellable": null,
+        "attended": false,
+        "recurrence": "d96825ff-3351-493b-902b-7b1d6b1cbe57",
+        "penalty_employee": "0.00",
+        "penalty_patient": "0.00",
+        "visit_related": null
+    },
+    {
+        "id": "486be1bf-7c52-49ef-9463-a357d8d8f302",
+        "start": "2024-08-07T08:00:00Z",
+        "end": "2024-08-07T08:30:00Z",
+        "patient": {
+            "id": "bf5b6384-4f5c-4cb0-8fb9-2dedb6ef0406",
+            "first_name": "Badri",
+            "last_name": "Dint",
+            "mobile": "+917075811476"
+        },
+        "employee": {
+            "id": "403d1c74-e982-4593-ab06-8ae5816020ec",
+            "first_name": "Kusalava",
+            "last_name": "Dint",
+            "is_therapist": true
+        },
+        "status_patient": "P",
+        "status_employee": "P",
+        "status_patient_updated_on": null,
+        "status_employee_updated_on": null,
+        "status_patient_updated_by": null,
+        "status_employee_updated_by": null,
+        "sellable": null,
+        "attended": false,
+        "recurrence": "d96825ff-3351-493b-902b-7b1d6b1cbe57",
+        "penalty_employee": "0.00",
+        "penalty_patient": "0.00",
+        "visit_related": null
+    },
+    {
+        "id": "c739bba3-0f10-4b4f-b242-6830ad808ed9",
+        "start": "2024-08-14T08:00:00Z",
+        "end": "2024-08-14T08:30:00Z",
+        "patient": {
+            "id": "bf5b6384-4f5c-4cb0-8fb9-2dedb6ef0406",
+            "first_name": "Badri",
+            "last_name": "Dint",
+            "mobile": "+917075811476"
+        },
+        "employee": {
+            "id": "403d1c74-e982-4593-ab06-8ae5816020ec",
+            "first_name": "Kusalava",
+            "last_name": "Dint",
+            "is_therapist": true
+        },
+        "status_patient": "P",
+        "status_employee": "P",
+        "status_patient_updated_on": null,
+        "status_employee_updated_on": null,
+        "status_patient_updated_by": null,
+        "status_employee_updated_by": null,
+        "sellable": null,
+        "attended": false,
+        "recurrence": "d96825ff-3351-493b-902b-7b1d6b1cbe57",
+        "penalty_employee": "0.00",
+        "penalty_patient": "0.00",
+        "visit_related": null
+    },
+    {
+        "id": "8d3998c1-e910-4b06-a86a-d8303f438aea",
+        "start": "2024-07-31T09:00:00Z",
+        "end": "2024-07-31T09:45:00Z",
+        "patient": {
+            "id": "bf5b6384-4f5c-4cb0-8fb9-2dedb6ef0406",
+            "first_name": "Badri",
+            "last_name": "Dint",
+            "mobile": "+917075811476"
+        },
+        "employee": {
+            "id": "403d1c74-e982-4593-ab06-8ae5816020ec",
+            "first_name": "Kusalava",
+            "last_name": "Dint",
+            "is_therapist": true
+        },
+        "status_patient": "P",
+        "status_employee": "P",
+        "status_patient_updated_on": null,
+        "status_employee_updated_on": null,
+        "status_patient_updated_by": null,
+        "status_employee_updated_by": null,
+        "sellable": null,
+        "attended": false,
+        "recurrence": "de230e91-5220-4a39-be15-a65e047fde67",
+        "penalty_employee": "0.00",
+        "penalty_patient": "0.00",
+        "visit_related": null
+    },
+    {
+        "id": "4410c1b9-ee09-49a2-b9fa-530d6f874afd",
+        "start": "2024-08-07T09:00:00Z",
+        "end": "2024-08-07T09:45:00Z",
+        "patient": {
+            "id": "bf5b6384-4f5c-4cb0-8fb9-2dedb6ef0406",
+            "first_name": "Badri",
+            "last_name": "Dint",
+            "mobile": "+917075811476"
+        },
+        "employee": {
+            "id": "403d1c74-e982-4593-ab06-8ae5816020ec",
+            "first_name": "Kusalava",
+            "last_name": "Dint",
+            "is_therapist": true
+        },
+        "status_patient": "P",
+        "status_employee": "P",
+        "status_patient_updated_on": null,
+        "status_employee_updated_on": null,
+        "status_patient_updated_by": null,
+        "status_employee_updated_by": null,
+        "sellable": null,
+        "attended": false,
+        "recurrence": "de230e91-5220-4a39-be15-a65e047fde67",
+        "penalty_employee": "0.00",
+        "penalty_patient": "0.00",
+        "visit_related": null
+    },
+    {
+        "id": "6dc1527d-5d49-4804-832f-fd31ffa4037a",
+        "start": "2024-08-14T09:00:00Z",
+        "end": "2024-08-14T09:45:00Z",
+        "patient": {
+            "id": "bf5b6384-4f5c-4cb0-8fb9-2dedb6ef0406",
+            "first_name": "Badri",
+            "last_name": "Dint",
+            "mobile": "+917075811476"
+        },
+        "employee": {
+            "id": "403d1c74-e982-4593-ab06-8ae5816020ec",
+            "first_name": "Kusalava",
+            "last_name": "Dint",
+            "is_therapist": true
+        },
+        "status_patient": "P",
+        "status_employee": "P",
+        "status_patient_updated_on": null,
+        "status_employee_updated_on": null,
+        "status_patient_updated_by": null,
+        "status_employee_updated_by": null,
+        "sellable": null,
+        "attended": false,
+        "recurrence": "de230e91-5220-4a39-be15-a65e047fde67",
+        "penalty_employee": "0.00",
+        "penalty_patient": "0.00",
+        "visit_related": null
+    },
+    {
+        "id": "4f54f8eb-6a56-4b4d-b917-9a7e96f3ddf9",
+        "start": "2024-08-01T09:00:00Z",
+        "end": "2024-08-01T09:30:00Z",
+        "patient": {
+            "id": "bf5b6384-4f5c-4cb0-8fb9-2dedb6ef0406",
+            "first_name": "Badri",
+            "last_name": "Dint",
+            "mobile": "+917075811476"
+        },
+        "employee": {
+            "id": "403d1c74-e982-4593-ab06-8ae5816020ec",
+            "first_name": "Kusalava",
+            "last_name": "Dint",
+            "is_therapist": true
+        },
+        "status_patient": "P",
+        "status_employee": "P",
+        "status_patient_updated_on": null,
+        "status_employee_updated_on": null,
+        "status_patient_updated_by": null,
+        "status_employee_updated_by": null,
+        "sellable": null,
+        "attended": false,
+        "recurrence": "b3a43866-2d19-41f1-a181-7d8985ad9bfb",
+        "penalty_employee": "0.00",
+        "penalty_patient": "0.00",
+        "visit_related": null
+    },
+    {
+        "id": "69f2cd7a-49af-452f-be37-e38f5ba2c6ad",
+        "start": "2024-08-08T09:00:00Z",
+        "end": "2024-08-08T09:30:00Z",
+        "patient": {
+            "id": "bf5b6384-4f5c-4cb0-8fb9-2dedb6ef0406",
+            "first_name": "Badri",
+            "last_name": "Dint",
+            "mobile": "+917075811476"
+        },
+        "employee": {
+            "id": "403d1c74-e982-4593-ab06-8ae5816020ec",
+            "first_name": "Kusalava",
+            "last_name": "Dint",
+            "is_therapist": true
+        },
+        "status_patient": "P",
+        "status_employee": "P",
+        "status_patient_updated_on": null,
+        "status_employee_updated_on": null,
+        "status_patient_updated_by": null,
+        "status_employee_updated_by": null,
+        "sellable": null,
+        "attended": false,
+        "recurrence": "b3a43866-2d19-41f1-a181-7d8985ad9bfb",
+        "penalty_employee": "0.00",
+        "penalty_patient": "0.00",
+        "visit_related": null
+    },
+    {
+        "id": "06bc17bf-a66e-4940-b6bb-36e93ddc0069",
+        "start": "2024-08-15T09:00:00Z",
+        "end": "2024-08-15T09:30:00Z",
+        "patient": {
+            "id": "bf5b6384-4f5c-4cb0-8fb9-2dedb6ef0406",
+            "first_name": "Badri",
+            "last_name": "Dint",
+            "mobile": "+917075811476"
+        },
+        "employee": {
+            "id": "403d1c74-e982-4593-ab06-8ae5816020ec",
+            "first_name": "Kusalava",
+            "last_name": "Dint",
+            "is_therapist": true
+        },
+        "status_patient": "P",
+        "status_employee": "P",
+        "status_patient_updated_on": null,
+        "status_employee_updated_on": null,
+        "status_patient_updated_by": null,
+        "status_employee_updated_by": null,
+        "sellable": null,
+        "attended": false,
+        "recurrence": "b3a43866-2d19-41f1-a181-7d8985ad9bfb",
+        "penalty_employee": "0.00",
+        "penalty_patient": "0.00",
+        "visit_related": null
+    },
+    {
+        "id": "39b630e6-14db-4db7-b452-c003fd8ff4a4",
+        "start": "2024-08-02T09:00:00Z",
+        "end": "2024-08-02T09:30:00Z",
+        "patient": {
+            "id": "bf5b6384-4f5c-4cb0-8fb9-2dedb6ef0406",
+            "first_name": "Badri",
+            "last_name": "Dint",
+            "mobile": "+917075811476"
+        },
+        "employee": {
+            "id": "403d1c74-e982-4593-ab06-8ae5816020ec",
+            "first_name": "Kusalava",
+            "last_name": "Dint",
+            "is_therapist": true
+        },
+        "status_patient": "P",
+        "status_employee": "P",
+        "status_patient_updated_on": null,
+        "status_employee_updated_on": null,
+        "status_patient_updated_by": null,
+        "status_employee_updated_by": null,
+        "sellable": null,
+        "attended": false,
+        "recurrence": "bf3cbcc1-1f9c-4094-a435-18e704250d87",
+        "penalty_employee": "0.00",
+        "penalty_patient": "0.00",
+        "visit_related": null
+    },
+    {
+        "id": "10a8e6e1-19b3-4da9-94d3-9547082cb91c",
+        "start": "2024-08-09T09:00:00Z",
+        "end": "2024-08-09T09:30:00Z",
+        "patient": {
+            "id": "bf5b6384-4f5c-4cb0-8fb9-2dedb6ef0406",
+            "first_name": "Badri",
+            "last_name": "Dint",
+            "mobile": "+917075811476"
+        },
+        "employee": {
+            "id": "403d1c74-e982-4593-ab06-8ae5816020ec",
+            "first_name": "Kusalava",
+            "last_name": "Dint",
+            "is_therapist": true
+        },
+        "status_patient": "P",
+        "status_employee": "P",
+        "status_patient_updated_on": null,
+        "status_employee_updated_on": null,
+        "status_patient_updated_by": null,
+        "status_employee_updated_by": null,
+        "sellable": null,
+        "attended": false,
+        "recurrence": "bf3cbcc1-1f9c-4094-a435-18e704250d87",
+        "penalty_employee": "0.00",
+        "penalty_patient": "0.00",
+        "visit_related": null
+    },
+    {
+        "id": "907ef10d-c0f4-4df0-921f-13c59d43bffb",
+        "start": "2024-08-16T09:00:00Z",
+        "end": "2024-08-16T09:30:00Z",
+        "patient": {
+            "id": "bf5b6384-4f5c-4cb0-8fb9-2dedb6ef0406",
+            "first_name": "Badri",
+            "last_name": "Dint",
+            "mobile": "+917075811476"
+        },
+        "employee": {
+            "id": "403d1c74-e982-4593-ab06-8ae5816020ec",
+            "first_name": "Kusalava",
+            "last_name": "Dint",
+            "is_therapist": true
+        },
+        "status_patient": "P",
+        "status_employee": "P",
+        "status_patient_updated_on": null,
+        "status_employee_updated_on": null,
+        "status_patient_updated_by": null,
+        "status_employee_updated_by": null,
+        "sellable": null,
+        "attended": false,
+        "recurrence": "bf3cbcc1-1f9c-4094-a435-18e704250d87",
+        "penalty_employee": "0.00",
+        "penalty_patient": "0.00",
+        "visit_related": null
+    },
+    {
+        "id": "c273cae5-4a44-4d6a-b9d8-9c39fbf61212",
+        "start": "2024-08-05T09:00:00Z",
+        "end": "2024-08-05T09:30:00Z",
+        "patient": {
+            "id": "bf5b6384-4f5c-4cb0-8fb9-2dedb6ef0406",
+            "first_name": "Badri",
+            "last_name": "Dint",
+            "mobile": "+917075811476"
+        },
+        "employee": {
+            "id": "403d1c74-e982-4593-ab06-8ae5816020ec",
+            "first_name": "Kusalava",
+            "last_name": "Dint",
+            "is_therapist": true
+        },
+        "status_patient": "P",
+        "status_employee": "P",
+        "status_patient_updated_on": null,
+        "status_employee_updated_on": null,
+        "status_patient_updated_by": null,
+        "status_employee_updated_by": null,
+        "sellable": null,
+        "attended": false,
+        "recurrence": "b42c4b91-b8d7-4ba7-8ae8-eea8e548e7ae",
+        "penalty_employee": "0.00",
+        "penalty_patient": "0.00",
+        "visit_related": null
+    },
+    {
+        "id": "f902bd1c-faa4-4b39-b62e-485ed386ec1e",
+        "start": "2024-08-12T09:00:00Z",
+        "end": "2024-08-12T09:30:00Z",
+        "patient": {
+            "id": "bf5b6384-4f5c-4cb0-8fb9-2dedb6ef0406",
+            "first_name": "Badri",
+            "last_name": "Dint",
+            "mobile": "+917075811476"
+        },
+        "employee": {
+            "id": "403d1c74-e982-4593-ab06-8ae5816020ec",
+            "first_name": "Kusalava",
+            "last_name": "Dint",
+            "is_therapist": true
+        },
+        "status_patient": "P",
+        "status_employee": "P",
+        "status_patient_updated_on": null,
+        "status_employee_updated_on": null,
+        "status_patient_updated_by": null,
+        "status_employee_updated_by": null,
+        "sellable": null,
+        "attended": false,
+        "recurrence": "b42c4b91-b8d7-4ba7-8ae8-eea8e548e7ae",
+        "penalty_employee": "0.00",
+        "penalty_patient": "0.00",
+        "visit_related": null
+    },
+    {
+        "id": "0e4da487-02b2-470b-904c-cc5ec85eaea3",
+        "start": "2024-08-19T09:00:00Z",
+        "end": "2024-08-19T09:30:00Z",
+        "patient": {
+            "id": "bf5b6384-4f5c-4cb0-8fb9-2dedb6ef0406",
+            "first_name": "Badri",
+            "last_name": "Dint",
+            "mobile": "+917075811476"
+        },
+        "employee": {
+            "id": "403d1c74-e982-4593-ab06-8ae5816020ec",
+            "first_name": "Kusalava",
+            "last_name": "Dint",
+            "is_therapist": true
+        },
+        "status_patient": "P",
+        "status_employee": "P",
+        "status_patient_updated_on": null,
+        "status_employee_updated_on": null,
+        "status_patient_updated_by": null,
+        "status_employee_updated_by": null,
+        "sellable": null,
+        "attended": false,
+        "recurrence": "b42c4b91-b8d7-4ba7-8ae8-eea8e548e7ae",
+        "penalty_employee": "0.00",
+        "penalty_patient": "0.00",
+        "visit_related": null
+    },
+    {
+        "id": "2ab8e539-fb8b-4444-aff2-ff2a74100528",
+        "start": "2024-08-05T08:00:00Z",
+        "end": "2024-08-05T08:30:00Z",
+        "patient": {
+            "id": "bf5b6384-4f5c-4cb0-8fb9-2dedb6ef0406",
+            "first_name": "Badri",
+            "last_name": "Dint",
+            "mobile": "+917075811476"
+        },
+        "employee": {
+            "id": "1a089b07-2ded-4822-a80a-bb250d881d97",
+            "first_name": "Kusalava Badrinath",
+            "last_name": "Dintakurti",
+            "is_therapist": true
+        },
+        "status_patient": "P",
+        "status_employee": "P",
+        "status_patient_updated_on": null,
+        "status_employee_updated_on": null,
+        "status_patient_updated_by": null,
+        "status_employee_updated_by": null,
+        "sellable": null,
+        "attended": false,
+        "recurrence": "019b02f1-017c-43eb-a7f6-bbd3a6b9aa1f",
+        "penalty_employee": "0.00",
+        "penalty_patient": "0.00",
+        "visit_related": null
+    },
+    {
+        "id": "bc24dfde-d849-437c-b285-67c7fb4eee32",
+        "start": "2024-08-12T08:00:00Z",
+        "end": "2024-08-12T08:30:00Z",
+        "patient": {
+            "id": "bf5b6384-4f5c-4cb0-8fb9-2dedb6ef0406",
+            "first_name": "Badri",
+            "last_name": "Dint",
+            "mobile": "+917075811476"
+        },
+        "employee": {
+            "id": "1a089b07-2ded-4822-a80a-bb250d881d97",
+            "first_name": "Kusalava Badrinath",
+            "last_name": "Dintakurti",
+            "is_therapist": true
+        },
+        "status_patient": "P",
+        "status_employee": "P",
+        "status_patient_updated_on": null,
+        "status_employee_updated_on": null,
+        "status_patient_updated_by": null,
+        "status_employee_updated_by": null,
+        "sellable": null,
+        "attended": false,
+        "recurrence": "019b02f1-017c-43eb-a7f6-bbd3a6b9aa1f",
+        "penalty_employee": "0.00",
+        "penalty_patient": "0.00",
+        "visit_related": null
+    },
+    {
+        "id": "5493195a-f7ac-4baa-bddf-fb487a09b09b",
+        "start": "2024-07-30T12:00:00Z",
+        "end": "2024-07-30T12:30:00Z",
+        "patient": {
+            "id": "bf5b6384-4f5c-4cb0-8fb9-2dedb6ef0406",
+            "first_name": "Badri",
+            "last_name": "Dint",
+            "mobile": "+917075811476"
+        },
+        "employee": {
+            "id": "403d1c74-e982-4593-ab06-8ae5816020ec",
+            "first_name": "Kusalava",
+            "last_name": "Dint",
+            "is_therapist": true
+        },
+        "status_patient": "P",
+        "status_employee": "P",
+        "status_patient_updated_on": null,
+        "status_employee_updated_on": null,
+        "status_patient_updated_by": null,
+        "status_employee_updated_by": null,
+        "sellable": null,
+        "attended": false,
+        "recurrence": "c4004f2b-a96b-4fdb-ae08-6453fa6e4e7b",
+        "penalty_employee": "0.00",
+        "penalty_patient": "0.00",
+        "visit_related": null
+    },
+    {
+        "id": "1e96816a-fa41-40e2-904a-e09d622cb7c5",
+        "start": "2024-08-06T12:00:00Z",
+        "end": "2024-08-06T12:30:00Z",
+        "patient": {
+            "id": "bf5b6384-4f5c-4cb0-8fb9-2dedb6ef0406",
+            "first_name": "Badri",
+            "last_name": "Dint",
+            "mobile": "+917075811476"
+        },
+        "employee": {
+            "id": "403d1c74-e982-4593-ab06-8ae5816020ec",
+            "first_name": "Kusalava",
+            "last_name": "Dint",
+            "is_therapist": true
+        },
+        "status_patient": "P",
+        "status_employee": "P",
+        "status_patient_updated_on": null,
+        "status_employee_updated_on": null,
+        "status_patient_updated_by": null,
+        "status_employee_updated_by": null,
+        "sellable": null,
+        "attended": false,
+        "recurrence": "c4004f2b-a96b-4fdb-ae08-6453fa6e4e7b",
+        "penalty_employee": "0.00",
+        "penalty_patient": "0.00",
+        "visit_related": null
+    },
+    {
+        "id": "ed2ebfc8-a810-4da7-af7e-5ab599fdc1ba",
+        "start": "2024-07-31T12:00:00Z",
+        "end": "2024-07-31T12:30:00Z",
+        "patient": {
+            "id": "bf5b6384-4f5c-4cb0-8fb9-2dedb6ef0406",
+            "first_name": "Badri",
+            "last_name": "Dint",
+            "mobile": "+917075811476"
+        },
+        "employee": {
+            "id": "403d1c74-e982-4593-ab06-8ae5816020ec",
+            "first_name": "Kusalava",
+            "last_name": "Dint",
+            "is_therapist": true
+        },
+        "status_patient": "P",
+        "status_employee": "P",
+        "status_patient_updated_on": null,
+        "status_employee_updated_on": null,
+        "status_patient_updated_by": null,
+        "status_employee_updated_by": null,
+        "sellable": null,
+        "attended": false,
+        "recurrence": "aa11062f-4433-41f8-b3d4-6d67cc843523",
+        "penalty_employee": "0.00",
+        "penalty_patient": "0.00",
+        "visit_related": null
+    },
+    {
+        "id": "60084c6a-2d50-4d79-8e69-b8ea82fe000e",
+        "start": "2024-08-01T09:30:00Z",
+        "end": "2024-08-01T10:00:00Z",
+        "patient": {
+            "id": "bf5b6384-4f5c-4cb0-8fb9-2dedb6ef0406",
+            "first_name": "Badri",
+            "last_name": "Dint",
+            "mobile": "+917075811476"
+        },
+        "employee": {
+            "id": "403d1c74-e982-4593-ab06-8ae5816020ec",
+            "first_name": "Kusalava",
+            "last_name": "Dint",
+            "is_therapist": true
+        },
+        "status_patient": "P",
+        "status_employee": "P",
+        "status_patient_updated_on": null,
+        "status_employee_updated_on": null,
+        "status_patient_updated_by": null,
+        "status_employee_updated_by": null,
+        "sellable": null,
+        "attended": false,
+        "recurrence": "e6d11cdf-8ecb-4238-8044-899d223a48a8",
+        "penalty_employee": "0.00",
+        "penalty_patient": "0.00",
+        "visit_related": null
+    },
+    {
+        "id": "70156735-cd4b-4969-a287-8a9f9a35e061",
+        "start": "2024-08-08T09:30:00Z",
+        "end": "2024-08-08T10:00:00Z",
+        "patient": {
+            "id": "bf5b6384-4f5c-4cb0-8fb9-2dedb6ef0406",
+            "first_name": "Badri",
+            "last_name": "Dint",
+            "mobile": "+917075811476"
+        },
+        "employee": {
+            "id": "403d1c74-e982-4593-ab06-8ae5816020ec",
+            "first_name": "Kusalava",
+            "last_name": "Dint",
+            "is_therapist": true
+        },
+        "status_patient": "P",
+        "status_employee": "P",
+        "status_patient_updated_on": null,
+        "status_employee_updated_on": null,
+        "status_patient_updated_by": null,
+        "status_employee_updated_by": null,
+        "sellable": null,
+        "attended": false,
+        "recurrence": "e6d11cdf-8ecb-4238-8044-899d223a48a8",
+        "penalty_employee": "0.00",
+        "penalty_patient": "0.00",
+        "visit_related": null
+    },
+    {
+        "id": "5189a661-a468-4f1a-8f4f-1a33ca6b482c",
+        "start": "2024-08-02T09:30:00Z",
+        "end": "2024-08-02T10:00:00Z",
+        "patient": {
+            "id": "bf5b6384-4f5c-4cb0-8fb9-2dedb6ef0406",
+            "first_name": "Badri",
+            "last_name": "Dint",
+            "mobile": "+917075811476"
+        },
+        "employee": {
+            "id": "403d1c74-e982-4593-ab06-8ae5816020ec",
+            "first_name": "Kusalava",
+            "last_name": "Dint",
+            "is_therapist": true
+        },
+        "status_patient": "P",
+        "status_employee": "P",
+        "status_patient_updated_on": null,
+        "status_employee_updated_on": null,
+        "status_patient_updated_by": null,
+        "status_employee_updated_by": null,
+        "sellable": null,
+        "attended": false,
+        "recurrence": "5bd7cd76-d54f-438c-9f36-4cf56d703fbf",
+        "penalty_employee": "0.00",
+        "penalty_patient": "0.00",
+        "visit_related": null
+    },
+    {
+        "id": "9b228cc5-15d7-4c85-8a2f-0668e20279bd",
+        "start": "2024-08-02T08:30:00Z",
+        "end": "2024-08-02T09:00:00Z",
+        "patient": {
+            "id": "bf5b6384-4f5c-4cb0-8fb9-2dedb6ef0406",
+            "first_name": "Badri",
+            "last_name": "Dint",
+            "mobile": "+917075811476"
+        },
+        "employee": {
+            "id": "403d1c74-e982-4593-ab06-8ae5816020ec",
+            "first_name": "Kusalava",
+            "last_name": "Dint",
+            "is_therapist": true
+        },
+        "status_patient": "P",
+        "status_employee": "P",
+        "status_patient_updated_on": null,
+        "status_employee_updated_on": null,
+        "status_patient_updated_by": null,
+        "status_employee_updated_by": null,
+        "sellable": null,
+        "attended": false,
+        "recurrence": "a1f1d146-0982-4c84-a90b-240184decb32",
+        "penalty_employee": "0.00",
+        "penalty_patient": "0.00",
+        "visit_related": null
+    },
+    {
+        "id": "824e8af0-27fa-489d-bd38-7a191f90db88",
+        "start": "2024-08-05T08:30:00Z",
+        "end": "2024-08-05T09:00:00Z",
+        "patient": {
+            "id": "bf5b6384-4f5c-4cb0-8fb9-2dedb6ef0406",
+            "first_name": "Badri",
+            "last_name": "Dint",
+            "mobile": "+917075811476"
+        },
+        "employee": {
+            "id": "403d1c74-e982-4593-ab06-8ae5816020ec",
+            "first_name": "Kusalava",
+            "last_name": "Dint",
+            "is_therapist": true
+        },
+        "status_patient": "P",
+        "status_employee": "P",
+        "status_patient_updated_on": null,
+        "status_employee_updated_on": null,
+        "status_patient_updated_by": null,
+        "status_employee_updated_by": null,
+        "sellable": null,
+        "attended": true,
+        "recurrence": "a1f1d146-0982-4c84-a90b-240184decb32",
+        "penalty_employee": "0.00",
+        "penalty_patient": "0.00",
+        "visit_related": "d291871e-357c-4254-8895-b7a07af4718f"
+    },
+    {
+        "id": "217ce10a-7067-4578-b466-fc4c83e0552f",
+        "start": "2024-08-05T08:00:00Z",
+        "end": "2024-08-05T08:30:00Z",
+        "patient": {
+            "id": "bf5b6384-4f5c-4cb0-8fb9-2dedb6ef0406",
+            "first_name": "Badri",
+            "last_name": "Dint",
+            "mobile": "+917075811476"
+        },
+        "employee": {
+            "id": "403d1c74-e982-4593-ab06-8ae5816020ec",
+            "first_name": "Kusalava",
+            "last_name": "Dint",
+            "is_therapist": true
+        },
+        "status_patient": "P",
+        "status_employee": "P",
+        "status_patient_updated_on": null,
+        "status_employee_updated_on": null,
+        "status_patient_updated_by": null,
+        "status_employee_updated_by": null,
+        "sellable": null,
+        "attended": false,
+        "recurrence": "729d74fd-8536-4bed-98e4-1176fd542ad2",
+        "penalty_employee": "0.00",
+        "penalty_patient": "0.00",
+        "visit_related": null
+    },
+    {
+        "id": "81d26110-87ed-47b8-9780-e0257bd5c624",
+        "start": "2024-08-12T08:00:00Z",
+        "end": "2024-08-12T08:30:00Z",
+        "patient": {
+            "id": "bf5b6384-4f5c-4cb0-8fb9-2dedb6ef0406",
+            "first_name": "Badri",
+            "last_name": "Dint",
+            "mobile": "+917075811476"
+        },
+        "employee": {
+            "id": "403d1c74-e982-4593-ab06-8ae5816020ec",
+            "first_name": "Kusalava",
+            "last_name": "Dint",
+            "is_therapist": true
+        },
+        "status_patient": "P",
+        "status_employee": "P",
+        "status_patient_updated_on": null,
+        "status_employee_updated_on": null,
+        "status_patient_updated_by": null,
+        "status_employee_updated_by": null,
+        "sellable": null,
+        "attended": true,
+        "recurrence": "729d74fd-8536-4bed-98e4-1176fd542ad2",
+        "penalty_employee": "0.00",
+        "penalty_patient": "0.00",
+        "visit_related": "402feddc-0139-4070-a940-16f1fab6c3ff"
+    },
+    {
+        "id": "056df27a-9846-4151-9029-2bf65cabcaad",
+        "start": "2024-08-05T11:30:00Z",
+        "end": "2024-08-05T12:00:00Z",
+        "patient": {
+            "id": "bf5b6384-4f5c-4cb0-8fb9-2dedb6ef0406",
+            "first_name": "Badri",
+            "last_name": "Dint",
+            "mobile": "+917075811476"
+        },
+        "employee": {
+            "id": "403d1c74-e982-4593-ab06-8ae5816020ec",
+            "first_name": "Kusalava",
+            "last_name": "Dint",
+            "is_therapist": true
+        },
+        "status_patient": "P",
+        "status_employee": "P",
+        "status_patient_updated_on": null,
+        "status_employee_updated_on": null,
+        "status_patient_updated_by": null,
+        "status_employee_updated_by": null,
+        "sellable": null,
+        "attended": false,
+        "recurrence": "2867618e-38bd-42b8-ac08-15748096485c",
+        "penalty_employee": "0.00",
+        "penalty_patient": "0.00",
+        "visit_related": null
+    },
+    {
+        "id": "8b1e62aa-3d7e-412a-98d8-153ed75c393d",
+        "start": "2024-08-12T11:30:00Z",
+        "end": "2024-08-12T12:00:00Z",
+        "patient": {
+            "id": "bf5b6384-4f5c-4cb0-8fb9-2dedb6ef0406",
+            "first_name": "Badri",
+            "last_name": "Dint",
+            "mobile": "+917075811476"
+        },
+        "employee": {
+            "id": "403d1c74-e982-4593-ab06-8ae5816020ec",
+            "first_name": "Kusalava",
+            "last_name": "Dint",
+            "is_therapist": true
+        },
+        "status_patient": "P",
+        "status_employee": "P",
+        "status_patient_updated_on": null,
+        "status_employee_updated_on": null,
+        "status_patient_updated_by": null,
+        "status_employee_updated_by": null,
+        "sellable": null,
+        "attended": false,
+        "recurrence": "2867618e-38bd-42b8-ac08-15748096485c",
+        "penalty_employee": "0.00",
+        "penalty_patient": "0.00",
+        "visit_related": null
+    },
+    {
+        "id": "cf2b8ae0-03c8-47eb-84f5-ab7a51e290fd",
+        "start": "2024-08-19T11:30:00Z",
+        "end": "2024-08-19T12:00:00Z",
+        "patient": {
+            "id": "bf5b6384-4f5c-4cb0-8fb9-2dedb6ef0406",
+            "first_name": "Badri",
+            "last_name": "Dint",
+            "mobile": "+917075811476"
+        },
+        "employee": {
+            "id": "403d1c74-e982-4593-ab06-8ae5816020ec",
+            "first_name": "Kusalava",
+            "last_name": "Dint",
+            "is_therapist": true
+        },
+        "status_patient": "P",
+        "status_employee": "P",
+        "status_patient_updated_on": null,
+        "status_employee_updated_on": null,
+        "status_patient_updated_by": null,
+        "status_employee_updated_by": null,
+        "sellable": null,
+        "attended": false,
+        "recurrence": "2867618e-38bd-42b8-ac08-15748096485c",
+        "penalty_employee": "0.00",
+        "penalty_patient": "0.00",
+        "visit_related": null
+    },
+    {
+        "id": "cbd2d48e-880b-4420-9b1e-1d4f593cf9e5",
+        "start": "2024-08-26T11:30:00Z",
+        "end": "2024-08-26T12:00:00Z",
+        "patient": {
+            "id": "bf5b6384-4f5c-4cb0-8fb9-2dedb6ef0406",
+            "first_name": "Badri",
+            "last_name": "Dint",
+            "mobile": "+917075811476"
+        },
+        "employee": {
+            "id": "403d1c74-e982-4593-ab06-8ae5816020ec",
+            "first_name": "Kusalava",
+            "last_name": "Dint",
+            "is_therapist": true
+        },
+        "status_patient": "P",
+        "status_employee": "P",
+        "status_patient_updated_on": null,
+        "status_employee_updated_on": null,
+        "status_patient_updated_by": null,
+        "status_employee_updated_by": null,
+        "sellable": null,
+        "attended": false,
+        "recurrence": "2867618e-38bd-42b8-ac08-15748096485c",
+        "penalty_employee": "0.00",
+        "penalty_patient": "0.00",
+        "visit_related": null
+    },
+    {
+        "id": "77dbd23b-e6f4-4333-b88d-a8746758ae88",
+        "start": "2024-07-31T05:00:00Z",
+        "end": "2024-07-31T05:30:00Z",
+        "patient": {
+            "id": "bf5b6384-4f5c-4cb0-8fb9-2dedb6ef0406",
+            "first_name": "Badri",
+            "last_name": "Dint",
+            "mobile": "+917075811476"
+        },
+        "employee": {
+            "id": "403d1c74-e982-4593-ab06-8ae5816020ec",
+            "first_name": "Kusalava",
+            "last_name": "Dint",
+            "is_therapist": true
+        },
+        "status_patient": "P",
+        "status_employee": "P",
+        "status_patient_updated_on": null,
+        "status_employee_updated_on": null,
+        "status_patient_updated_by": null,
+        "status_employee_updated_by": null,
+        "sellable": null,
+        "attended": false,
+        "recurrence": "9712c5eb-cf43-42ec-aa2d-3fab06184fa3",
+        "penalty_employee": "0.00",
+        "penalty_patient": "0.00",
+        "visit_related": null
+    },
+    {
+        "id": "8090105d-7397-42cd-b997-cedb16569197",
+        "start": "2024-07-31T05:00:00Z",
+        "end": "2024-07-31T05:30:00Z",
+        "patient": {
+            "id": "bf5b6384-4f5c-4cb0-8fb9-2dedb6ef0406",
+            "first_name": "Badri",
+            "last_name": "Dint",
+            "mobile": "+917075811476"
+        },
+        "employee": {
+            "id": "403d1c74-e982-4593-ab06-8ae5816020ec",
+            "first_name": "Kusalava",
+            "last_name": "Dint",
+            "is_therapist": true
+        },
+        "status_patient": "P",
+        "status_employee": "P",
+        "status_patient_updated_on": null,
+        "status_employee_updated_on": null,
+        "status_patient_updated_by": null,
+        "status_employee_updated_by": null,
+        "sellable": null,
+        "attended": false,
+        "recurrence": "fffcb578-7fd5-4c77-993e-29fc6c619a3d",
+        "penalty_employee": "0.00",
+        "penalty_patient": "0.00",
+        "visit_related": null
+    },
+    {
+        "id": "e4b396ea-989f-49e1-83ce-fecb6e0994f2",
+        "start": "2024-07-31T05:00:00Z",
+        "end": "2024-07-31T05:30:00Z",
+        "patient": {
+            "id": "bf5b6384-4f5c-4cb0-8fb9-2dedb6ef0406",
+            "first_name": "Badri",
+            "last_name": "Dint",
+            "mobile": "+917075811476"
+        },
+        "employee": {
+            "id": "403d1c74-e982-4593-ab06-8ae5816020ec",
+            "first_name": "Kusalava",
+            "last_name": "Dint",
+            "is_therapist": true
+        },
+        "status_patient": "P",
+        "status_employee": "P",
+        "status_patient_updated_on": null,
+        "status_employee_updated_on": null,
+        "status_patient_updated_by": null,
+        "status_employee_updated_by": null,
+        "sellable": null,
+        "attended": false,
+        "recurrence": "34af1bc3-1800-465e-b5fe-519f0575ba5e",
+        "penalty_employee": "0.00",
+        "penalty_patient": "0.00",
+        "visit_related": null
+    }
+]
