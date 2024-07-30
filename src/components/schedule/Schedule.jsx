@@ -319,7 +319,7 @@ export default function Schedule() {
           recurrence: recurrenceRule,
           actor: "E",
         };
-        console.log(bookingData);
+        console.log(bookingData, "Rescheduling Appointment");
         const response = await authenticatedFetch(`${import.meta.env.VITE_BASE_URL}/api/emp/clinic/${clinic_id}/schedule/booking/${newVisit.id}/reschedule/`, {
           method: 'PATCH',
           headers: {
@@ -414,30 +414,30 @@ export default function Schedule() {
 
   const handleDelete = async (eventToDelete, deleteScope) => {
     console.log(eventToDelete)
-    // try {
-    //   const url = `${import.meta.env.VITE_BASE_URL}/api/emp/clinic/${clinic_id}/schedule/booking/${eventToDelete.id}/delete/`;
-    //   const queryParams = deleteScope === 'recurrence' ? `?scope=${eventToDelete.recurrence}` : '';
+    try {
+      const url = `${import.meta.env.VITE_BASE_URL}/api/emp/clinic/${clinic_id}/schedule/booking/${eventToDelete.id}/delete/`;
+      const queryParams = deleteScope === 'recurrence' ? `?scope=${eventToDelete.recurrence}` : '';
   
-    //   const response = await authenticatedFetch(`${url}${queryParams}`, {
-    //     method: 'DELETE',
-    //   });
+      const response = await authenticatedFetch(`${url}${queryParams}`, {
+        method: 'DELETE',
+      });
   
-    //   if (!response.ok) throw new Error('Failed to delete appointment');
+      if (!response.ok) throw new Error('Failed to delete appointment');
   
-    //   fetchBookings(); // Refresh the bookings
-    //   setSelectedEvent(null);
-    //   toast({
-    //     title: "Success",
-    //     description: deleteScope === 'recurrence' ? "All recurring appointments deleted successfully." : "Appointment deleted successfully.",
-    //     variant: "default",
-    //   });
-    // } catch (error) {
-    //   toast({
-    //     title: "Error",
-    //     description: "Failed to delete appointment. Please try again.",
-    //     variant: "destructive",
-    //   });
-    // }
+      fetchBookings(); // Refresh the bookings
+      setSelectedEvent(null);
+      toast({
+        title: "Success",
+        description: deleteScope === 'recurrence' ? "All recurring appointments deleted successfully." : "Appointment deleted successfully.",
+        variant: "default",
+      });
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to delete appointment. Please try again.",
+        variant: "destructive",
+      });
+    }
   };
 
   const handleMarkVisit = async (bookingId, visitDetails) => {
