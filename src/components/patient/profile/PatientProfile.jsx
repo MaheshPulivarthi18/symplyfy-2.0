@@ -1223,7 +1223,7 @@ const PatientProfile = () => {
                   {appointments.map(appointment => (
                     <TableRow key={appointment.id}>
                       <TableCell>{employeeDetails[appointment.employee] ? employeeDetails[appointment.employee].first_name + " " + employeeDetails[appointment.employee].last_name  : appointment.employee.first_name+ " " +appointment.employee.last_name}</TableCell>
-                      <TableCell>{format(parseISO(appointment.start), 'yyyy-MM-dd')}</TableCell>
+                      <TableCell>{format(new Date(appointment.start), 'EEEE dd MMMM yyyy')}</TableCell>
                       <TableCell>{format(parseISO(appointment.start), 'HH:mm')}</TableCell>
                       <TableCell>{format(parseISO(appointment.end), 'HH:mm')}</TableCell>
                       <TableCell>
@@ -1399,16 +1399,16 @@ const PatientProfile = () => {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Date</TableHead>
-                    <TableHead>Amount Paid</TableHead>
-                    <TableHead>Amount Refunded</TableHead>
-                    <TableHead>Channel</TableHead>
+                    <TableHead className='text-center'>Date</TableHead>
+                    <TableHead className='text-center'>Amount Paid</TableHead>
+                    <TableHead className='text-center'>Amount Refunded</TableHead>
+                    <TableHead className='text-center'>Channel</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {payments.map(payment => (
                     <TableRow key={payment.id}>
-                      <TableCell>{payment.date}</TableCell>
+                      <TableCell>{format(new Date(payment.date), 'EEEE dd MMMM yyyy')}</TableCell>
                       <TableCell>{payment.amount_paid}</TableCell>
                       <TableCell>{payment.amount_refunded}</TableCell>
                       <TableCell>{paymentChannels.find(ch => ch.id === payment.channel)?.name || 'Unknown'}</TableCell>
@@ -1485,18 +1485,18 @@ const PatientProfile = () => {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Date</TableHead>
-                    <TableHead>Invoice Number</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Gross Amount</TableHead>
-                    <TableHead>Final Amount</TableHead>
-                    <TableHead>Actions</TableHead>
+                    <TableHead className='text-center'>Date</TableHead>
+                    <TableHead className='text-center'>Invoice Number</TableHead>
+                    <TableHead className='text-center'>Status</TableHead>
+                    <TableHead className='text-center'>Gross Amount</TableHead>
+                    <TableHead className='text-center'>Final Amount</TableHead>
+                    <TableHead className='text-center'>Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {invoices.map(invoice => (
                     <TableRow key={invoice.id}>
-                      <TableCell>{invoice.date}</TableCell>
+                      <TableCell>{format(new Date(invoice.date), 'EEEE dd MMMM yyyy')}</TableCell>
                       <TableCell>{invoice.number}</TableCell>
                       <TableCell>{invoice.status === 'd' ? 'Draft' : 'Final'}</TableCell>
                       <TableCell>{invoice.gross_amount}</TableCell>
@@ -1519,7 +1519,7 @@ const PatientProfile = () => {
                 {selectedInvoice && (
                   <div className="space-y-4">
                     <p><strong>Invoice Number:</strong> {selectedInvoice.number}</p>
-                    <p><strong>Date:</strong> {selectedInvoice.date}</p>
+                    <p><strong>Date:</strong> {format(new Date(selectedInvoice.date), 'EEEE dd MMMM yyyy')}</p>
                     <p><strong>Status:</strong> {selectedInvoice.status === 'd' ? 'Draft' : 'Final'}</p>
                     <p><strong>Gross Amount:</strong> {selectedInvoice.gross_amount}</p>
                     <p><strong>Final Amount:</strong> {selectedInvoice.final_amount}</p>
@@ -1559,18 +1559,19 @@ const PatientProfile = () => {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Date</TableHead>
-                    <TableHead>Time</TableHead>
-                    <TableHead>Doctor</TableHead>
-                    <TableHead>Service</TableHead>
-                    <TableHead>Walk-in</TableHead>
-                    <TableHead>Penalty</TableHead>
+                    <TableHead className='text-center'>Date</TableHead>
+                    <TableHead className='text-center'>Time</TableHead>
+                    <TableHead className='text-center'>Doctor</TableHead>
+                    <TableHead className='text-center'>Service</TableHead>
+                    <TableHead className='text-center'>Duration</TableHead>
+                    <TableHead className='text-center'>Walk-in</TableHead>
+                    <TableHead className='text-center'>Penalty</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {visits.map(visit => (
                     <TableRow key={visit.id}>
-                      <TableCell>{visit.date}</TableCell>
+                      <TableCell>{format(new Date(visit.date), 'EEEE dd MMMM yyyy')}</TableCell>
                       <TableCell>{visit.time || 'N/A'}</TableCell>
                       <TableCell>
                         {employeeDetails[visit.employee] 
@@ -1582,6 +1583,7 @@ const PatientProfile = () => {
                           ? sellableDetails[visit.sellable].name
                           : 'Loading...'}
                       </TableCell>
+                      <TableCell>{visit.duration ? `${visit.duration} minutes` : 'N/A'}</TableCell>
                       <TableCell>{visit.walk_in ? 'Yes' : 'No'}</TableCell>
                       <TableCell>{visit.penalty ? 'Yes' : 'No'}</TableCell>
                     </TableRow>
@@ -1606,9 +1608,9 @@ const PatientProfile = () => {
                       <DatePicker
                         id="date"
                         selected={newVisit.date ? new Date(newVisit.date) : null}
-                        dateFormat="dd/MM/yyyy"
                         onChange={(date) => setNewVisit({...newVisit, date: date.toISOString().split('T')[0]})}
-                        />
+                        dateFormat="EEEE dd MMMM yyyy"
+                      />
                     </div>
                     <div>
                       <Label htmlFor="time">Visit Time</Label>
@@ -1617,11 +1619,6 @@ const PatientProfile = () => {
                         value={newVisit.time}
                         onChange={(time) => setNewVisit({...newVisit, time: time})}
                       />
-                      {/*
-                        id="time"
-                          value={newVisit.time}
-                          onChange={(time) => setNewVisit({...newVisit, time: time})} 
-                        */}
                     </div>
                     <div>
                       <Label htmlFor="employee">Doctor</Label>
