@@ -1,63 +1,5 @@
 [
     {
-        "id": "b4774630-a718-49fa-9da8-bcd63929e8c1",
-        "start": "2024-08-05T08:30:00Z",
-        "end": "2024-08-05T09:00:00Z",
-        "patient": {
-            "id": "efffcd9e-2ca1-4774-aa6b-4d75cd934c14",
-            "first_name": "Badrinath",
-            "last_name": "Dintakurti",
-            "mobile": "+917539514862"
-        },
-        "employee": {
-            "id": "ade22580-fb2e-4af8-92d6-0630168271ed",
-            "first_name": "Srinivas",
-            "last_name": null,
-            "is_therapist": true
-        },
-        "status_patient": "P",
-        "status_employee": "P",
-        "status_patient_updated_on": null,
-        "status_employee_updated_on": null,
-        "status_patient_updated_by": null,
-        "status_employee_updated_by": null,
-        "sellable": null,
-        "attended": false,
-        "recurrence": "26c8309c-d439-4bf4-9dcf-7d27eea439f0",
-        "penalty_employee": "0.00",
-        "penalty_patient": "0.00",
-        "visit_related": null
-    },
-    {
-        "id": "f92b89a9-e98d-4ac7-bb2a-c4e43d6a2c4c",
-        "start": "2024-08-12T08:30:00Z",
-        "end": "2024-08-12T09:00:00Z",
-        "patient": {
-            "id": "efffcd9e-2ca1-4774-aa6b-4d75cd934c14",
-            "first_name": "Badrinath",
-            "last_name": "Dintakurti",
-            "mobile": "+917539514862"
-        },
-        "employee": {
-            "id": "ade22580-fb2e-4af8-92d6-0630168271ed",
-            "first_name": "Srinivas",
-            "last_name": null,
-            "is_therapist": true
-        },
-        "status_patient": "P",
-        "status_employee": "P",
-        "status_patient_updated_on": null,
-        "status_employee_updated_on": null,
-        "status_patient_updated_by": null,
-        "status_employee_updated_by": null,
-        "sellable": null,
-        "attended": false,
-        "recurrence": "26c8309c-d439-4bf4-9dcf-7d27eea439f0",
-        "penalty_employee": "0.00",
-        "penalty_patient": "0.00",
-        "visit_related": null
-    },
-    {
         "id": "7a3e3296-6884-46af-9da1-ce0a2a67eb32",
         "start": "2024-08-19T08:30:00Z",
         "end": "2024-08-19T09:00:00Z",
@@ -233,35 +175,6 @@
             "last_name": "Dintakurti"
         },
         "sellable": "d3df84a5-fba9-49b1-9376-2bc833bfc6a8",
-        "attended": false,
-        "recurrence": null,
-        "penalty_employee": "0.00",
-        "penalty_patient": "0.00",
-        "visit_related": null
-    },
-    {
-        "id": "679b4968-ad0c-44ac-8830-50ec0f631354",
-        "start": "2024-07-31T08:00:00Z",
-        "end": "2024-07-31T08:30:00Z",
-        "patient": {
-            "id": "efffcd9e-2ca1-4774-aa6b-4d75cd934c14",
-            "first_name": "Badrinath",
-            "last_name": "Dintakurti",
-            "mobile": "+917539514862"
-        },
-        "employee": {
-            "id": "ade22580-fb2e-4af8-92d6-0630168271ed",
-            "first_name": "Srinivas",
-            "last_name": null,
-            "is_therapist": true
-        },
-        "status_patient": "P",
-        "status_employee": "P",
-        "status_patient_updated_on": null,
-        "status_employee_updated_on": null,
-        "status_patient_updated_by": null,
-        "status_employee_updated_by": null,
-        "sellable": null,
         "attended": false,
         "recurrence": null,
         "penalty_employee": "0.00",
@@ -661,67 +574,9 @@
         "visit_related": null
     },
     {
-        "id": "e05eb116-951e-4eb8-b86b-d944dfc8da64",
-        "start": "2024-08-05T10:30:00Z",
-        "end": "2024-08-05T11:00:00Z",
-        "patient": {
-            "id": "efffcd9e-2ca1-4774-aa6b-4d75cd934c14",
-            "first_name": "Badrinath",
-            "last_name": "Dintakurti",
-            "mobile": "+917539514862"
-        },
-        "employee": {
-            "id": "4df25278-9865-429b-af89-fa708d7d79d5",
-            "first_name": "Kusalava",
-            "last_name": "Badrinath",
-            "is_therapist": true
-        },
-        "status_patient": "P",
-        "status_employee": "P",
-        "status_patient_updated_on": null,
-        "status_employee_updated_on": null,
-        "status_patient_updated_by": null,
-        "status_employee_updated_by": null,
-        "sellable": null,
-        "attended": false,
-        "recurrence": "32b29270-b9a2-4891-800f-f7a8b51dea42",
-        "penalty_employee": "0.00",
-        "penalty_patient": "0.00",
-        "visit_related": null
-    },
-    {
         "id": "85914b82-d3d4-4ae4-8639-25f7056e95f8",
         "start": "2024-08-12T10:30:00Z",
         "end": "2024-08-12T11:00:00Z",
-        "patient": {
-            "id": "efffcd9e-2ca1-4774-aa6b-4d75cd934c14",
-            "first_name": "Badrinath",
-            "last_name": "Dintakurti",
-            "mobile": "+917539514862"
-        },
-        "employee": {
-            "id": "4df25278-9865-429b-af89-fa708d7d79d5",
-            "first_name": "Kusalava",
-            "last_name": "Badrinath",
-            "is_therapist": true
-        },
-        "status_patient": "P",
-        "status_employee": "P",
-        "status_patient_updated_on": null,
-        "status_employee_updated_on": null,
-        "status_patient_updated_by": null,
-        "status_employee_updated_by": null,
-        "sellable": null,
-        "attended": false,
-        "recurrence": "32b29270-b9a2-4891-800f-f7a8b51dea42",
-        "penalty_employee": "0.00",
-        "penalty_patient": "0.00",
-        "visit_related": null
-    },
-    {
-        "id": "3dbd0493-c067-4bec-b4ba-e962da32fc94",
-        "start": "2024-08-19T10:30:00Z",
-        "end": "2024-08-19T11:00:00Z",
         "patient": {
             "id": "efffcd9e-2ca1-4774-aa6b-4d75cd934c14",
             "first_name": "Badrinath",
@@ -802,35 +657,6 @@
             "first_name": "Kusalava",
             "last_name": "Dintakurti"
         },
-        "sellable": "d3df84a5-fba9-49b1-9376-2bc833bfc6a8",
-        "attended": false,
-        "recurrence": null,
-        "penalty_employee": "0.00",
-        "penalty_patient": "0.00",
-        "visit_related": null
-    },
-    {
-        "id": "7055ea7d-1f60-4ecd-a89e-00637c89d5c7",
-        "start": "2024-07-31T09:00:00Z",
-        "end": "2024-07-31T09:30:00Z",
-        "patient": {
-            "id": "efffcd9e-2ca1-4774-aa6b-4d75cd934c14",
-            "first_name": "Badrinath",
-            "last_name": "Dintakurti",
-            "mobile": "+917539514862"
-        },
-        "employee": {
-            "id": "4df25278-9865-429b-af89-fa708d7d79d5",
-            "first_name": "Kusalava",
-            "last_name": "Badrinath",
-            "is_therapist": true
-        },
-        "status_patient": "P",
-        "status_employee": "P",
-        "status_patient_updated_on": null,
-        "status_employee_updated_on": null,
-        "status_patient_updated_by": null,
-        "status_employee_updated_by": null,
         "sellable": "d3df84a5-fba9-49b1-9376-2bc833bfc6a8",
         "attended": false,
         "recurrence": null,

@@ -27,6 +27,8 @@ const AppointmentPopup = ({ event, onClose, onReschedule, onCancel, onDelete, on
   });
   const [date, setDate] = useState(new Date());
   const [deleteScope, setDeleteScope] = useState('single');
+  const [cancelScope, setCancelScope] = useState('T');
+  const [tillDate, setTillDate] = useState(null);
 
   useEffect(() => {
     setIsSheetOpen(true);
@@ -37,8 +39,8 @@ const AppointmentPopup = ({ event, onClose, onReschedule, onCancel, onDelete, on
     onClose();
   };
 
-  const handleCancel = () => {
-    onCancel(event, cancelAllUpcoming, cancelRequestedByPatient);
+  const handleCancelClick = () => {
+    onCancel(event, cancelScope, tillDate);
     setIsCancelDialogOpen(false);
     handleClose();
   };
@@ -136,30 +138,49 @@ const AppointmentPopup = ({ event, onClose, onReschedule, onCancel, onDelete, on
       </Sheet>
 
       <Dialog open={isCancelDialogOpen} onOpenChange={setIsCancelDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Do you want to Cancel?</DialogTitle>
-          </DialogHeader>
-          <div className="py-4">
-            <div className="flex items-center space-x-2 mb-2">
-              <Checkbox id="thisAppointment" checked={!cancelAllUpcoming} onCheckedChange={() => setCancelAllUpcoming(false)} />
-              <label htmlFor="thisAppointment">This Appointment</label>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Cancel Appointment</DialogTitle>
+        </DialogHeader>
+        <div className="py-4">
+          <RadioGroup value={cancelScope} onValueChange={setCancelScope}>
+            <div className="flex items-center space-x-2">
+              <RadioGroupItem value="T" id="cancelSingle" />
+              <label htmlFor="cancelSingle">Cancel this appointment</label>
             </div>
-            <div className="flex items-center space-x-2 mb-4">
-              <Checkbox id="allUpcoming" checked={cancelAllUpcoming} onCheckedChange={setCancelAllUpcoming} />
-              <label htmlFor="allUpcoming">This and All upcoming appointments</label>
+            <div className="flex items-center space-x-2">
+              <RadioGroupItem value="F" id="cancelFuture" />
+              <label htmlFor="cancelFuture">Cancel this and future appointments</label>
             </div>
-            <div className="flex items-center space-x-2 mb-4">
-              <Checkbox id="patientRequested" checked={cancelRequestedByPatient} onCheckedChange={setCancelRequestedByPatient} />
-              <label htmlFor="patientRequested">Cancellation requested by Patient?</label>
+            <div className="flex items-center space-x-2">
+              <RadioGroupItem value="A" id="cancelAll" />
+              <label htmlFor="cancelAll">Cancel all appointments</label>
             </div>
-            <div className="flex justify-end space-x-2">
-              <Button variant="outline" onClick={() => setIsCancelDialogOpen(false)}>Back</Button>
-              <Button onClick={handleCancel}>Cancel</Button>
+            <div className="flex items-center space-x-2">
+              <RadioGroupItem value="D" id="cancelTillDate" />
+              <label htmlFor="cancelTillDate">Cancel till date</label>
             </div>
+          </RadioGroup>
+          
+          {cancelScope === 'D' && (
+            <div className="mt-4">
+              <label htmlFor="tillDate">Cancel till:</label>
+              <DatePicker
+                id="tillDate"
+                selected={tillDate}
+                onChange={setTillDate}
+                minDate={new Date()}
+              />
+            </div>
+          )}
+
+          <div className="flex justify-end space-x-2 mt-4">
+            <Button variant="outline" onClick={() => setIsCancelDialogOpen(false)}>Back</Button>
+            <Button onClick={handleCancelClick}>Cancel Appointment(s)</Button>
           </div>
-        </DialogContent>
-      </Dialog>
+        </div>
+      </DialogContent>
+    </Dialog>
 
       <Dialog open={isRescheduleDialogOpen} onOpenChange={setIsRescheduleDialogOpen}>
         <DialogContent>

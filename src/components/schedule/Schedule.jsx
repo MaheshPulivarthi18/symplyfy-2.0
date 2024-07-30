@@ -361,19 +361,25 @@ export default function Schedule() {
     }  
   };
 
-  const handleCancel = async (eventToCancel) => {
+  const handleCancel = async (eventToCancel, cancelScope, tillDate = null) => {
     console.log(eventToCancel);
     try {
+      const cancelData = {
+        actor: 'E',
+        scope: cancelScope,
+      };
+  
+      // Only include till_date if it's provided and scope is 'D'
+      if (cancelScope === 'D' && tillDate) {
+        cancelData.till_date = tillDate.toISOString();
+      }
+  
       const response = await authenticatedFetch(`${import.meta.env.VITE_BASE_URL}/api/emp/clinic/${clinic_id}/schedule/booking/${eventToCancel.id}/cancel/`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          scope: 'A', // Assuming 'A' means cancel for all (both patient and employee)
-          actor: 'E', // 'E' indicates the cancellation is initiated by an employee
-          till_date: new Date().toISOString() // Current date-time as the cancellation date
-        }),
+        body: JSON.stringify(cancelData),
       });
   
       if (!response.ok) {
@@ -386,14 +392,14 @@ export default function Schedule() {
       // Update the local state to reflect the cancellation
       setEvents(prevEvents => prevEvents.map(event => 
         event.id === canceledAppointment.id 
-          ? { ...event, status: 'cancelled' } 
+          ? { ...event, status_patient: 'X', status_employee: 'X' } 
           : event
       ));
   
       setSelectedEvent(null);
       toast({
         title: "Success",
-        description: "Appointment cancelled successfully.",
+        description: "Appointment(s) cancelled successfully.",
         variant: "default",
       });
     } catch (error) {
