@@ -224,7 +224,8 @@ export default function Schedule() {
         service: booking.sellable,
         resourceId: booking.employee.id,
         status_patient: booking.status_patient,
-        status_employee: booking.status_employee
+        status_employee: booking.status_employee,
+        recurrence: booking.recurrence
       }));
   
       setEvents(formattedEvents);
@@ -405,28 +406,32 @@ export default function Schedule() {
     }
   };
 
-  const handleDelete = async (eventToDelete) => {
-    try {
-      const response = await authenticatedFetch(`${import.meta.env.VITE_BASE_URL}/api/emp/clinic/${clinic_id}/schedule/booking/${eventToDelete.id}/delete/`, {
-        method: 'DELETE',
-      });
-
-      if (!response.ok) throw new Error('Failed to delete appointment');
-
-      fetchBookings(); // Refresh the bookings
-      setSelectedEvent(null);
-      toast({
-        title: "Success",
-        description: "Appointment deleted successfully.",
-        variant: "default",
-      });
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to delete appointment. Please try again.",
-        variant: "destructive",
-      });
-    }
+  const handleDelete = async (eventToDelete, deleteScope) => {
+    console.log(eventToDelete)
+    // try {
+    //   const url = `${import.meta.env.VITE_BASE_URL}/api/emp/clinic/${clinic_id}/schedule/booking/${eventToDelete.id}/delete/`;
+    //   const queryParams = deleteScope === 'recurrence' ? `?scope=${eventToDelete.recurrence}` : '';
+  
+    //   const response = await authenticatedFetch(`${url}${queryParams}`, {
+    //     method: 'DELETE',
+    //   });
+  
+    //   if (!response.ok) throw new Error('Failed to delete appointment');
+  
+    //   fetchBookings(); // Refresh the bookings
+    //   setSelectedEvent(null);
+    //   toast({
+    //     title: "Success",
+    //     description: deleteScope === 'recurrence' ? "All recurring appointments deleted successfully." : "Appointment deleted successfully.",
+    //     variant: "default",
+    //   });
+    // } catch (error) {
+    //   toast({
+    //     title: "Error",
+    //     description: "Failed to delete appointment. Please try again.",
+    //     variant: "destructive",
+    //   });
+    // }
   };
 
   const handleMarkVisit = async (bookingId, visitDetails) => {
@@ -736,7 +741,8 @@ export default function Schedule() {
     patient: event.patientName,
     patientId: event.patientId,
     doctorId: event.employeeId,
-    service: event.sellable
+    service: event.sellable,
+    recurrence: event.recurrence
   }));
 
   // const formattedFilteredEvents = filteredEvents.map(event => ({

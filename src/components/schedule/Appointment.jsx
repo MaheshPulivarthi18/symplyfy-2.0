@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { DatePicker } from '../ui/datepicker';
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 
 const AppointmentPopup = ({ event, onClose, onReschedule, onCancel, onDelete, onMarkVisit, sellables }) => {
   const [isSheetOpen, setIsSheetOpen] = useState(true);
@@ -25,6 +26,7 @@ const AppointmentPopup = ({ event, onClose, onReschedule, onCancel, onDelete, on
     removeSessionBalance: false,
   });
   const [date, setDate] = useState(new Date());
+  const [deleteScope, setDeleteScope] = useState('single');
 
   useEffect(() => {
     setIsSheetOpen(true);
@@ -173,17 +175,24 @@ const AppointmentPopup = ({ event, onClose, onReschedule, onCancel, onDelete, on
         </DialogContent>
       </Dialog>
 
+      {/* <Button onClick={() => setIsDeleteDialogOpen(true)}>Delete</Button> */}
+
       <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Do you want to Delete this Appointment?</DialogTitle>
+            <DialogTitle>Delete Appointment</DialogTitle>
           </DialogHeader>
-          <div className="py-4">
-            <div className="flex justify-end space-x-2">
-              <Button variant="outline" onClick={() => setIsDeleteDialogOpen(false)}>Back</Button>
-              <Button variant="destructive" onClick={handleDelete}>Delete</Button>
+          <RadioGroup value={deleteScope} onValueChange={setDeleteScope}>
+            <div className="flex items-center space-x-2">
+              <RadioGroupItem value="single" id="delete-single" />
+              <Label htmlFor="delete-single">Delete this appointment only</Label>
             </div>
-          </div>
+            <div className="flex items-center space-x-2">
+              <RadioGroupItem value="recurrence" id="delete-recurrence" />
+              <Label htmlFor="delete-recurrence">Delete all recurring appointments</Label>
+            </div>
+          </RadioGroup>
+          <Button onClick={handleDelete}>Confirm Delete</Button>
         </DialogContent>
       </Dialog>
 

@@ -99,6 +99,9 @@ const PatientProfile = () => {
     date: new Date().toISOString().split('T')[0],
     channel: ''
   });
+  const [invoices, setInvoices] = useState([]);
+
+
 
   useEffect(() => {
     let interval;
@@ -620,6 +623,24 @@ const PatientProfile = () => {
     }
   };
 
+  const fetchInvoices = async () => {
+    try {
+      const data = await fetchWithTokenHandling(`${import.meta.env.VITE_BASE_URL}/api/emp/clinic/${clinic_id}/patient/${patient_id}/invoice/`);
+      setInvoices(data);
+    } catch (error) {
+      console.error("Failed to fetch invoices:", error);
+      setInvoices([]);
+    }
+  };
+
+  const [selectedInvoice, setSelectedInvoice] = useState(null);
+  const [isInvoiceDetailDialogOpen, setIsInvoiceDetailDialogOpen] = useState(false);
+
+  const handleViewInvoice = (invoiceId) => {
+    const invoice = invoices.find(inv => inv.id === invoiceId);
+    setSelectedInvoice(invoice);
+    setIsInvoiceDetailDialogOpen(true);
+  };
 
   useEffect(() => {
     fetchPatientData();
@@ -632,6 +653,7 @@ const PatientProfile = () => {
     fetchPayments();
     fetchPaymentChannels();
     fetchVisits();
+    fetchInvoices(); // Add this line
   }, [clinic_id, patient_id]);
 
 
@@ -950,6 +972,7 @@ const PatientProfile = () => {
             <TabsTrigger className='px-12' value="appointments">Appointments</TabsTrigger>
             <TabsTrigger className='px-12' value="visits">Visits</TabsTrigger>
             <TabsTrigger className='px-12' value="payments">Payments</TabsTrigger>
+            <TabsTrigger value="invoices">Invoices</TabsTrigger>
             <TabsTrigger className='px-12' value="tasks">Tasks</TabsTrigger>
           </TabsList>
           <TabsContent value="notes" className="relative min-h-[300px] p-4 pb-16">
@@ -1452,6 +1475,79 @@ const PatientProfile = () => {
                     <Button type="submit" className="mt-4">Add Payment</Button>
                   </DialogFooter>
                 </form>
+              </DialogContent>
+            </Dialog>
+          </TabsContent>
+          <TabsContent value="invoices">
+            {invoices.length === 0 ? (
+              <p>No invoices recorded for this patient.</p>
+            ) : (
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Date</TableHead>
+                    <TableHead>Invoice Number</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead>Gross Amount</TableHead>
+                    <TableHead>Final Amount</TableHead>
+                    <TableHead>Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {invoices.map(invoice => (
+                    <TableRow key={invoice.id}>
+                      <TableCell>{invoice.date}</TableCell>
+                      <TableCell>{invoice.number}</TableCell>
+                      <TableCell>{invoice.status === 'd' ? 'Draft' : 'Final'}</TableCell>
+                      <TableCell>{invoice.gross_amount}</TableCell>
+                      <TableCell>{invoice.final_amount}</TableCell>
+                      <TableCell>
+                        <Button variant="outline" size="sm" onClick={() => handleViewInvoice(invoice.id)}>
+                          View Details
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            )}
+            <Dialog open={isInvoiceDetailDialogOpen} onOpenChange={setIsInvoiceDetailDialogOpen}>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Invoice Details</DialogTitle>
+                </DialogHeader>
+                {selectedInvoice && (
+                  <div className="space-y-4">
+                    <p><strong>Invoice Number:</strong> {selectedInvoice.number}</p>
+                    <p><strong>Date:</strong> {selectedInvoice.date}</p>
+                    <p><strong>Status:</strong> {selectedInvoice.status === 'd' ? 'Draft' : 'Final'}</p>
+                    <p><strong>Gross Amount:</strong> {selectedInvoice.gross_amount}</p>
+                    <p><strong>Final Amount:</strong> {selectedInvoice.final_amount}</p>
+                    <h3 className="font-semibold">Items:</h3>
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Name</TableHead>
+                          <TableHead>Quantity</TableHead>
+                          <TableHead>Rate</TableHead>
+                          <TableHead>Gross</TableHead>
+                          <TableHead>Net</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {selectedInvoice.items.map(item => (
+                          <TableRow key={item.id}>
+                            <TableCell>{item.name}</TableCell>
+                            <TableCell>{item.quantity}</TableCell>
+                            <TableCell>{item.rate}</TableCell>
+                            <TableCell>{item.gross}</TableCell>
+                            <TableCell>{item.net}</TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
+                )}
               </DialogContent>
             </Dialog>
           </TabsContent>
