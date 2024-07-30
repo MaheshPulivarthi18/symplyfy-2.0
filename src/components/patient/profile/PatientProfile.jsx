@@ -59,7 +59,7 @@ const PatientProfile = () => {
   const [newTask, setNewTask] = useState({ name: '', description: '', repetitions: 0, goal: '' });
   const [newAppointment, setNewAppointment] = useState({
     date: '',
-    time: '',
+    time: '09:00',
     employee: '',
     sellable: '',
     duration: 30,
@@ -446,21 +446,50 @@ const PatientProfile = () => {
       setAppointments([]);
     }
   };
-
+  
   const handleAddAppointment = async (e) => {
     e.preventDefault();
     try {
-      const indianTimeZoneOffset = 330; // 5 hours and 30 minutes in minutes
+      console.log("New Appointment Data:", newAppointment);
+  
+      // Ensure newAppointment.time is a valid time string
+      const timeRegex = /^([01]\d|2[0-3]):([0-5]\d)$/;
+      if (!timeRegex.test(newAppointment.time)) {
+        console.log("Time regex test failed");
+        throw new Error("Invalid time format");
+      }
+  
+      // Ensure newAppointment.date is a valid date string
+      if (!newAppointment.date || isNaN(new Date(newAppointment.date).getTime())) {
+        console.log("Invalid date");
+        throw new Error("Invalid date");
+      }
+  
+      // Create a Date object in the local time zone
+      const [year, month, day] = newAppointment.date.split('-');
+      const [hours, minutes] = newAppointment.time.split(':');
+      const localDate = new Date(year, month - 1, day, hours, minutes);
+      console.log("Local Date:", localDate);
+  
+      if (isNaN(localDate.getTime())) {
+        console.log("Invalid Date object created");
+        throw new Error("Invalid Date object created");
+      }
+  
+      // Convert to UTC
+      const utcDate = new Date(localDate.getTime() - localDate.getTimezoneOffset() * 60000);
+      console.log("UTC Date:", utcDate);
       
-      const localStartDateTime = parseISO(`${newAppointment.date}T${newAppointment.time}`);
-      const startDateTime = addMinutes(localStartDateTime, -indianTimeZoneOffset);
-      const endDateTime = addMinutes(startDateTime, newAppointment.duration);
+      // Convert UTC to Indian Standard Time (IST)
+      const istDate = new Date(utcDate.getTime() - (5.5 * 60 * 60 * 1000));
+      console.log("IST Date:", istDate);
   
-      const weekdayMap = {
-        'Mon': 'MO', 'Tue': 'TU', 'Wed': 'WE', 'Thu': 'TH', 'Fri': 'FR', 'Sat': 'SA', 'Sun': 'SU'
-      };
-      const formattedWeekdays = newAppointment.weekdays.map(day => weekdayMap[day]).join(',');
-  
+      const startDateTime = istDate;
+      const endDateTime = new Date(startDateTime.getTime() + newAppointment.duration * 60000);
+      
+      console.log("Start Date Time:", startDateTime);
+      console.log("End Date Time:", endDateTime);
+      
       let recurrenceRule = null;
       if (newAppointment.frequency === 'weekly') {
         recurrenceRule = `RRULE:FREQ=WEEKLY;BYDAY=${formattedWeekdays}`;
@@ -471,17 +500,23 @@ const PatientProfile = () => {
           recurrenceRule += `;COUNT=${newAppointment.sessions}`;
         }
       }
+
+      console.log("Start Date Time:", startDateTime);
+      console.log("End Date Time:", endDateTime);
   
       const bookingData = {
-        start: format(startDateTime, "yyyy-MM-dd'T'HH:mm:ss'Z'"),
-        end: format(endDateTime, "yyyy-MM-dd'T'HH:mm:ss'Z'"),
+        start: startDateTime.toISOString(),
+        end: endDateTime.toISOString(),
         patient: patient.id,
         employee: newAppointment.employee,
         sellable: newAppointment.sellable,
         recurrence: recurrenceRule,
       };
   
+      console.log("Booking Data:", bookingData);
+
       const response = await createBooking(bookingData);
+      console.log(response)
       setAppointments([...appointments, response]);
       setNewAppointment({
         date: '',
@@ -497,7 +532,8 @@ const PatientProfile = () => {
       setIsAppointmentDialogOpen(false);
       toast({ title: "Success", description: "Appointment booked successfully" });
     } catch (error) {
-      console.log(error.message, "ERROR MESSAGE AT HANDLEADDAPPOINTMENT")
+      console.log(error.message, "ERROR MESSAGE AT HANDLEADDAPPOINTMENT");
+      console.log("Error stack:", error.stack);
       toast({ title: "Error", description: error.message, variant: "destructive" });
     }
   };
@@ -705,7 +741,7 @@ const PatientProfile = () => {
     };
   
     return (
-      <Select value={value} onValueChange={onChange}>
+      <Select value={value} onValueChange={(newTime) => onChange(newTime)}>
         <SelectTrigger>
           <SelectValue placeholder="Select time" />
         </SelectTrigger>
@@ -1163,7 +1199,7 @@ const PatientProfile = () => {
                 <TableBody>
                   {appointments.map(appointment => (
                     <TableRow key={appointment.id}>
-                      <TableCell>{appointment.employee.first_name} {appointment.employee.last_name}</TableCell>
+                      <TableCell>{employeeDetails[appointment.employee] ? employeeDetails[appointment.employee].first_name + " " + employeeDetails[appointment.employee].last_name  : appointment.employee.first_name+ " " +appointment.employee.last_name}</TableCell>
                       <TableCell>{format(parseISO(appointment.start), 'yyyy-MM-dd')}</TableCell>
                       <TableCell>{format(parseISO(appointment.start), 'HH:mm')}</TableCell>
                       <TableCell>{format(parseISO(appointment.end), 'HH:mm')}</TableCell>
@@ -1225,6 +1261,13 @@ const PatientProfile = () => {
                             onChange={(date) => setNewAppointment({...newAppointment, date: date.toISOString().split('T')[0]})}
                             dateFormat="dd/MM/yyyy"
                           />
+                          {/* 
+                          <DatePicker
+                            id="enddate"
+                            selected={date}
+                            onChange={(date) => setNewVisit({...newVisit, endsOn: date ? date.toISOString().split('T')[0] : ''})}
+                            dateFormat="dd/MM/yyyy"
+                          /> */}
                         </div>
                         <div>
                           <Label htmlFor="time">Time</Label>
@@ -1272,21 +1315,12 @@ const PatientProfile = () => {
 
                         <div className="space-y-2">
                           <Label>Ends On (DD/MM/YYYY)</Label>
-                          <Popover>
-                            <PopoverTrigger asChild>
-                              <Button variant="outline" className="w-full justify-start text-left font-normal">
-                                <CalendarIcon className="mr-2 h-4 w-4" />
-                                {newAppointment.endsOn ? format(new Date(newAppointment.endsOn), "PPP") : <span>Pick an end date</span>}
-                              </Button>
-                            </PopoverTrigger>
-                            <PopoverContent className="w-auto p-0">
-                              <Calendar
-                                mode="single"
-                                selected={newAppointment.endsOn ? new Date(newAppointment.endsOn) : undefined}
-                                onSelect={(date) => setNewAppointment({...newAppointment, endsOn: date ? date.toISOString().split('T')[0] : ''})}
-                              />
-                            </PopoverContent>
-                          </Popover>
+                          <DatePicker
+                            id="enddate"
+                            selected={date}
+                            onChange={(date) => setNewAppointment({...newAppointment, endsOn: date ? date.toISOString().split('T')[0] : ''})}
+                            dateFormat="dd/MM/yyyy"
+                          /> 
                         </div>
 
                         <div className="space-y-2">

@@ -1,3 +1,4 @@
+// schedule.jsx
 import React, { useState, useEffect } from 'react';
 import { Calendar, dateFnsLocalizer } from 'react-big-calendar';
 import parse from 'date-fns/parse';
@@ -82,7 +83,7 @@ export default function Schedule() {
     patient: '',
     patientName: '',
     sellable: '',
-    date: '',
+    date: new Date(),
     time: '',
     frequency: 'does_not_repeat',
     weekdays: [],
@@ -93,6 +94,7 @@ export default function Schedule() {
     therapist: '',
     therapistName: '',
   });
+  const [showCancelled, setShowCancelled] = useState(false);
 
   useEffect(() => {
     let interval;
@@ -116,8 +118,13 @@ export default function Schedule() {
     fetchPatients();
     fetchSettings();
     fetchSellables();
-    fetchBookings();
   }, [clinic_id]);
+
+  useEffect(() => {
+    if (patients.length > 0) {
+      fetchBookings();
+    }
+  }, [patients]);
 
   const fetchTherapists = async () => {
     try {
@@ -179,22 +186,47 @@ export default function Schedule() {
 
   const fetchBookings = async () => {
     try {
+      // Fetch main bookings
       const response = await authenticatedFetch(`${import.meta.env.VITE_BASE_URL}/api/emp/clinic/${clinic_id}/schedule/booking/`);
       if (!response.ok) throw new Error('Failed to fetch bookings');
       const data = await response.json();
-      const formattedEvents = data.map(booking => ({
+  
+      // Use a Map to store unique bookings by ID
+      const bookingsMap = new Map(data.map(booking => [booking.id, booking]));
+  
+      // Fetch patient bookings and add only if not already present
+      for (const patient of patients) {
+        const patResponse = await authenticatedFetch(`${import.meta.env.VITE_BASE_URL}/api/emp/clinic/${clinic_id}/patient/${patient.id}/booking/`);
+        if (!patResponse.ok) throw new Error('Failed to fetch patient bookings');
+        const patientBookings = await patResponse.json();
+        patientBookings.forEach(booking => {
+          if (!bookingsMap.has(booking.id)) {
+            bookingsMap.set(booking.id, booking);
+          }
+        });
+      }
+  
+      // Convert Map back to array
+      const finalData = Array.from(bookingsMap.values());
+  
+      console.log("Final bookings data:", finalData);
+  
+      // Format the combined data
+      const formattedEvents = finalData.map(booking => ({
         id: booking.id,
-        title: `${booking.patient.first_name} ${booking.patient.last_name} - ${booking.sellable}`,
+        title: `${booking.patient.first_name} ${booking.patient.last_name}`,
         start: new Date(booking.start),
         end: new Date(booking.end),
         patientId: booking.patient.id,
         patientName: `${booking.patient.first_name} ${booking.patient.last_name}`,
         doctorId: booking.employee.id,
-        doctorName: `${booking.employee.first_name} ${booking.employee.last_name}`,
+        doctorName: `${booking.employee.first_name} ${booking.employee.last_name === null ? "" : booking.employee.last_name}`,
         service: booking.sellable,
         resourceId: booking.employee.id,
-        status: booking.status
+        status_patient: booking.status_patient,
+        status_employee: booking.status_employee
       }));
+  
       setEvents(formattedEvents);
     } catch (error) {
       toast({
@@ -206,6 +238,7 @@ export default function Schedule() {
       setLoading(false);
     }
   };
+  
 
   const fetchSellables = async () => {
     try {
@@ -217,51 +250,16 @@ export default function Schedule() {
       console.error("Failed to fetch sellables:", error);
       setSellables([]);
     }
-  };
-
-  const handleBookAppointment = async () => {
-    try {
-      const response = await authenticatedFetch(`${import.meta.env.VITE_BASE_URL}/api/emp/clinic/${clinic_id}/schedule/booking/`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          patient_id: newEvent.patient,
-          therapist_id: newEvent.doctor,
-          service_id: newEvent.service,
-          start_time: newEvent.time.toISOString(),
-          duration: newEvent.duration,
-          frequency: newEvent.frequency,
-        }),
-      });
-
-      if (!response.ok) throw new Error('Failed to book appointment');
-
-      setIsVisitDialogOpen(false);
-      fetchBookings(); // Refresh the bookings
-      toast({
-        title: "Success",
-        description: "Appointment booked successfully.",
-        variant: "default",
-      });
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to book appointment. Please try again.",
-        variant: "destructive",
-      });
-    }
-  };
+  };  
 
   const handleReschedule = (event) => {
     // First, set up the newVisit state with the event details
     setNewVisit({
       id: event.id,
       patient: event.patientId,
-      patientName: event.patientName,
+      patientName: event.patient,
       therapist: event.doctorId,
-      therapistName: event.doctorName,
+      therapistName: event.doctor,
       sellable: event.service,
       date: format(new Date(event.start), 'yyyy-MM-dd'),
       time: format(new Date(event.start), 'HH:mm'),
@@ -279,77 +277,87 @@ export default function Schedule() {
   // Then, create a separate function to handle the actual rescheduling
   const submitReschedule = async () => {
     try {
-      const indianTimeZoneOffset = 330;
-      const localStartDateTime = parseISO(`${newVisit.date}T${newVisit.time}`);
-      const startDateTime = addMinutes(localStartDateTime, -indianTimeZoneOffset);
-      const endDateTime = addMinutes(startDateTime, newVisit.duration || parseInt(newVisit.customDuration));
+        // Use the date from newVisit.date and combine it with the time
+        const [hours, minutes] = newVisit.time.split(':').map(Number);
+        const localStartDateTime = new Date(newVisit.date);
+        localStartDateTime.setHours(hours, minutes, 0, 0);
+
+        // Calculate the duration in minutes
+        const durationInMinutes = newVisit.duration || parseInt(newVisit.customDuration);
+
+        // Calculate end time
+        const localEndDateTime = new Date(localStartDateTime.getTime() + durationInMinutes * 60000);
+
+        // Format dates as ISO strings, but remove the 'Z' to keep them as local time
+        const formatLocalDate = (date) => date.toISOString().slice(0, -1);
+        console.log(formatLocalDate(localStartDateTime), localEndDateTime, durationInMinutes, newVisit.date, newVisit.time);
+
+        // Convert weekdays to the format expected by the backend (e.g., "MO,TU,WE")
+        const weekdayMap = {
+          'Mon': 'MO', 'Tue': 'TU', 'Wed': 'WE', 'Thu': 'TH', 'Fri': 'FR', 'Sat': 'SA', 'Sun': 'SU'
+        };
+        const formattedWeekdays = newVisit.weekdays.map(day => weekdayMap[day]).join(',');
   
-      // Convert weekdays to the format expected by the backend (e.g., "MO,TU,WE")
-      const weekdayMap = {
-        'Mon': 'MO', 'Tue': 'TU', 'Wed': 'WE', 'Thu': 'TH', 'Fri': 'FR', 'Sat': 'SA', 'Sun': 'SU'
-      };
-      const formattedWeekdays = newVisit.weekdays.map(day => weekdayMap[day]).join(',');
-  
-      let recurrenceRule = null;
-      if (newVisit.frequency === 'weekly') {
-        recurrenceRule = `RRULE:FREQ=WEEKLY;BYDAY=${formattedWeekdays}`;
-        if (newVisit.endsOn) {
-          const endDate = addMinutes(parseISO(newVisit.endsOn), -indianTimeZoneOffset);
-          recurrenceRule += `;UNTIL=${format(endDate, "yyyyMMdd'T'HHmmss'Z'")}`;
-        } else if (newVisit.sessions) {
-          recurrenceRule += `;COUNT=${newVisit.sessions}`;
+        let recurrenceRule = null;
+        if (newVisit.frequency === 'weekly') {
+          recurrenceRule = `RRULE:FREQ=WEEKLY;BYDAY=${formattedWeekdays}`;
+          if (newVisit.endsOn) {
+            const endDate = parseISO(newVisit.endsOn);
+            console.log(endDate)
+            recurrenceRule += `;UNTIL=${format(endDate, "yyyyMMdd'T'HHmmss'Z'")}`;
+          } else if (newVisit.sessions) {
+            recurrenceRule += `;COUNT=${newVisit.sessions}`;
+          }
         }
-      }
+        const bookingData = {
+          start: formatLocalDate(localStartDateTime),
+          end: formatLocalDate(localEndDateTime),
+          patient: newVisit.patient,
+          employee: newVisit.therapist,
+          sellable: newVisit.sellable,
+          recurrence: recurrenceRule,
+          actor: "E",
+        };
+        console.log(bookingData);
+        const response = await authenticatedFetch(`${import.meta.env.VITE_BASE_URL}/api/emp/clinic/${clinic_id}/schedule/booking/${newVisit.id}/reschedule/`, {
+          method: 'PATCH',
+          headers: {
+            'Content-Type': 'application/json',
+          },      
+          body: JSON.stringify(bookingData),      
+        });
+
+        if (!response.ok) throw new Error('Failed to reschedule appointment');
   
-      const bookingData = {
-        start: format(startDateTime, "yyyy-MM-dd'T'HH:mm:ss'Z'"),
-        end: format(endDateTime, "yyyy-MM-dd'T'HH:mm:ss'Z'"),
-        patient: newVisit.patient,
-        employee: newVisit.therapist,
-        sellable: newVisit.sellable,
-        recurrence: recurrenceRule,
-      };
-  
-      const response = await authenticatedFetch(`${import.meta.env.VITE_BASE_URL}/api/emp/clinic/${clinic_id}/schedule/booking/${newVisit.id}/reschedule/`, {
-        method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(bookingData),
-      });
-  
-      if (!response.ok) throw new Error('Failed to reschedule appointment');
-  
-      const updatedBooking = await response.json();
-      setEvents(events.map(event => event.id === newVisit.id ? updatedBooking : event));
-  
-      setNewVisit({
-        patient: '',
-        sellable: '',
-        date: '',
-        time: '',
-        frequency: 'does_not_repeat',
-        weekdays: [],
-        endsOn: '',
-        sessions: '',
-        duration: 30,
-        customDuration: '',
-        therapist: '',
-      });
-      setIsRescheduling(false);
-      setIsVisitDialogOpen(false);
-      toast({
-        title: "Success",
-        description: "Appointment rescheduled successfully.",
-        variant: "default",
-      });
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: error.message,
-        variant: "destructive",
-      });
-    }
+        const updatedBooking = await response.json();
+        setEvents(events.map(event => event.id === newVisit.id ? updatedBooking : event));
+        setNewVisit({
+          patient: '',
+          sellable: '',
+          date: '',
+          time: '',
+          frequency: 'does_not_repeat',
+          weekdays: [],
+          endsOn: '',
+          sessions: '',
+          duration: 30,
+          customDuration: '',
+          therapist: '',
+        });
+        setIsRescheduling(false);
+        setIsVisitDialogOpen(false);
+        toast({
+          title: "Success",
+          description: "Appointment rescheduled successfully.",
+          variant: "default",
+        });
+      } catch (error) {
+        toast({
+          title: "Error",
+          description: error.message,
+          variant: "destructive",
+      }); 
+    }  
   };
 
   const handleCancel = async (eventToCancel) => {
@@ -421,25 +429,44 @@ export default function Schedule() {
     }
   };
 
-  const handleMarkVisit = async (eventToMark) => {
+  const handleMarkVisit = async (bookingId, visitDetails) => {
     try {
-      const response = await authenticatedFetch(`${import.meta.env.VITE_BASE_URL}/api/emp/clinic/${clinic_id}/schedule/booking/${eventToMark.id}/confirm/`, {
+      const response = await authenticatedFetch(`${import.meta.env.VITE_BASE_URL}/api/emp/clinic/${clinic_id}/schedule/booking/${bookingId}/confirm/`, {
         method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          actor: 'E',
+          // visited_time: visitDetails.visitedTime,
+          // product: visitDetails.product,
+          // walk_in: visitDetails.walkIn,
+          // mark_penalty: visitDetails.markPenalty,
+          // remove_session_balance: visitDetails.removeSessionBalance,
+        }),
       });
 
-      if (!response.ok) throw new Error('Failed to mark appointment as completed');
+      if (!response.ok) throw new Error('Failed to mark visit');
 
-      fetchBookings(); // Refresh the bookings
-      setSelectedEvent(null);
+      const updatedBooking = await response.json();
+      
+      // Update the local state to mark the event as attended
+      setEvents(events.map(event => 
+        event.id === bookingId 
+          ? { ...event, ...updatedBooking, attended: true }
+          : event
+      ));
+      
       toast({
         title: "Success",
-        description: "Appointment marked as completed successfully.",
+        description: "Visit marked successfully.",
         variant: "default",
       });
     } catch (error) {
+      console.error('Error marking visit:', error);
       toast({
         title: "Error",
-        description: "Failed to mark appointment as completed. Please try again.",
+        description: "Failed to mark visit. Please try again.",
         variant: "destructive",
       });
     }
@@ -447,11 +474,22 @@ export default function Schedule() {
 
   const addVisit = async () => {
     try {
-      const indianTimeZoneOffset = 330;
-      const localStartDateTime = parseISO(`${newVisit.date}T${newVisit.time}`);
-      const startDateTime = addMinutes(localStartDateTime, -indianTimeZoneOffset);
-      const endDateTime = addMinutes(startDateTime, newVisit.duration || parseInt(newVisit.customDuration));
-  
+      // Use the date from newVisit.date and combine it with the time
+      const [hours, minutes] = newVisit.time.split(':').map(Number);
+      const localStartDateTime = new Date(newVisit.date);
+      localStartDateTime.setHours(hours, minutes, 0, 0);
+      
+      // Calculate the duration in minutes
+      const durationInMinutes = newVisit.duration || parseInt(newVisit.customDuration);
+      
+      // Calculate end time
+      const localEndDateTime = new Date(localStartDateTime.getTime() + durationInMinutes * 60000);
+      
+      
+      // Format dates as ISO strings, but remove the 'Z' to keep them as local time
+      const formatLocalDate = (date) => date.toISOString().slice(0, -1);
+      console.log(formatLocalDate(localStartDateTime), localEndDateTime, durationInMinutes, newVisit.date, newVisit.time);
+      
       // Convert weekdays to the format expected by the backend (e.g., "MO,TU,WE")
       const weekdayMap = {
         'Mon': 'MO', 'Tue': 'TU', 'Wed': 'WE', 'Thu': 'TH', 'Fri': 'FR', 'Sat': 'SA', 'Sun': 'SU'
@@ -462,48 +500,40 @@ export default function Schedule() {
       if (newVisit.frequency === 'weekly') {
         recurrenceRule = `RRULE:FREQ=WEEKLY;BYDAY=${formattedWeekdays}`;
         if (newVisit.endsOn) {
-          const endDate = addMinutes(parseISO(newVisit.endsOn), -indianTimeZoneOffset);
+          const endDate = parseISO(newVisit.endsOn);
+          console.log(endDate)
           recurrenceRule += `;UNTIL=${format(endDate, "yyyyMMdd'T'HHmmss'Z'")}`;
         } else if (newVisit.sessions) {
           recurrenceRule += `;COUNT=${newVisit.sessions}`;
         }
       }
-  
+
       const bookingData = {
-        start: format(startDateTime, "yyyy-MM-dd'T'HH:mm:ss'Z'"),
-        end: format(endDateTime, "yyyy-MM-dd'T'HH:mm:ss'Z'"),
+        start: formatLocalDate(localStartDateTime),
+        end: formatLocalDate(localEndDateTime),
         patient: newVisit.patient,
         employee: newVisit.therapist,
-        sellable: newVisit.sellable, // This ensures we're always sending the sellable value
+        sellable: newVisit.sellable,
         recurrence: recurrenceRule,
         actor: "E",
       };
 
-      console.log(bookingData)
+    console.log(bookingData);
   
-      let response;
-      if (isRescheduling) {
-        response = await authenticatedFetch(`${import.meta.env.VITE_BASE_URL}/api/emp/clinic/${clinic_id}/schedule/booking/${newVisit.id}/reschedule/`, {
-          method: 'PATCH',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(bookingData),
-        });
-      } else {
-        response = await authenticatedFetch(`${import.meta.env.VITE_BASE_URL}/api/emp/clinic/${clinic_id}/schedule/booking/`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(bookingData),
-        });
-      }
-  
+      console.log(bookingData);
+
+      const response = await authenticatedFetch(`${import.meta.env.VITE_BASE_URL}/api/emp/clinic/${clinic_id}/schedule/booking/`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(bookingData),
+      });
+
       if (!response.ok) {
         throw new Error(isRescheduling ? 'Failed to reschedule appointment' : 'Failed to book appointment');
       }
-  
+
       const newBooking = await response.json();
       if (isRescheduling) {
         setEvents(events.map(event => event.id === newVisit.id ? newBooking : event));
@@ -526,11 +556,10 @@ export default function Schedule() {
       });
       toast({
         title: "Success",
-        description: isRescheduling ? "Appointment rescheduled successfully." : "Appointment booked successfully.",
+        description: "Appointment booked successfully.",
         variant: "default",
       });
       setIsVisitDialogOpen(false);
-      setIsRescheduling(false);
     } catch (error) {
       toast({
         title: "Error",
@@ -564,12 +593,12 @@ export default function Schedule() {
     }
   };
   
-  const handleCanceledToggle = () => {
-    setShowCanceled(showCanceled);
-    if (!showCanceled) {
+  const handleCancelledToggle = () => {
+    setShowCancelled(!showCancelled);
+    if (!showCancelled) {
       setView('month');
-      setSelectedDoctor('');
-      setSelectedPatient('');
+      setSelectedDoctorId('');
+      setSelectedPatientId('');
     }
   };
   
@@ -579,7 +608,25 @@ export default function Schedule() {
     setShowCanceled(false);
   };
 
-  const handleSelect = ({ start, end }) => {
+  // const handleSelect = ({ start, end, resourceId }) => {
+  //   if (isWithinBreakTime(start) || isWithinBreakTime(end)) {
+  //     toast({
+  //       title: "Invalid Selection",
+  //       description: "You cannot schedule appointments during break time.",
+  //       variant: "destructive",
+  //     });
+  //     return;
+  //   }
+  //   setNewVisit(prev => ({ 
+  //     ...prev, 
+  //     date: format(start, 'yyyy-MM-dd'),
+  //     time: format(start, 'HH:mm'),
+  //     therapist: resourceId || ''
+  //   }));
+  //   setIsVisitDialogOpen(true);
+  // };
+
+  const handleSelect = ({ start, end, resourceId }) => {
     if (isWithinBreakTime(start) || isWithinBreakTime(end)) {
       toast({
         title: "Invalid Selection",
@@ -588,31 +635,36 @@ export default function Schedule() {
       });
       return;
     }
-    setNewEvent(prev => ({ ...prev, date: start, time: start }));
+    setNewVisit(prev => ({ 
+      ...prev, 
+      date: start,
+      time: format(start, 'HH:mm'),
+      therapist: resourceId || ''
+    }));
     setIsVisitDialogOpen(true);
   };
 
-  const handleInputChange = (e) => {
-    const { name, value } = e.target;
-    setNewEvent(prev => ({ ...prev, [name]: value }));
-  };
+  // const handleInputChange = (e) => {
+  //   const { name, value } = e.target;
+  //   setNewEvent(prev => ({ ...prev, [name]: value }));
+  // };
 
-  const handleDateChange = (date) => {
-    setNewEvent(prev => ({ ...prev, date }));
-  };
+  // const handleDateChange = (date) => {
+  //   setNewEvent(prev => ({ ...prev, date }));
+  // };
 
-  const handleTimeChange = (time) => {
-    setNewEvent(prev => ({ ...prev, time }));
-  };
+  // const handleTimeChange = (time) => {
+  //   setNewEvent(prev => ({ ...prev, time }));
+  // };
 
-  const handleDurationChange = (duration) => {
-    if (duration === 'custom') {
-      setIsCustomDuration(true);
-    } else {
-      setNewEvent(prev => ({ ...prev, duration: parseInt(duration) }));
-      setIsCustomDuration(false);
-    }
-  };
+  // const handleDurationChange = (duration) => {
+  //   if (duration === 'custom') {
+  //     setIsCustomDuration(true);
+  //   } else {
+  //     setNewEvent(prev => ({ ...prev, duration: parseInt(duration) }));
+  //     setIsCustomDuration(false);
+  //   }
+  // };
 
   const handleSelectEvent = (event) => {
     console.log(event)
@@ -645,36 +697,66 @@ export default function Schedule() {
   };
 
   const getFilteredResources = () => {
-    if (view === 'week' && selectedDoctor) {
-      return [{ id: selectedDoctor, title: selectedDoctor }];
+    if (view === 'day') {
+      // For day view, return all therapists or the selected one
+      return selectedDoctorId 
+        ? [therapists.find(t => t.id === selectedDoctorId)].filter(Boolean)
+        : therapists;
     }
-    return therapists.map(therapist => ({ id: therapist.first_name, title: therapist.first_name }));
+    if (view === 'week' && selectedDoctorId) {
+      return [therapists.find(t => t.id === selectedDoctorId)].filter(Boolean);
+    }
+    return therapists;
   };
 
+
   const filteredEvents = events.filter(event => {
-    const doctorMatch = !selectedDoctorId || event.doctorId === selectedDoctorId;
+    const doctorMatch = !selectedDoctorId || event.resourceId === selectedDoctorId;
     const patientMatch = !selectedPatientId || event.patientId === selectedPatientId;
-    const statusMatch = showCanceled ? true : event.status !== 'cancelled';
+    
+    const isCancelled = event.status_patient === 'X' || event.status_employee === 'X';
+  
+    // If showCancelled is true, show only cancelled events
+    // If showCancelled is false, show all non-cancelled events
+    const statusMatch = showCancelled ? isCancelled : !isCancelled;
   
     return (doctorMatch && patientMatch && statusMatch);
   });
 
   const formattedFilteredEvents = filteredEvents.map(event => ({
     id: event.id,
-    doctor: event.doctorName,
-    patient: event.patientName,
-    service: event.service,
     title: event.title,
     start: new Date(event.start),
     end: new Date(event.end),
-    resourceId: event.resourceId,
-    allDay: false, // Add this if your events are not all-day events
+    resourceId: event.doctorId,
+    status_patient: event.status_patient,
+    status_employee: event.status_employee,
+    attended: event.attended,
+    doctor: event.doctorName,
+    patient: event.patientName,
+    patientId: event.patientId,
+    doctorId: event.employeeId,
+    service: event.sellable
   }));
+
+  // const formattedFilteredEvents = filteredEvents.map(event => ({
+  //   id: event.id,
+  //   doctor: event.doctorName,
+  //   patient: event.patientName,
+  //   service: event.service,
+  //   title: event.title,
+  //   start: new Date(event.start),
+  //   end: new Date(event.end),
+  //   resourceId: event.doctorId,
+  //   allDay: false,
+  //   status_patient: event.status_patient,
+  //   status_employee: event.status_employee
+  // }));
 
   const ResourceHeader = ({ label }) => {
     return (
     <div className="resource-header flex flex-row justify-center gap-4 text-center">
-      <div className="avatar text-black">
+      <div className="avatar bg-gray-600">
         {label.charAt(0)}
       </div>
       <span>{label}</span>
@@ -856,8 +938,12 @@ export default function Schedule() {
               ))}
             </div>
 
-            <Toggle onClick={handleCanceledToggle} className="w-full">
-              View cancelled Events
+            <Toggle 
+            pressed={showCancelled} 
+            onPressedChange={handleCancelledToggle} 
+            className="w-full"
+            >
+              {showCancelled ? "Hide Cancelled" : "View Cancelled"}
             </Toggle>
           </ScrollArea>
         </div>
@@ -870,7 +956,10 @@ export default function Schedule() {
             defaultView={"day"}
             views={["day", "week", "month"]}
             selectable
-            resources={getFilteredResources()}
+            resources={getFilteredResources().map(therapist => ({
+              id: therapist.id,
+              title: `${therapist.first_name} ${therapist.last_name === null ? "" : therapist.last_name}`
+            }))}
             resourceIdAccessor="id"
             resourceTitleAccessor="title"
             onSelectSlot={handleSelect}
@@ -889,13 +978,24 @@ export default function Schedule() {
             max={calendarEndTime}
             onNavigate={handleNavigate}
             eventPropGetter={(event) => {
-              let newStyle = {
-                backgroundColor: event.status === 'cancelled' ? 'lightgrey' : 
-                                 event.status === 'completed' ? 'lightgreen' : 
-                                 '#3174ad',
-                color: event.status === 'cancelled' ? 'darkgrey' : 'white',
+              let backgroundColor = '#3174ad';  // Default blue color
+              let textColor = 'white';
+
+              if (event.status_patient === 'X' || event.status_employee === 'X') {
+                backgroundColor = 'lightgrey';
+                textColor = 'darkgrey';
+              } else if (event.attended) {
+                backgroundColor = '#4CAF50';  // Green color for attended events
+              } else if (event.status_patient === 'C' && event.status_employee === 'C') {
+                backgroundColor = '#FFA500';  // Orange color for confirmed events
+              }
+
+              return {
+                style: {
+                  backgroundColor: backgroundColor,
+                  color: textColor,
+                }
               };
-              return { style: newStyle };
             }}
             dayPropGetter={(date) => ({
               style: {
@@ -926,6 +1026,7 @@ export default function Schedule() {
           onCancel={handleCancel}
           onDelete={handleDelete}
           onMarkVisit={handleMarkVisit}
+          sellables={sellables}  // Pass sellables to AppointmentPopup
         />
       )}
       {/* add appointment */}
@@ -940,14 +1041,14 @@ export default function Schedule() {
                 <div>
                   <Label>Patient</Label>
                   <Input 
-                    value={patients.find(p => p.first_name === newVisit.patientName.split(" ")[0])?.first_name + ' ' + patients.find(p => p.last_name === newVisit.patientName.split(" ")[1])?.last_name || ''}
+                    value={patients.find(p => p.first_name + " " + p.last_name === newVisit.patientName)?.first_name + ' ' + patients.find(p => p.first_name + " " + p.last_name === newVisit.patientName)?.last_name || ''}
                     disabled
                   />
                 </div>
                 <div>
                   <Label>Therapist</Label>
                   <Input 
-                    value={therapists.find(t => t.first_name === newVisit.therapistName.split(" ")[0])?.first_name + ' ' + therapists.find(t => t.last_name === newVisit.therapistName.split(" ")[1])?.last_name || ''}
+                    value={therapists.find(t => t.first_name + " " + t.last_name === newVisit.therapistName)?.first_name + ' ' + (therapists.find(t => t.first_name + " " + t.last_name === newVisit.therapistName)?.last_name === null) ? (" "): (therapists.find(t => t.first_name + " " + t.last_name === newVisit.therapistName)?.last_name) || ''}
                     disabled
                   />
                 </div>
@@ -1010,8 +1111,8 @@ export default function Schedule() {
                   <Label htmlFor="date">Starts On (DD/MM/YYYY)</Label>
                   <DatePicker
                     id="date"
-                    selected={newVisit.date ? new Date(newVisit.date) : null}
-                    onChange={(date) => setNewVisit({...newVisit, date: date.toISOString().split('T')[0]})}
+                    selected={newVisit.date}
+                    onChange={(date) => setNewVisit({...newVisit, date: date})}
                     dateFormat="dd/MM/yyyy"
                   />
                 </div>
@@ -1020,7 +1121,7 @@ export default function Schedule() {
                   <TimeSelect
                     id="time"
                     value={newVisit.time}
-                    onChange={(time) => setNewVisit({...newVisit, time: time})}
+                    onChange={(time) => {setNewVisit({...newVisit, time: time}); console.log(newVisit.time)}}
                   />
                 </div>
               </div>

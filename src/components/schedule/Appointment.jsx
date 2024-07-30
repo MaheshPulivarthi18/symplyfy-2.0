@@ -1,89 +1,264 @@
 // AppointmentPopup.jsx
-import React from 'react';
-import { format } from 'date-fns';
+import React, { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { DatePicker } from '../ui/datepicker';
 
-const AppointmentPopup = ({ event, onClose, onReschedule, onCancel, onDelete, onMarkVisit }) => {
-  const getStatusColor = (status) => {
-    switch (status) {
-      case 'scheduled':
-        return 'bg-blue-500';
-      case 'cancelled':
-        return 'bg-red-500';
-      case 'completed':
-        return 'bg-green-500';
-      default:
-        return 'bg-gray-500';
-    }
+const AppointmentPopup = ({ event, onClose, onReschedule, onCancel, onDelete, onMarkVisit, sellables }) => {
+  const [isSheetOpen, setIsSheetOpen] = useState(true);
+  const [isCancelDialogOpen, setIsCancelDialogOpen] = useState(false);
+  const [isRescheduleDialogOpen, setIsRescheduleDialogOpen] = useState(false);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [isMarkVisitDialogOpen, setIsMarkVisitDialogOpen] = useState(false);
+  const [cancelAllUpcoming, setCancelAllUpcoming] = useState(false);
+  const [cancelRequestedByPatient, setCancelRequestedByPatient] = useState(false);
+  const [visitDetails, setVisitDetails] = useState({
+    visitedTime: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+    product: event.service || '',
+    walkIn: false,
+    markPenalty: false,
+    removeSessionBalance: false,
+  });
+  const [date, setDate] = useState(new Date());
+
+  useEffect(() => {
+    setIsSheetOpen(true);
+  }, [event]);
+
+  const handleClose = () => {
+    setIsSheetOpen(false);
+    onClose();
+  };
+
+  const handleCancel = () => {
+    onCancel(event, cancelAllUpcoming, cancelRequestedByPatient);
+    setIsCancelDialogOpen(false);
+    handleClose();
+  };
+
+  const handleReschedule = () => {
+    onReschedule(event);
+    setIsRescheduleDialogOpen(false);
+    handleClose();
+  };
+
+  const handleDelete = () => {
+    onDelete(event);
+    setIsDeleteDialogOpen(false);
+    handleClose();
+  };
+
+  const handleMarkVisit = () => {
+    onMarkVisit(event);
+    handleClose();
+  };
+
+  const handleMarkVisitClick = () => {
+    setIsMarkVisitDialogOpen(true);
+  };
+
+  const handleSessionCompleted = () => {
+    onMarkVisit(event.id, visitDetails);
+    setIsMarkVisitDialogOpen(false);
+    handleClose();
+  };
+
+  const isEventCancelled = event.status_patient === 'X' || event.status_employee === 'X';
+
+  const TimeSelect = ({ value, onChange }) => {
+    const generateTimeOptions = () => {
+      const options = [];
+      for (let i = 0; i < 24; i++) {
+        for (let j = 0; j < 60; j += 30) {
+          const hour = i.toString().padStart(2, '0');
+          const minute = j.toString().padStart(2, '0');
+          const time = `${hour}:${minute}`;
+          options.push(<SelectItem key={time} value={time}>{time}</SelectItem>);
+        }
+      }
+      return options;
+    };
+  
+    return (
+      <Select value={value} onValueChange={onChange}>
+        <SelectTrigger>
+          <SelectValue placeholder="Select time" />
+        </SelectTrigger>
+        <SelectContent>
+          {generateTimeOptions()}
+        </SelectContent>
+      </Select>
+    );
   };
 
   return (
-    <Dialog open={true} onOpenChange={onClose}>
-      <DialogContent className="w-[35vw] mx-auto">
-        <DialogHeader>
-          <DialogTitle className="text-xl font-bold text-center">{event.title}</DialogTitle>
-        </DialogHeader>
-        <div className='flex flex-col md:flex-row items-start gap-6'>
-          <div className="grid gap-4 py-4 flex-grow" style={{ borderLeft: `4px solid ${getStatusColor(event.status)}`, paddingLeft: '1rem' }}>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <span className="font-bold">Patient:</span>
-              <span className="col-span-3">{event.patient}</span>
-            </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <span className="font-bold">Doctor:</span>
-              <span className="col-span-3">{event.doctor}</span>
-            </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <span className="font-bold">Service:</span>
-              <span className="col-span-3">{(event.service === null) ? ("N/A") : (event.service)}</span>
-            </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <span className="font-bold">Date:</span>
-              <span className="col-span-3">{format(event.start, 'MMMM d, yyyy')}</span>
-            </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <span className="font-bold">Time:</span>
-              <span className="col-span-3">{format(event.start, 'h:mm a')} - {format(event.end, 'h:mm a')}</span>
-            </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <span className="font-bold mr-4">Duration:</span>
-              <span className="col-span-3 ml-4">{(event.end - event.start) / (1000 * 60)} minutes</span>
-            </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <span className="font-bold">Status:</span>
-              <Badge variant={event.status === 'cancelled' ? 'destructive' : 'default'} className={getStatusColor(event.status)}>
-                {event.status}
-              </Badge>
-            </div>
-          </div>
-          <div className="flex flex-col gap-4 mt-4">
-            {event.status !== 'completed' && (
-              <Button variant="default" onClick={() => onMarkVisit(event)}>
-                Mark Completed
-              </Button>
-            )}
-            {event.status !== 'cancelled' && event.status !== 'completed' && (
+    <>
+      <Sheet className='' open={isSheetOpen} onOpenChange={setIsSheetOpen}>
+        <SheetContent side="bottom" className={`w-[25%] left-[37%] items-center ${isEventCancelled ? "bottom-[50%]" : "bottom-[30%]" }`}>
+          <SheetHeader>
+            <SheetTitle>{event.title + " - " + event.doctor}</SheetTitle>
+          </SheetHeader>
+          <div className="py-4">
+            {!isEventCancelled && (
               <>
-                <Button variant="secondary" onClick={() => {
-                  onClose(); // Close the popup
-                  onReschedule(event); // Call the reschedule function
-                }}>
-                  Reschedule
+                <Button className="w-full mb-2" onClick={handleMarkVisitClick}>
+                  Mark Patient Visit
                 </Button>
-                <Button variant="outline" onClick={() => onCancel(event)}>
-                  Cancel
+                <Button className="w-full mb-2" variant="outline" onClick={() => setIsCancelDialogOpen(true)}>
+                  Cancel Appointment
+                </Button>
+                <Button className="w-full mb-2" variant="outline" onClick={() => setIsRescheduleDialogOpen(true)}>
+                  Reschedule Appointment
+                </Button>
+                <Button className="w-full mb-2" variant="outline" onClick={() => setIsDeleteDialogOpen(true)}>
+                  Delete Appointment
                 </Button>
               </>
             )}
-            <Button variant="destructive" onClick={() => onDelete(event)}>
-              Delete
+            <Button className="w-full mb-2" variant="outline">
+              View Patient Details
+            </Button>
+            <Button className="w-full mb-2" variant="outline">
+              Record New Payment
+            </Button>
+            <Button className="w-full" variant="outline">
+              Call ({event.phoneNumber || '+919182664777'})
             </Button>
           </div>
-        </div>
-      </DialogContent>
-    </Dialog>
+        </SheetContent>
+      </Sheet>
+
+      <Dialog open={isCancelDialogOpen} onOpenChange={setIsCancelDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Do you want to Cancel?</DialogTitle>
+          </DialogHeader>
+          <div className="py-4">
+            <div className="flex items-center space-x-2 mb-2">
+              <Checkbox id="thisAppointment" checked={!cancelAllUpcoming} onCheckedChange={() => setCancelAllUpcoming(false)} />
+              <label htmlFor="thisAppointment">This Appointment</label>
+            </div>
+            <div className="flex items-center space-x-2 mb-4">
+              <Checkbox id="allUpcoming" checked={cancelAllUpcoming} onCheckedChange={setCancelAllUpcoming} />
+              <label htmlFor="allUpcoming">This and All upcoming appointments</label>
+            </div>
+            <div className="flex items-center space-x-2 mb-4">
+              <Checkbox id="patientRequested" checked={cancelRequestedByPatient} onCheckedChange={setCancelRequestedByPatient} />
+              <label htmlFor="patientRequested">Cancellation requested by Patient?</label>
+            </div>
+            <div className="flex justify-end space-x-2">
+              <Button variant="outline" onClick={() => setIsCancelDialogOpen(false)}>Back</Button>
+              <Button onClick={handleCancel}>Cancel</Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={isRescheduleDialogOpen} onOpenChange={setIsRescheduleDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Do you want to Reschedule this Appointment?</DialogTitle>
+          </DialogHeader>
+          <div className="py-4">
+            <div className="flex justify-end space-x-2">
+              <Button variant="outline" onClick={() => setIsRescheduleDialogOpen(false)}>Back</Button>
+              <Button onClick={handleReschedule}>Reschedule</Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Do you want to Delete this Appointment?</DialogTitle>
+          </DialogHeader>
+          <div className="py-4">
+            <div className="flex justify-end space-x-2">
+              <Button variant="outline" onClick={() => setIsDeleteDialogOpen(false)}>Back</Button>
+              <Button variant="destructive" onClick={handleDelete}>Delete</Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={isMarkVisitDialogOpen} onOpenChange={setIsMarkVisitDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Patient Visit</DialogTitle>
+          </DialogHeader>
+          <div className="py-4">
+            <div className="mb-4">
+              <Label>Visit Date (DD/MM/YYYY)</Label>
+              <DatePicker
+                id="date"
+                selected={visitDetails.visitedDate}
+                onChange={(date) => setVisitDetails({...visitDetails, visitedDate: date.toISOString().split('T')[0]})}
+                dateFormat="dd/MM/yyyy"
+              />
+            </div>
+            <div className="mb-4">
+              <Label>Visited Time</Label>
+              <TimeSelect
+                id="time"
+                value={visitDetails.visitedTime}
+                onChange={(time) => setVisitDetails({ ...visitDetails, visitedTime: time })}
+              />
+            </div>
+            <div className="mb-4">
+              <Label>Product / Service</Label>
+              <Select
+                value={visitDetails.product}
+                onValueChange={(value) => setVisitDetails({ ...visitDetails, product: value })}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select Product / Service" />
+                </SelectTrigger>
+                <SelectContent>
+                  {sellables.map((sellable) => (
+                    <SelectItem key={sellable.id} value={sellable.id}>
+                      {sellable.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="flex items-center space-x-2 mb-4">
+              <Checkbox
+                id="walkIn"
+                checked={visitDetails.walkIn}
+                onCheckedChange={(checked) => setVisitDetails({ ...visitDetails, walkIn: checked })}
+              />
+              <Label htmlFor="walkIn">Walk In</Label>
+            </div>
+            <div className="flex items-center space-x-2 mb-4">
+              <Checkbox
+                id="markPenalty"
+                checked={visitDetails.markPenalty}
+                onCheckedChange={(checked) => setVisitDetails({ ...visitDetails, markPenalty: checked })}
+              />
+              <Label htmlFor="markPenalty">Mark Penalty</Label>
+            </div>
+            <div className="flex items-center space-x-2 mb-4">
+              <Checkbox
+                id="removeSessionBalance"
+                checked={visitDetails.removeSessionBalance}
+                onCheckedChange={(checked) => setVisitDetails({ ...visitDetails, removeSessionBalance: checked })}
+              />
+              <Label htmlFor="removeSessionBalance">Remove Session Balance</Label>
+            </div>
+            <Button onClick={handleSessionCompleted} className="w-full">
+              Session Completed
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 };
 
