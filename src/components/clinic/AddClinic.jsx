@@ -104,7 +104,7 @@ const AddClinic = () => {
   };
 
   return (
-    <Card className="w-full max-w-4xl mx-auto mt-8">
+    <Card className="w-full max-w-4xl max-h-[90%] mx-auto mt-8 overflow-scroll">
       <CardHeader>
         <CardTitle className="text-2xl font-bold">Add New Clinic</CardTitle>
       </CardHeader>

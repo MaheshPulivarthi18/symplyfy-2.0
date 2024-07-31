@@ -102,7 +102,7 @@ const Navbar = () => {
   };
 
   return (
-    <Card className="flex flex-col p-4 bg-white shadow-md w-full mb-2">
+    <Card className="flex flex-col p-4 bg-white shadow-md w-full mt-2">
       <div className="flex justify-between items-center">
         <div className="flex items-center space-x-2" onClick={() => navigate('/clinic')} style={{cursor: 'pointer'}}>
           <img src={logo} alt="Symplify Logo" className="h-8 w-8" />

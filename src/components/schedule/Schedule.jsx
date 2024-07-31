@@ -1153,7 +1153,7 @@ export default function Schedule() {
                     id="date"
                     selected={newVisit.date}
                     value={newVisit.date}
-                    onChange={(date) => setNewVisit({...newVisit, date: date})}
+                    onChange={(date) => {setNewVisit({...newVisit, date: date}); console.log(date)}}
                     dateFormat="dd/MM/yyyy"
                   />
                 </div>

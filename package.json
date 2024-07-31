@@ -32,6 +32,8 @@
     "@radix-ui/react-tabs": "^1.1.0",
     "@radix-ui/react-toast": "^1.2.1",
     "@radix-ui/react-toggle": "^1.1.0",
+    "@tanstack/match-sorter-utils": "^8.15.1",
+    "@tanstack/react-table": "^8.19.3",
     "class-variance-authority": "^0.7.0",
     "clsx": "^2.1.1",
     "date-fns": "^2.30.0",

@@ -142,7 +142,7 @@ const Clinic = () => {
 
   return (
     <>
-      <Card className="w-full max-w-4xl mx-auto mt-8">
+      <Card className="w-full max-w-4xl max-h-[90%] mx-auto mt-8 overflow-scroll">
         <CardHeader>
           <CardTitle className="text-2xl font-bold">
             <div className='flex justify-between items-center'>
@@ -159,8 +159,14 @@ const Clinic = () => {
             </div>
           ) : (
             <>
-              {renderClinicList(employeeClinics, "Employee Clinics", false)}
-              {renderClinicList(patientClinics, "Patient Clinics", true)}
+              <div className='w-full flex flex-row gap-4'>
+                <div className='w-1/2'>
+                  {renderClinicList(employeeClinics, "Employee Clinics", false)}
+                </div>
+                <div className='w-1/2'>
+                  {renderClinicList(patientClinics, "Patient Clinics", true)}
+                </div>
+              </div>
             </>
           )}
         </CardContent>

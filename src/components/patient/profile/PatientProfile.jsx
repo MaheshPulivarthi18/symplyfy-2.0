@@ -19,7 +19,7 @@ import { DatePicker } from '@/components/ui/datepicker';
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { parseISO, format, addMinutes, addHours } from 'date-fns';
+import { parseISO, format, addMinutes, addHours, addDays } from 'date-fns';
 import { CalendarIcon, Clock } from "lucide-react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { date } from 'zod';
@@ -32,6 +32,9 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
+import { DataTable } from "@/components/ui/data-table"
+//  import { format, parseISO } from 'date-fns'
+import { ArrowUpDown } from "lucide-react"
 
 const PatientProfile = () => {
   const { clinic_id, patient_id } = useParams();
@@ -79,7 +82,7 @@ const PatientProfile = () => {
   const [visits, setVisits] = useState([]);
   const [isVisitDialogOpen, setIsVisitDialogOpen] = useState(false);
   const [newVisit, setNewVisit] = useState({
-    date: '',
+    date: new Date(), // Initialize with current date
     time: '',
     comment: '',
     employee: '',
@@ -87,7 +90,7 @@ const PatientProfile = () => {
     sellable_reduce_balance: false,
     walk_in: false,
     penalty: false,
-    duration: ''
+    duration: 30
   });
 
   const [payments, setPayments] = useState([]);
@@ -100,8 +103,173 @@ const PatientProfile = () => {
     channel: ''
   });
   const [invoices, setInvoices] = useState([]);
+  
+  // Visits DataTable
+  const VisitsDataTable = ({ data }) => {
+    const columns = [
+      {
+        accessorKey: "date",
+        header: ({ column }) => {
+          return (
+            <Button
+              variant="ghost"
+              onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+            >
+              Date
+              <ArrowUpDown className="ml-2 h-4 w-4" />
+            </Button>
+          )
+        },
+        cell: ({ row }) => format(parseISO(row.getValue("date")), 'EEEE dd MMMM yyyy'),
+      },
+      {
+        accessorKey: "time",
+        header: ({ column }) => {
+          return (
+            <Button
+              variant="ghost"
+              onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+            >
+              Time
+              <ArrowUpDown className="ml-2 h-4 w-4" />
+            </Button>
+          )
+        },
+      },
+      {
+        accessorKey: "doctor",
+        header: "Doctor",
+        cell: ({ row }) => row.getValue("doctor"),
+      },
+      {
+        accessorKey: "service",
+        header: "Service",
+        cell: ({ row }) => row.getValue("service"),
+      },
+      {
+        accessorKey: "duration",
+        header: "Duration",
+        cell: ({ row }) => `${row.getValue("duration")} minutes`,
+      },
+      {
+        accessorKey: "walk_in",
+        header: "Walk-in",
+        cell: ({ row }) => row.getValue("walk_in") ? "Yes" : "No",
+      },
+      {
+        accessorKey: "penalty",
+        header: "Penalty",
+        cell: ({ row }) => row.getValue("penalty") ? "Yes" : "No",
+      },
+    ];
+  
+    // Preprocess the data to include doctor and service names
+    const processedData = data.map(visit => ({
+      ...visit,
+      doctor: employeeDetails[visit.employee] 
+        ? `${employeeDetails[visit.employee].first_name} ${employeeDetails[visit.employee].last_name}`
+        : 'Loading...',
+      service: sellableDetails[visit.sellable]
+        ? sellableDetails[visit.sellable].name
+        : 'Loading...',
+    }));
+  
+    return (
+      <DataTable
+        columns={columns}
+        data={processedData}
+        searchableColumns={[
+          {
+            id: "doctor",
+            title: "Doctor",
+          },
+        ]}
+        rowsPerPage={7}
+      />
+    );
+  };
 
+// Appointments DataTable
+const AppointmentsDataTable = ({ data }) => {
+  const columns = [
+    {
+      accessorKey: "therapist",
+      header: "Therapist",
+      cell: ({ row }) => {
+        const employeeId = row.original.employee;
+        return employeeDetails[employeeId] 
+          ? `${employeeDetails[employeeId].first_name} ${employeeDetails[employeeId].last_name}`
+          : row.original.employee.first_name + " " + row.original.employee.last_name;
+      },
+    },
+    {
+      accessorKey: "date",
+      header: ({ column }) => {
+        return (
+          <Button
+            variant="ghost"
+            onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+          >
+            Date
+            <ArrowUpDown className="ml-2 h-4 w-4" />
+          </Button>
+        )
+      },
+      cell: ({ row }) => format(parseISO(row.getValue("date")), 'EEEE dd MMMM yyyy'),
+    },
+    {
+      accessorKey: "startTime",
+      header: ({ column }) => {
+        return (
+          <Button
+            variant="ghost"
+            onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+          >
+            Start Time
+            <ArrowUpDown className="ml-2 h-4 w-4" />
+          </Button>
+        )
+      },
+      cell: ({ row }) => format(parseISO(row.getValue("startTime")), 'HH:mm'),
+    },
+    {
+      accessorKey: "endTime",
+      header: "End Time",
+      cell: ({ row }) => format(parseISO(row.getValue("endTime")), 'HH:mm'),
+    },
+    {
+      accessorKey: "service",
+      header: "Service",
+      cell: ({ row }) => {
+        const sellableId = row.original.sellable;
+        console.log(sellableDetails[sellableId]?.name)
+        return sellableDetails[sellableId]
+          ? sellableDetails[sellableId].name
+          : 'N/A';
+      },
+    },
+  ];
 
+  return (
+    <DataTable
+      columns={columns}
+      data={data.map(appointment => ({
+        ...appointment,
+        date: appointment.start,
+        startTime: appointment.start,
+        endTime: appointment.end,
+        therapist: `${appointment.employee.first_name} ${appointment.employee.last_name}`,
+      }))}
+      searchableColumns={[
+        {
+          id: "therapist",
+          title: "Therapist",
+        },
+      ]}
+      rowsPerPage={7}
+    />
+  );
+};
 
   useEffect(() => {
     let interval;
@@ -468,11 +636,12 @@ const PatientProfile = () => {
         throw new Error("Invalid date");
       }
   
-      // Create a Date object in the local time zone
+      // Create a Date object in the local time zone and add one day
       const [year, month, day] = newAppointment.date.split('-');
       const [hours, minutes] = newAppointment.time.split(':');
-      const localDate = new Date(year, month - 1, day, hours, minutes);
-      console.log("Local Date:", localDate);
+      let localDate = new Date(year, month - 1, day, hours, minutes);
+      localDate = addDays(localDate, 1); // Add one day
+      console.log("Local Date (adjusted):", localDate);
   
       if (isNaN(localDate.getTime())) {
         console.log("Invalid Date object created");
@@ -503,9 +672,6 @@ const PatientProfile = () => {
           recurrenceRule += `;COUNT=${newAppointment.sessions}`;
         }
       }
-
-      console.log("Start Date Time:", startDateTime);
-      console.log("End Date Time:", endDateTime);
   
       const bookingData = {
         start: startDateTime.toISOString(),
@@ -517,7 +683,7 @@ const PatientProfile = () => {
       };
   
       console.log("Booking Data:", bookingData);
-
+  
       const response = await createBooking(bookingData);
       console.log(response)
       setAppointments([...appointments, response]);
@@ -544,13 +710,44 @@ const PatientProfile = () => {
   const handleAddVisit = async (e) => {
     e.preventDefault();
     try {
+      console.log('Original newVisit date:', newVisit.date);
+  
+      // Add one day to the selected date
+      const adjustedDate = format(addDays(new Date(newVisit.date), 1), "yyyy-MM-dd");
+  
+      const [hours, minutes] = newVisit.time.split(':').map(Number);
+      const localStartDateTime = new Date(adjustedDate);
+      localStartDateTime.setHours(hours, minutes, 0, 0);
+  
+      const durationInMinutes = newVisit.duration;
+  
+      const localEndDateTime = new Date(localStartDateTime.getTime() + durationInMinutes * 60000);
+  
+      // Format dates as ISO strings, but remove the 'Z' to keep them as local time
+      const formatLocalDate = (date) => date.toISOString().split('T')[0];
+      
+      const visitData = {
+        date: adjustedDate,
+        time: newVisit.time,
+        comment: newVisit.comment,
+        employee: newVisit.employee,
+        sellable: newVisit.sellable,
+        sellable_reduce_balance: newVisit.sellable_reduce_balance,
+        walk_in: newVisit.walk_in,
+        penalty: newVisit.penalty,
+        duration: newVisit.duration.toString()
+      };
+  
+      console.log("Final visit data to be sent:", visitData);
+  
       const response = await fetchWithTokenHandling(`${import.meta.env.VITE_BASE_URL}/api/emp/clinic/${clinic_id}/patient/${patient_id}/visit/`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(newVisit),
+        body: JSON.stringify(visitData),
       });
+
       setVisits(prevVisits => [...prevVisits, response]);
       
       // Fetch details for the new visit
@@ -558,7 +755,7 @@ const PatientProfile = () => {
       if (response.sellable) fetchSellableDetails(response.sellable);
   
       setNewVisit({
-        date: '',
+        date: new Date(),
         time: '',
         comment: '',
         employee: '',
@@ -566,7 +763,7 @@ const PatientProfile = () => {
         sellable_reduce_balance: false,
         walk_in: false,
         penalty: false,
-        duration: ''
+        duration: 30
       });
       setIsVisitDialogOpen(false);
       toast({ title: "Success", description: "Visit added successfully" });
@@ -795,8 +992,8 @@ const PatientProfile = () => {
   };
 
   return (
-    <div className="flex w-full gap-8 p-8 container mx-auto shadow-xl">
-      <Card className="w-[45%]">
+    <div className="flex w-full h-full gap-8 p-8 shadow-xl">
+      <Card className="w-[40%]">
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
           <CardTitle>Patient Information</CardTitle>
           <DropdownMenu>
@@ -910,105 +1107,105 @@ const PatientProfile = () => {
         </CardContent>
       </Card>
       <Dialog open={isInvoiceDialogOpen} onOpenChange={setIsInvoiceDialogOpen}>
-  <DialogContent className="sm:max-w-[600px]">
-    <DialogHeader>
-      <DialogTitle>Generate Invoice</DialogTitle>
-    </DialogHeader>
-    <div className="grid gap-4 py-4">
-      <div className="gap-4">
-        <Label htmlFor="sellable" className="text-right">
-          Product/Service
-        </Label>
-        <Select 
-          onValueChange={setSelectedSellable} 
-          value={selectedSellable}
-          className="col-span-3"
-        >
-          <SelectTrigger id="sellable">
-            <SelectValue placeholder="Select product/service" />
-          </SelectTrigger>
-          <SelectContent>
-            {sellables.map(sellable => (
-              <SelectItem key={sellable.id} value={sellable.id}>
-                {sellable.name}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
-      <Button onClick={handleAddInvoiceItem}>+ Add Item</Button>
-      <div className="border p-2">
-        <table className="w-full">
-          <thead>
-            <tr>
-              <th>Product/Service</th>
-              <th>Quantity</th>
-              <th>Rate</th>
-              <th>Gross</th>
-              <th>Discount</th>
-              <th>Net</th>
-            </tr>
-          </thead>
-          <tbody>
-            {invoiceItems.length === 0 ? (
-              <tr>
-                <td colSpan="6" className="text-center">No items added</td>
-              </tr>
-            ) : (
-              invoiceItems.map((item, index) => (
-                <tr key={index}>
-                  <td>{item.name}</td>
-                  <td>
-                    <Input
-                      type="number"
-                      value={item.quantity}
-                      onChange={(e) => handleItemChange(index, 'quantity', parseInt(e.target.value))}
-                      className="w-16"
-                    />
-                  </td>
-                  <td>
-                    <Input
-                      type="number"
-                      value={item.rate}
-                      onChange={(e) => handleItemChange(index, 'rate', parseFloat(e.target.value))}
-                      className="w-24"
-                    />
-                  </td>
-                  <td>{item.gross}</td>
-                  <td>
-                    <Input
-                      type="number"
-                      value={item.discount}
-                      onChange={(e) => handleItemChange(index, 'discount', parseFloat(e.target.value))}
-                      className="w-24"
-                    />
-                  </td>
-                  <td>{item.net}</td>
-                </tr>
-              ))
-            )}
-          </tbody>
-        </table>
-      </div>
-      <div className="grid grid-cols-4 items-center gap-4">
-        <Label htmlFor="finalAmount" className="text-right">
-          Final Amount
-        </Label>
-        <Input 
-          id="finalAmount" 
-          value={finalAmount} 
-          readOnly
-          className="col-span-3"
-        />
-      </div>
-    </div>
-    <DialogFooter>
-      <Button onClick={handleGenerateInvoice}>Generate Invoice</Button>
-    </DialogFooter>
-  </DialogContent>
-</Dialog>
+        <DialogContent className="sm:max-w-[600px]">
+          <DialogHeader>
+            <DialogTitle>Generate Invoice</DialogTitle>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="gap-4">
+              <Label htmlFor="sellable" className="text-right">
+                Product/Service
+              </Label>
+              <Select 
+                onValueChange={setSelectedSellable} 
+                value={selectedSellable}
+                className="col-span-3"
+              >
+                <SelectTrigger id="sellable">
+                  <SelectValue placeholder="Select product/service" />
+                </SelectTrigger>
+                <SelectContent>
+                  {sellables.map(sellable => (
+                    <SelectItem key={sellable.id} value={sellable.id}>
+                      {sellable.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <Button onClick={handleAddInvoiceItem}>+ Add Item</Button>
+            <div className="border p-2">
+              <table className="w-full">
+                <thead>
+                  <tr>
+                    <th>Product/Service</th>
+                    <th>Quantity</th>
+                    <th>Rate</th>
+                    <th>Gross</th>
+                    <th>Discount</th>
+                    <th>Net</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {invoiceItems.length === 0 ? (
+                    <tr>
+                      <td colSpan="6" className="text-center">No items added</td>
+                    </tr>
+                  ) : (
+                    invoiceItems.map((item, index) => (
+                      <tr key={index}>
+                        <td>{item.name}</td>
+                        <td>
+                          <Input
+                            type="number"
+                            value={item.quantity}
+                            onChange={(e) => handleItemChange(index, 'quantity', parseInt(e.target.value))}
+                            className="w-16"
+                          />
+                        </td>
+                        <td>
+                          <Input
+                            type="number"
+                            value={item.rate}
+                            onChange={(e) => handleItemChange(index, 'rate', parseFloat(e.target.value))}
+                            className="w-24"
+                          />
+                        </td>
+                        <td>{item.gross}</td>
+                        <td>
+                          <Input
+                            type="number"
+                            value={item.discount}
+                            onChange={(e) => handleItemChange(index, 'discount', parseFloat(e.target.value))}
+                            className="w-24"
+                          />
+                        </td>
+                        <td>{item.net}</td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="finalAmount" className="text-right">
+                Final Amount
+              </Label>
+              <Input 
+                id="finalAmount" 
+                value={finalAmount} 
+                readOnly
+                className="col-span-3"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button onClick={handleGenerateInvoice}>Generate Invoice</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
       <div className="w-full space-y-8">
-        <Tabs className='w-full' defaultValue="notes">
+        <Tabs className='w-full h-full' defaultValue="notes">
           <TabsList className='w-full justify-around'>
             <TabsTrigger className='px-12' value="notes">Notes</TabsTrigger>
             <TabsTrigger className='px-12' value="goals">Goals</TabsTrigger>
@@ -1018,7 +1215,7 @@ const PatientProfile = () => {
             <TabsTrigger value="invoices">Invoices</TabsTrigger>
             <TabsTrigger className='px-12' value="tasks">Tasks</TabsTrigger>
           </TabsList>
-          <TabsContent value="notes" className="relative min-h-[300px] p-4 pb-16">
+          <TabsContent value="notes" className="relative min-h-[300px] h-[90%] p-4 ">
             {notes.length === 0 ? (
               <p>No notes available for this patient.</p>
             ) : (
@@ -1094,7 +1291,7 @@ const PatientProfile = () => {
               </DialogContent>
             </Dialog>
           </TabsContent>
-          <TabsContent value="goals" className="relative min-h-[300px] p-4 pb-16">
+          <TabsContent value="goals" className="relative min-h-[300px] h-[90%] overflow-scroll p-4 ">
           {goals.length === 0 ? (
                 <p>No goals set for this patient.</p>
               ) : (
@@ -1186,7 +1383,7 @@ const PatientProfile = () => {
               </DialogContent>
             </Dialog>
           </TabsContent>
-          <TabsContent value="tasks" className="relative min-h-[300px] p-4 pb-16">
+          <TabsContent value="tasks" className="relative min-h-[300px] h-[90%] p-4 ">
             {tasks.length === 0 ? (
                 <p>No tasks assigned to this patient.</p>
               ) : (
@@ -1248,36 +1445,11 @@ const PatientProfile = () => {
           </TabsContent>
           
           {/* Appointment TabsContent */}
-          <TabsContent value="appointments" className="relative min-h-[300px] max-h-[600px] p-4 pb-16 overflow-scroll">
+          <TabsContent value="appointments" className="relative min-h-[300px] h-[90%] overflow-scroll p-4">
             {appointments.length === 0 ? (
               <p>No upcoming appointments for this patient.</p>
             ) : (
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead className='text-center'>Therapist</TableHead>
-                    <TableHead className='text-center'>Date</TableHead>
-                    <TableHead className='text-center'>Start Time</TableHead>
-                    <TableHead className='text-center'>End Time</TableHead>
-                    <TableHead className='text-center'>Service</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {appointments.map(appointment => (
-                    <TableRow key={appointment.id}>
-                      <TableCell>{employeeDetails[appointment.employee] ? employeeDetails[appointment.employee].first_name + " " + employeeDetails[appointment.employee].last_name  : appointment.employee.first_name+ " " +appointment.employee.last_name}</TableCell>
-                      <TableCell>{format(new Date(appointment.start), 'EEEE dd MMMM yyyy')}</TableCell>
-                      <TableCell>{format(parseISO(appointment.start), 'HH:mm')}</TableCell>
-                      <TableCell>{format(parseISO(appointment.end), 'HH:mm')}</TableCell>
-                      <TableCell>
-                        {sellableDetails[appointment.sellable]
-                          ? sellableDetails[appointment.sellable].name
-                          : 'N/A'}
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+              <AppointmentsDataTable data={appointments} />
             )}
             <Dialog open={isAppointmentDialogOpen} onOpenChange={setIsAppointmentDialogOpen}>
               <DialogTrigger asChild>
@@ -1435,7 +1607,7 @@ const PatientProfile = () => {
             </Dialog>
           </TabsContent>
           
-          <TabsContent value="payments" className="relative min-h-[300px] p-4 pb-16">
+          <TabsContent value="payments" className="relative min-h-[300px] h-[90%] overflow-scroll p-4 ">
             {payments.length === 0 ? (
               <p>No payments recorded for this patient.</p>
             ) : (
@@ -1595,52 +1767,21 @@ const PatientProfile = () => {
             </Dialog>
           </TabsContent>
 
-          <TabsContent value="visits" className="relative min-h-[300px] p-4 pb-16">
+          <TabsContent value="visits" className="relative min-h-[300px] h-[90%] overflow-scroll p-4 ">
             {visits.length === 0 ? (
               <p>No visits recorded for this patient.</p>
             ) : (
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead className='text-center'>Date</TableHead>
-                    <TableHead className='text-center'>Time</TableHead>
-                    <TableHead className='text-center'>Doctor</TableHead>
-                    <TableHead className='text-center'>Service</TableHead>
-                    <TableHead className='text-center'>Duration</TableHead>
-                    <TableHead className='text-center'>Walk-in</TableHead>
-                    <TableHead className='text-center'>Penalty</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {visits.map(visit => (
-                    <TableRow key={visit.id}>
-                      <TableCell>{format(new Date(visit.date), 'EEEE dd MMMM yyyy')}</TableCell>
-                      <TableCell>{visit.time || 'N/A'}</TableCell>
-                      <TableCell>
-                        {employeeDetails[visit.employee] 
-                          ? `${employeeDetails[visit.employee].first_name} ${employeeDetails[visit.employee].last_name}`
-                          : 'Loading...'}
-                      </TableCell>
-                      <TableCell>
-                        {sellableDetails[visit.sellable]
-                          ? sellableDetails[visit.sellable].name
-                          : 'Loading...'}
-                      </TableCell>
-                      <TableCell>{visit.duration ? `${visit.duration} minutes` : 'N/A'}</TableCell>
-                      <TableCell>{visit.walk_in ? 'Yes' : 'No'}</TableCell>
-                      <TableCell>{visit.penalty ? 'Yes' : 'No'}</TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+              <VisitsDataTable data={visits} />
             )}
             <Dialog open={isVisitDialogOpen} onOpenChange={setIsVisitDialogOpen}>
               <DialogTrigger asChild>
-                <Button className="absolute bottom-0 right-0">
+                <Button
+                  className="absolute bottom-0 right-0">
                   <PlusCircle className="h-4 w-4" />
                 </Button>
               </DialogTrigger>
               <DialogContent>
+                {console.log("Dialog rendering with date:", newVisit.date)}
                 <DialogHeader>
                   <DialogTitle>Add New Visit</DialogTitle>
                 </DialogHeader>
@@ -1649,10 +1790,8 @@ const PatientProfile = () => {
                     <div>
                       <Label htmlFor="date">Visit Date</Label>
                       <DatePicker
-                        id="date"
-                        selected={newVisit.date ? new Date(newVisit.date) : null}
-                        onChange={(date) => setNewVisit({...newVisit, date: date.toISOString().split('T')[0]})}
-                        dateFormat="EEEE dd MMMM yyyy"
+                        value={newVisit.date}
+                        onChange={(date) => setNewVisit({...newVisit, date: date})}
                       />
                     </div>
                     <div>
