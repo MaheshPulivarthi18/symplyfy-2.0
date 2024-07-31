@@ -9,6 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { DatePicker } from '../ui/datepicker';
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { useNavigate, useParams } from 'react-router-dom';
 
 const AppointmentPopup = ({ event, onClose, onReschedule, onCancel, onDelete, onMarkVisit, sellables }) => {
   const [isSheetOpen, setIsSheetOpen] = useState(true);
@@ -25,8 +26,10 @@ const AppointmentPopup = ({ event, onClose, onReschedule, onCancel, onDelete, on
     markPenalty: false,
     removeSessionBalance: false,
   });
+  const {clinic_id} = useParams()
+  const navigate = useNavigate()
   const [date, setDate] = useState(new Date());
-  const [deleteScope, setDeleteScope] = useState('single');
+  const [deleteScope, setDeleteScope] = useState('0');
   const [cancelScope, setCancelScope] = useState('T');
   const [tillDate, setTillDate] = useState(null);
 
@@ -52,7 +55,7 @@ const AppointmentPopup = ({ event, onClose, onReschedule, onCancel, onDelete, on
   };
 
   const handleDelete = () => {
-    onDelete(event);
+    onDelete(event, deleteScope);
     setIsDeleteDialogOpen(false);
     handleClose();
   };
@@ -124,7 +127,7 @@ const AppointmentPopup = ({ event, onClose, onReschedule, onCancel, onDelete, on
                 </Button>
               </>
             )}
-            <Button className="w-full mb-2" variant="outline">
+            <Button className="w-full mb-2" variant="outline" onClick={() => navigate(`/clinic/${clinic_id}/patients/${event.patientId}`)}>
               View Patient Details
             </Button>
             <Button className="w-full mb-2" variant="outline">
@@ -205,11 +208,11 @@ const AppointmentPopup = ({ event, onClose, onReschedule, onCancel, onDelete, on
           </DialogHeader>
           <RadioGroup value={deleteScope} onValueChange={setDeleteScope}>
             <div className="flex items-center space-x-2">
-              <RadioGroupItem value="single" id="delete-single" />
+              <RadioGroupItem value="0" id="delete-single" />
               <Label htmlFor="delete-single">Delete this appointment only</Label>
             </div>
             <div className="flex items-center space-x-2">
-              <RadioGroupItem value="recurrence" id="delete-recurrence" />
+              <RadioGroupItem value="1" id="delete-recurrence" />
               <Label htmlFor="delete-recurrence">Delete all recurring appointments</Label>
             </div>
           </RadioGroup>

@@ -254,7 +254,7 @@ export default function Schedule() {
   };  
 
   const handleReschedule = (event) => {
-    // First, set up the newVisit state with the event details
+    const eventDate = new Date(event.start);
     setNewVisit({
       id: event.id,
       patient: event.patientId,
@@ -262,8 +262,8 @@ export default function Schedule() {
       therapist: event.doctorId,
       therapistName: event.doctor,
       sellable: event.service,
-      date: format(new Date(event.start), 'yyyy-MM-dd'),
-      time: format(new Date(event.start), 'HH:mm'),
+      date: isNaN(eventDate) ? new Date() : eventDate,
+      time: format(isNaN(eventDate) ? new Date() : eventDate, 'HH:mm'),
       frequency: 'does_not_repeat',
       weekdays: [],
       endsOn: '',
@@ -331,7 +331,12 @@ export default function Schedule() {
         if (!response.ok) throw new Error('Failed to reschedule appointment');
   
         const updatedBooking = await response.json();
-        setEvents(events.map(event => event.id === newVisit.id ? updatedBooking : event));
+        // setEvents(events.map(event => event.id === newVisit.id ? updatedBooking : event));
+        await fetchBookings();
+
+        setEvents(prevEvents => prevEvents.map(event => 
+          event.id === newVisit.id ? updatedBooking : event
+        ));
         setNewVisit({
           patient: '',
           sellable: '',
@@ -390,6 +395,7 @@ export default function Schedule() {
       const canceledAppointment = await response.json();
       
       // Update the local state to reflect the cancellation
+      await fetchBookings();
       setEvents(prevEvents => prevEvents.map(event => 
         event.id === canceledAppointment.id 
           ? { ...event, status_patient: 'X', status_employee: 'X' } 
@@ -413,18 +419,17 @@ export default function Schedule() {
   };
 
   const handleDelete = async (eventToDelete, deleteScope) => {
-    console.log(eventToDelete)
     try {
       const url = `${import.meta.env.VITE_BASE_URL}/api/emp/clinic/${clinic_id}/schedule/booking/${eventToDelete.id}/delete/`;
-      const queryParams = deleteScope === 'recurrence' ? `?scope=${eventToDelete.recurrence}` : '';
+      const queryParams = deleteScope === '1' ? `?scope=${eventToDelete.recurrence}` : '';
   
       const response = await authenticatedFetch(`${url}${queryParams}`, {
         method: 'DELETE',
       });
   
       if (!response.ok) throw new Error('Failed to delete appointment');
-  
-      fetchBookings(); // Refresh the bookings
+
+      await fetchBookings();
       setSelectedEvent(null);
       toast({
         title: "Success",
@@ -462,11 +467,12 @@ export default function Schedule() {
       const updatedBooking = await response.json();
       
       // Update the local state to mark the event as attended
-      setEvents(events.map(event => 
+      setEvents(prevEvents => prevEvents.map(event => 
         event.id === bookingId 
           ? { ...event, ...updatedBooking, attended: true }
           : event
       ));
+      await fetchBookings();
       
       toast({
         title: "Success",
@@ -529,8 +535,6 @@ export default function Schedule() {
         actor: "E",
       };
 
-    console.log(bookingData);
-  
       console.log(bookingData);
 
       const response = await authenticatedFetch(`${import.meta.env.VITE_BASE_URL}/api/emp/clinic/${clinic_id}/schedule/booking/`, {
@@ -551,7 +555,8 @@ export default function Schedule() {
       } else {
         setEvents([...events, newBooking]);
       }
-  
+      await fetchBookings()
+      handleDialogOpenChange(false);
       setNewVisit({
         patient: '',
         sellable: '',
@@ -576,6 +581,28 @@ export default function Schedule() {
         title: "Error",
         description: error.message,
         variant: "destructive",
+      });
+    }
+  };
+
+  const handleDialogOpenChange = (open) => {
+    setIsVisitDialogOpen(open);
+    if (!open) {
+      setIsRescheduling(false);
+      setNewVisit({
+        patient: '',
+        patientName: '',
+        sellable: '',
+        date: new Date(),
+        time: '',
+        frequency: 'does_not_repeat',
+        weekdays: [],
+        endsOn: '',
+        sessions: '',
+        duration: 30,
+        customDuration: '',
+        therapist: '',
+        therapistName: '',
       });
     }
   };
@@ -876,7 +903,18 @@ export default function Schedule() {
       <div className='flex flex-col-reverse lg:flex-row-reverse gap-8 lg:gap-8 w-full h-full'>
         <div className="w-full lg:w-[17.75%] flex flex-col h-full">
           <div className="mb-4 flex-shrink-0">
-            <Button onClick={() => {setIsVisitDialogOpen(true); setIsRescheduling(false)}} className="flex items-center w-full">
+            <Button 
+              onClick={() => {
+                const now = new Date();
+                setNewVisit(prev => ({
+                  ...prev,
+                  date: now,
+                  time: format(now, 'HH:mm'),
+                }));
+                handleDialogOpenChange(true);
+              }} 
+              className="flex items-center w-full"
+            >
               <PlusCircle className="mr-2 h-4 w-4" />
               Add Appointment
             </Button>
@@ -1042,8 +1080,9 @@ export default function Schedule() {
         />
       )}
       {/* add appointment */}
-      <Dialog open={isVisitDialogOpen} onOpenChange={setIsVisitDialogOpen}>
-        <DialogContent className="sm:max-w-[425px]">
+      <Dialog open={isVisitDialogOpen} onOpenChange={handleDialogOpenChange}>
+        <DialogContent className="sm:max-w-[425px] max-h-[90vh] overflow-y-auto">
+          {console.log("Dialog rendering with date:", newVisit.date)}
           <DialogHeader>
             <DialogTitle>{isRescheduling ? 'Reschedule Appointment' : 'Add Appointment'}</DialogTitle>
           </DialogHeader>
@@ -1051,18 +1090,7 @@ export default function Schedule() {
             {isRescheduling ? (
               <>
                 <div>
-                  <Label>Patient</Label>
-                  <Input 
-                    value={patients.find(p => p.first_name + " " + p.last_name === newVisit.patientName)?.first_name + ' ' + patients.find(p => p.first_name + " " + p.last_name === newVisit.patientName)?.last_name || ''}
-                    disabled
-                  />
-                </div>
-                <div>
-                  <Label>Therapist</Label>
-                  <Input 
-                    value={therapists.find(t => t.first_name + " " + t.last_name === newVisit.therapistName)?.first_name + ' ' + (therapists.find(t => t.first_name + " " + t.last_name === newVisit.therapistName)?.last_name === null) ? (" "): (therapists.find(t => t.first_name + " " + t.last_name === newVisit.therapistName)?.last_name) || ''}
-                    disabled
-                  />
+                  <Label>{format(new Date(newVisit.date), 'EEEE dd MMMM yyyy')} - {newVisit.time}</Label>
                 </div>
               </>
             ) : (
@@ -1120,10 +1148,11 @@ export default function Schedule() {
             <div className="flex flex-col space-y-2">
               <div className="flex space-x-2">
                 <div className="flex-grow">
-                  <Label htmlFor="date">Starts On (DD/MM/YYYY)</Label>
+                  <Label htmlFor="date">{isRescheduling ? ("Reschedule To") : ("Starts On")} (DD/MM/YYYY)</Label>
                   <DatePicker
                     id="date"
                     selected={newVisit.date}
+                    value={newVisit.date}
                     onChange={(date) => setNewVisit({...newVisit, date: date})}
                     dateFormat="dd/MM/yyyy"
                   />
@@ -1138,63 +1167,71 @@ export default function Schedule() {
                 </div>
               </div>
             </div>
-
-            <Select onValueChange={(value) => setNewVisit({...newVisit, frequency: value})}>
-              <SelectTrigger className="w-full">
-                <SelectValue placeholder="Frequency" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="does_not_repeat">Does not repeat</SelectItem>
-                <SelectItem value="weekly">Weekly</SelectItem>
-              </SelectContent>
-            </Select>
-
-            {newVisit.frequency === 'weekly' && (
+            {isRescheduling ? (
               <>
-                <div>
-                  <Label className="mb-2 block">Select Weekdays</Label>
-                  <div className="flex flex-wrap gap-2">
-                    {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map((day) => (
-                      <Button
-                        key={day}
-                        variant={newVisit.weekdays.includes(day) ? "default" : "outline"}
-                        size="sm"
-                        onClick={() => {
-                          const updatedWeekdays = newVisit.weekdays.includes(day)
-                            ? newVisit.weekdays.filter(d => d !== day)
-                            : [...newVisit.weekdays, day];
-                          setNewVisit({...newVisit, weekdays: updatedWeekdays});
-                        }}
-                      >
-                        {day}
-                      </Button>
-                    ))}
-                  </div>
-                </div>
 
-                <div className="space-y-2">
-                  <Label>Ends On (DD/MM/YYYY)</Label>
-                  <DatePicker
-                    id="enddate"
-                    selected={date}
-                    onChange={(date) => setNewVisit({...newVisit, endsOn: date ? date.toISOString().split('T')[0] : ''})}
-                    dateFormat="dd/MM/yyyy"
-                  />
-                </div>
+              </>
+            ) : (
+              <>
+                <Select onValueChange={(value) => setNewVisit({...newVisit, frequency: value})}>
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Frequency" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="does_not_repeat">Does not repeat</SelectItem>
+                    <SelectItem value="weekly">Weekly</SelectItem>
+                  </SelectContent>
+                </Select>
 
-                <div className="space-y-2">
-                  <Label htmlFor="sessions">OR</Label>
-                  <Input
-                    id="sessions"
-                    type="number"
-                    placeholder="For next 'X' sessions"
-                    value={newVisit.sessions}
-                    onChange={(e) => setNewVisit({...newVisit, sessions: e.target.value})}
-                  />
-                </div>
+                {newVisit.frequency === 'weekly' && (
+                  <>
+                    <div>
+                      <Label className="mb-2 block">Select Weekdays</Label>
+                      <div className="flex flex-wrap gap-2">
+                        {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map((day) => (
+                          <Button
+                            key={day}
+                            variant={newVisit.weekdays.includes(day) ? "default" : "outline"}
+                            size="sm"
+                            onClick={() => {
+                              const updatedWeekdays = newVisit.weekdays.includes(day)
+                                ? newVisit.weekdays.filter(d => d !== day)
+                                : [...newVisit.weekdays, day];
+                              setNewVisit({...newVisit, weekdays: updatedWeekdays});
+                            }}
+                          >
+                            {day}
+                          </Button>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label>Ends On (DD/MM/YYYY)</Label>
+                      <DatePicker
+                        id="enddate"
+                        selected={date}
+                        onChange={(date) => setNewVisit({...newVisit, endsOn: date ? date.toISOString().split('T')[0] : ''})}
+                        dateFormat="dd/MM/yyyy"
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="sessions">OR</Label>
+                      <Input
+                        id="sessions"
+                        type="number"
+                        placeholder="For next 'X' sessions"
+                        value={newVisit.sessions}
+                        onChange={(e) => setNewVisit({...newVisit, sessions: e.target.value})}
+                      />
+                    </div>
+                  </>
+                )}
+
               </>
             )}
-
+            
             <div className="space-y-2">
               <Label>Duration</Label>
               <RadioGroup onValueChange={(value) => setNewVisit({...newVisit, duration: parseInt(value), customDuration: ''})}>

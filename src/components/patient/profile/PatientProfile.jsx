@@ -697,23 +697,41 @@ const PatientProfile = () => {
 
   const handleAddInvoiceItem = () => {
     const sellable = sellables.find(s => s.id === selectedSellable);
-    console.log(sellable)
     if (sellable) {
-      setInvoiceItems([...invoiceItems, {
+      const newItem = {
         sellable: sellable.id,
         name: sellable.name,
         quantity: 1,
-        rate: sellable.rate,
-        gross: sellable.rate,
+        rate: parseFloat(sellable.rate),
+        gross: parseFloat(sellable.rate),
         discount: 0,
-        net: sellable.rate,
+        net: parseFloat(sellable.rate),
         tax: 0,
         add_balance: true
-      }]);
-      setFinalAmount(prevAmount => parseInt(prevAmount) + parseInt(sellable.rate));
+      };
+      setInvoiceItems([...invoiceItems, newItem]);
+      calculateFinalAmount([...invoiceItems, newItem]);
     }
   };
-
+  
+  const handleItemChange = (index, field, value) => {
+    const updatedItems = [...invoiceItems];
+    updatedItems[index][field] = value;
+    
+    // Recalculate gross and net
+    const item = updatedItems[index];
+    item.gross = item.quantity * item.rate;
+    item.net = item.gross - item.discount;
+  
+    setInvoiceItems(updatedItems);
+    calculateFinalAmount(updatedItems);
+  };
+  
+  const calculateFinalAmount = (items) => {
+    const total = items.reduce((sum, item) => sum + item.net, 0);
+    setFinalAmount(total);
+  };
+  
   const handleGenerateInvoice = async () => {
     try {
       const response = await fetchWithTokenHandling(`${import.meta.env.VITE_BASE_URL}/api/emp/clinic/${clinic_id}/patient/${patient_id}/invoice/`, {
@@ -730,6 +748,7 @@ const PatientProfile = () => {
         }),
       });
       toast({ title: "Success", description: "Invoice generated successfully" });
+      await fetchInvoices()
       setIsInvoiceDialogOpen(false);
       setInvoiceItems([]);
       setFinalAmount(0);
@@ -737,6 +756,7 @@ const PatientProfile = () => {
       toast({ title: "Error", description: error.message, variant: "destructive" });
     }
   };
+  
 
   if (loading) {
     return (
@@ -889,81 +909,104 @@ const PatientProfile = () => {
           </form>
         </CardContent>
       </Card>
-        <Dialog open={isInvoiceDialogOpen} onOpenChange={setIsInvoiceDialogOpen}>
-          <DialogContent className="sm:max-w-[600px]">
-            <DialogHeader>
-              <DialogTitle>Generate Invoice</DialogTitle>
-            </DialogHeader>
-            <div className="grid gap-4 py-4">
-              <div className="gap-4">
-                <Label htmlFor="sellable" className="text-right">
-                  Product/Service
-                </Label>
-                <Select 
-                  onValueChange={setSelectedSellable} 
-                  value={selectedSellable}
-                  className="col-span-3"
-                >
-                  <SelectTrigger id="sellable">
-                    <SelectValue placeholder="Select product/service" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {sellables.map(sellable => (
-                      <SelectItem key={sellable.id} value={sellable.id}>
-                        {sellable.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <Button onClick={handleAddInvoiceItem}>+ Add Item</Button>
-              <div className="border p-2">
-                <table className="w-full">
-                  <thead>
-                    <tr>
-                      <th>Product/Service</th>
-                      <th>Quantity</th>
-                      <th>Rate</th>
-                      <th>Discount</th>
-                      <th>Amount</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {invoiceItems.length === 0 ? (
-                      <tr>
-                        <td colSpan="5" className="text-center">No items added</td>
-                      </tr>
-                    ) : (
-                      invoiceItems.map((item, index) => (
-                        <tr key={index}>
-                          <td>{item.name}</td>
-                          <td>{item.quantity}</td>
-                          <td>{item.rate}</td>
-                          <td>{item.discount}</td>
-                          <td>{item.net}</td>
-                        </tr>
-                      ))
-                    )}
-                  </tbody>
-                </table>
-              </div>
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="finalAmount" className="text-right">
-                  Final Amount
-                </Label>
-                <Input 
-                  id="finalAmount" 
-                  value={finalAmount} 
-                  onChange={(e) => setFinalAmount(parseFloat(e.target.value))} 
-                  className="col-span-3"
-                />
-              </div>
-            </div>
-            <DialogFooter>
-              <Button onClick={handleGenerateInvoice}>Generate Invoice</Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
+      <Dialog open={isInvoiceDialogOpen} onOpenChange={setIsInvoiceDialogOpen}>
+  <DialogContent className="sm:max-w-[600px]">
+    <DialogHeader>
+      <DialogTitle>Generate Invoice</DialogTitle>
+    </DialogHeader>
+    <div className="grid gap-4 py-4">
+      <div className="gap-4">
+        <Label htmlFor="sellable" className="text-right">
+          Product/Service
+        </Label>
+        <Select 
+          onValueChange={setSelectedSellable} 
+          value={selectedSellable}
+          className="col-span-3"
+        >
+          <SelectTrigger id="sellable">
+            <SelectValue placeholder="Select product/service" />
+          </SelectTrigger>
+          <SelectContent>
+            {sellables.map(sellable => (
+              <SelectItem key={sellable.id} value={sellable.id}>
+                {sellable.name}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+      <Button onClick={handleAddInvoiceItem}>+ Add Item</Button>
+      <div className="border p-2">
+        <table className="w-full">
+          <thead>
+            <tr>
+              <th>Product/Service</th>
+              <th>Quantity</th>
+              <th>Rate</th>
+              <th>Gross</th>
+              <th>Discount</th>
+              <th>Net</th>
+            </tr>
+          </thead>
+          <tbody>
+            {invoiceItems.length === 0 ? (
+              <tr>
+                <td colSpan="6" className="text-center">No items added</td>
+              </tr>
+            ) : (
+              invoiceItems.map((item, index) => (
+                <tr key={index}>
+                  <td>{item.name}</td>
+                  <td>
+                    <Input
+                      type="number"
+                      value={item.quantity}
+                      onChange={(e) => handleItemChange(index, 'quantity', parseInt(e.target.value))}
+                      className="w-16"
+                    />
+                  </td>
+                  <td>
+                    <Input
+                      type="number"
+                      value={item.rate}
+                      onChange={(e) => handleItemChange(index, 'rate', parseFloat(e.target.value))}
+                      className="w-24"
+                    />
+                  </td>
+                  <td>{item.gross}</td>
+                  <td>
+                    <Input
+                      type="number"
+                      value={item.discount}
+                      onChange={(e) => handleItemChange(index, 'discount', parseFloat(e.target.value))}
+                      className="w-24"
+                    />
+                  </td>
+                  <td>{item.net}</td>
+                </tr>
+              ))
+            )}
+          </tbody>
+        </table>
+      </div>
+      <div className="grid grid-cols-4 items-center gap-4">
+        <Label htmlFor="finalAmount" className="text-right">
+          Final Amount
+        </Label>
+        <Input 
+          id="finalAmount" 
+          value={finalAmount} 
+          readOnly
+          className="col-span-3"
+        />
+      </div>
+    </div>
+    <DialogFooter>
+      <Button onClick={handleGenerateInvoice}>Generate Invoice</Button>
+    </DialogFooter>
+  </DialogContent>
+</Dialog>
       <div className="w-full space-y-8">
         <Tabs className='w-full' defaultValue="notes">
           <TabsList className='w-full justify-around'>

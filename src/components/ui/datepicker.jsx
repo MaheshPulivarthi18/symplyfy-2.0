@@ -21,17 +21,24 @@ import {
 } from "@/components/ui/select"
 
 export function DatePicker({ value, onChange }) {
-  const [date, setDate] = React.useState(value || new Date())
+  const [date, setDate] = React.useState(() => {
+    if (value instanceof Date && !isNaN(value)) {
+      return value;
+    }
+    return new Date();
+  });
 
   React.useEffect(() => {
-    if (value instanceof Date) {
+    if (value instanceof Date && !isNaN(value)) {
       setDate(value);
     }
   }, [value]);
 
   const handleDateChange = (newDate) => {
-    setDate(newDate);
-    onChange(newDate);
+    if (newDate instanceof Date && !isNaN(newDate)) {
+      setDate(newDate);
+      onChange(newDate);
+    }
   };
 
   const handleQuickSelect = (days) => {
