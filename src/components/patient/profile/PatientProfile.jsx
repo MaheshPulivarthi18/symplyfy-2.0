@@ -12,7 +12,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Progress } from '@/components/ui/progress';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from '@/components/ui/dialog';
 import { Textarea } from '@/components/ui/textarea';
-import { PlusCircle, Check } from "lucide-react"
+import { PlusCircle, Check, FileDownIcon } from "lucide-react"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
 import { DatePicker } from '@/components/ui/datepicker';
@@ -23,7 +23,7 @@ import { parseISO, format, addMinutes, addHours, addDays } from 'date-fns';
 import { CalendarIcon, Clock } from "lucide-react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { date } from 'zod';
-import { MoreVertical, FileText, Phone, Mail, Edit } from "lucide-react"
+import { MoreVertical, FileText, Phone, Mail, Edit, FileDown } from "lucide-react"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -33,6 +33,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { DataTable } from "@/components/ui/data-table"
+// import { } from "lucide-react"
 //  import { format, parseISO } from 'date-fns'
 import { ArrowUpDown } from "lucide-react"
 
@@ -839,6 +840,57 @@ const AppointmentsDataTable = ({ data }) => {
     setIsInvoiceDetailDialogOpen(true);
   };
 
+  const exportToCSV = (data, filename, headers) => {
+    const csvContent = [
+      headers.join(','),
+      ...data.map(row => headers.map(header => row[header] || '').join(','))
+    ].join('\n');
+    
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    if (link.download !== undefined) {
+      const url = URL.createObjectURL(blob);
+      link.setAttribute('href', url);
+      link.setAttribute('download', filename);
+      link.style.visibility = 'hidden';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
+  };
+
+  const exportVisitsToCSV = () => {
+    const headers = ['Date', 'Time', 'Doctor', 'Service', 'Duration', 'Walk-in', 'Penalty'];
+    const processedData = visits.map(visit => ({
+      Date: format(parseISO(visit.date), 'EEEE dd MMMM yyyy'),
+      Time: visit.time,
+      Doctor: employeeDetails[visit.employee] 
+        ? `${employeeDetails[visit.employee].first_name} ${employeeDetails[visit.employee].last_name}`
+        : 'Loading...',
+      Service: sellableDetails[visit.sellable]
+        ? sellableDetails[visit.sellable].name
+        : 'Loading...',
+      Duration: `${visit.duration} minutes`,
+      'Walk-in': visit.walk_in ? "Yes" : "No",
+      Penalty: visit.penalty ? "Yes" : "No",
+    }));
+    exportToCSV(processedData, 'patient_visits.csv', headers);
+  };
+  
+  const exportAppointmentsToCSV = () => {
+    const headers = ['Therapist', 'Date', 'Start Time', 'End Time', 'Service'];
+    const processedData = appointments.map(appointment => ({
+      Therapist: `${appointment.employee.first_name} ${appointment.employee.last_name}`,
+      Date: format(parseISO(appointment.start), 'EEEE dd MMMM yyyy'),
+      'Start Time': format(parseISO(appointment.start), 'HH:mm'),
+      'End Time': format(parseISO(appointment.end), 'HH:mm'),
+      Service: sellableDetails[appointment.sellable]
+        ? sellableDetails[appointment.sellable].name
+        : 'N/A',
+    }));
+    exportToCSV(processedData, 'patient_appointments.csv', headers);
+  };
+
   useEffect(() => {
     fetchPatientData();
     fetchNotes();
@@ -1449,7 +1501,14 @@ const AppointmentsDataTable = ({ data }) => {
             {appointments.length === 0 ? (
               <p>No upcoming appointments for this patient.</p>
             ) : (
-              <AppointmentsDataTable data={appointments} />
+              <>
+                <div className="flex justify-end mb-4">
+                <Button onClick={exportAppointmentsToCSV}>
+                  <FileDownIcon className="h-4 w-4 mr-2" /> Export as CSV
+                </Button>
+                </div>
+                <AppointmentsDataTable data={appointments} />
+              </>
             )}
             <Dialog open={isAppointmentDialogOpen} onOpenChange={setIsAppointmentDialogOpen}>
               <DialogTrigger asChild>
@@ -1771,7 +1830,14 @@ const AppointmentsDataTable = ({ data }) => {
             {visits.length === 0 ? (
               <p>No visits recorded for this patient.</p>
             ) : (
-              <VisitsDataTable data={visits} />
+                <>
+                  <div className="flex justify-end mb-4">
+                    <Button onClick={exportVisitsToCSV}>
+                    <FileDownIcon className="h-4 w-4 mr-2" /> Export as CSV
+                    </Button>
+                  </div>
+                  <VisitsDataTable data={visits} />
+                </>
             )}
             <Dialog open={isVisitDialogOpen} onOpenChange={setIsVisitDialogOpen}>
               <DialogTrigger asChild>
