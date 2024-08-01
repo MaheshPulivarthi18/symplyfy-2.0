@@ -36,6 +36,8 @@ import { DataTable } from "@/components/ui/data-table"
 // import { } from "lucide-react"
 //  import { format, parseISO } from 'date-fns'
 import { ArrowUpDown } from "lucide-react"
+// import { excel}
+import ExcelJS from 'exceljs';
 
 const PatientProfile = () => {
   const { clinic_id, patient_id } = useParams();
@@ -891,6 +893,72 @@ const AppointmentsDataTable = ({ data }) => {
     exportToCSV(processedData, 'patient_appointments.csv', headers);
   };
 
+  const exportToExcel = async (data, filename, headers) => {
+    const workbook = new ExcelJS.Workbook();
+    const worksheet = workbook.addWorksheet('Sheet1');
+  
+    // Add headers
+    worksheet.addRow(headers);
+  
+    // Add data
+    data.forEach(row => {
+      worksheet.addRow(headers.map(header => row[header]));
+    });
+  
+    // Style the header row
+    worksheet.getRow(1).font = { bold: true };
+    worksheet.getRow(1).fill = {
+      type: 'pattern',
+      pattern: 'solid',
+      fgColor: { argb: 'FFD3D3D3' }
+    };
+  
+    // Auto-fit columns
+    worksheet.columns.forEach(column => {
+      column.width = Math.max(15, ...data.map(row => row[column.header] ? row[column.header].toString().length : 0));
+    });
+  
+    // Generate Excel file
+    const buffer = await workbook.xlsx.writeBuffer();
+    const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = `${filename}.xlsx`;
+    link.click();
+  };
+  
+  const exportVisitsToExcel = async () => {
+    const headers = ['Date', 'Time', 'Doctor', 'Service', 'Duration', 'Walk-in', 'Penalty'];
+    const processedData = visits.map(visit => ({
+      Date: format(parseISO(visit.date), 'EEEE dd MMMM yyyy'),
+      Time: visit.time,
+      Doctor: employeeDetails[visit.employee] 
+        ? `${employeeDetails[visit.employee].first_name} ${employeeDetails[visit.employee].last_name}`
+        : 'Loading...',
+      Service: sellableDetails[visit.sellable]
+        ? sellableDetails[visit.sellable].name
+        : 'Loading...',
+      Duration: `${visit.duration} minutes`,
+      'Walk-in': visit.walk_in ? "Yes" : "No",
+      Penalty: visit.penalty ? "Yes" : "No",
+    }));
+    await exportToExcel(processedData, 'patient_visits', headers);
+  };
+  
+  const exportAppointmentsToExcel = async () => {
+    const headers = ['Therapist', 'Date', 'Start Time', 'End Time', 'Service'];
+    const processedData = appointments.map(appointment => ({
+      Therapist: `${appointment.employee.first_name} ${appointment.employee.last_name}`,
+      Date: format(parseISO(appointment.start), 'EEEE dd MMMM yyyy'),
+      'Start Time': format(parseISO(appointment.start), 'HH:mm'),
+      'End Time': format(parseISO(appointment.end), 'HH:mm'),
+      Service: sellableDetails[appointment.sellable]
+        ? sellableDetails[appointment.sellable].name
+        : 'N/A',
+    }));
+    await exportToExcel(processedData, 'patient_appointments', headers);
+  };
+
   useEffect(() => {
     fetchPatientData();
     fetchNotes();
@@ -1503,8 +1571,8 @@ const AppointmentsDataTable = ({ data }) => {
             ) : (
               <>
                 <div className="flex justify-end mb-4">
-                <Button onClick={exportAppointmentsToCSV}>
-                  <FileDownIcon className="h-4 w-4 mr-2" /> Export as CSV
+                <Button onClick={exportAppointmentsToExcel}>
+                  <FileDownIcon className="h-4 w-4 mr-2" /> Export as Excel
                 </Button>
                 </div>
                 <AppointmentsDataTable data={appointments} />
@@ -1832,8 +1900,8 @@ const AppointmentsDataTable = ({ data }) => {
             ) : (
                 <>
                   <div className="flex justify-end mb-4">
-                    <Button onClick={exportVisitsToCSV}>
-                    <FileDownIcon className="h-4 w-4 mr-2" /> Export as CSV
+                    <Button onClick={exportVisitsToExcel}>
+                    <FileDownIcon className="h-4 w-4 mr-2" /> Export as Excel
                     </Button>
                   </div>
                   <VisitsDataTable data={visits} />
