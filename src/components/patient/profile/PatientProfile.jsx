@@ -38,6 +38,7 @@ import { DataTable } from "@/components/ui/data-table"
 import { ArrowUpDown } from "lucide-react"
 // import { excel}
 import ExcelJS from 'exceljs';
+import { InvoiceDialog, InvoiceDetailsDialog, InvoiceStatusDialog } from '../payments/GenarateInvoice';
 
 const PatientProfile = () => {
   const { clinic_id, patient_id } = useParams();
@@ -836,6 +837,51 @@ const AppointmentsDataTable = ({ data }) => {
   const [selectedInvoice, setSelectedInvoice] = useState(null);
   const [isInvoiceDetailDialogOpen, setIsInvoiceDetailDialogOpen] = useState(false);
 
+  const handleGenerateInvoice = async () => {
+    try {
+      const response = await fetchWithTokenHandling(`${import.meta.env.VITE_BASE_URL}/api/emp/clinic/${clinic_id}/patient/${patient_id}/invoice/`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          date: new Date().toISOString().split('T')[0],
+          status: 'd',
+          gross_amount: finalAmount.toString(),
+          final_amount: finalAmount.toString(),
+          items: invoiceItems
+        }),
+      });
+      
+      setSelectedInvoice(response);
+      setIsInvoiceDialogOpen(false);
+      setIsInvoiceStatusDialogOpen(true);
+    } catch (error) {
+      toast({ title: "Error", description: error.message, variant: "destructive" });
+    }
+  };
+
+  const updateInvoiceStatus = async (status) => {
+    try {
+      await fetchWithTokenHandling(`${import.meta.env.VITE_BASE_URL}/api/emp/clinic/${clinic_id}/patient/${patient_id}/invoice/${selectedInvoice.id}/`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ status }),
+      });
+      
+      toast({ title: "Success", description: "Invoice status updated successfully" });
+      await fetchInvoices();
+      setIsInvoiceStatusDialogOpen(false);
+      setIsInvoiceDetailDialogOpen(false);
+      setInvoiceItems([]);
+      setFinalAmount(0);
+    } catch (error) {
+      toast({ title: "Error", description: error.message, variant: "destructive" });
+    }
+  };
+
   const handleViewInvoice = (invoiceId) => {
     const invoice = invoices.find(inv => inv.id === invoiceId);
     setSelectedInvoice(invoice);
@@ -1008,6 +1054,7 @@ const AppointmentsDataTable = ({ data }) => {
   };
 
   const [isInvoiceDialogOpen, setIsInvoiceDialogOpen] = useState(false);
+  const [isInvoiceStatusDialogOpen, setIsInvoiceStatusDialogOpen] = useState(false);
   const [invoiceItems, setInvoiceItems] = useState([]);
   const [selectedSellable, setSelectedSellable] = useState('');
   const [finalAmount, setFinalAmount] = useState(0);
@@ -1048,32 +1095,6 @@ const AppointmentsDataTable = ({ data }) => {
     const total = items.reduce((sum, item) => sum + item.net, 0);
     setFinalAmount(total);
   };
-  
-  const handleGenerateInvoice = async () => {
-    try {
-      const response = await fetchWithTokenHandling(`${import.meta.env.VITE_BASE_URL}/api/emp/clinic/${clinic_id}/patient/${patient_id}/invoice/`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          date: new Date().toISOString().split('T')[0],
-          status: 'd',
-          gross_amount: finalAmount.toString(),
-          final_amount: finalAmount.toString(),
-          items: invoiceItems
-        }),
-      });
-      toast({ title: "Success", description: "Invoice generated successfully" });
-      await fetchInvoices()
-      setIsInvoiceDialogOpen(false);
-      setInvoiceItems([]);
-      setFinalAmount(0);
-    } catch (error) {
-      toast({ title: "Error", description: error.message, variant: "destructive" });
-    }
-  };
-  
 
   if (loading) {
     return (
@@ -1840,7 +1861,11 @@ const AppointmentsDataTable = ({ data }) => {
                     <TableRow key={invoice.id}>
                       <TableCell>{format(new Date(invoice.date), 'EEEE dd MMMM yyyy')}</TableCell>
                       <TableCell>{invoice.number}</TableCell>
-                      <TableCell>{invoice.status === 'd' ? 'Draft' : 'Final'}</TableCell>
+                      <TableCell>
+                        {invoice.status === 'd' ? 'Draft' : 
+                        invoice.status === 'c' ? 'Confirmed' : 
+                        invoice.status === 'x' ? 'Cancelled' : 'Unknown'}
+                      </TableCell>
                       <TableCell>{invoice.gross_amount}</TableCell>
                       <TableCell>{invoice.final_amount}</TableCell>
                       <TableCell>
@@ -1853,45 +1878,7 @@ const AppointmentsDataTable = ({ data }) => {
                 </TableBody>
               </Table>
             )}
-            <Dialog open={isInvoiceDetailDialogOpen} onOpenChange={setIsInvoiceDetailDialogOpen}>
-              <DialogContent>
-                <DialogHeader>
-                  <DialogTitle>Invoice Details</DialogTitle>
-                </DialogHeader>
-                {selectedInvoice && (
-                  <div className="space-y-4">
-                    <p><strong>Invoice Number:</strong> {selectedInvoice.number}</p>
-                    <p><strong>Date:</strong> {format(new Date(selectedInvoice.date), 'EEEE dd MMMM yyyy')}</p>
-                    <p><strong>Status:</strong> {selectedInvoice.status === 'd' ? 'Draft' : 'Final'}</p>
-                    <p><strong>Gross Amount:</strong> {selectedInvoice.gross_amount}</p>
-                    <p><strong>Final Amount:</strong> {selectedInvoice.final_amount}</p>
-                    <h3 className="font-semibold">Items:</h3>
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead>Name</TableHead>
-                          <TableHead>Quantity</TableHead>
-                          <TableHead>Rate</TableHead>
-                          <TableHead>Gross</TableHead>
-                          <TableHead>Net</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {selectedInvoice.items.map(item => (
-                          <TableRow key={item.id}>
-                            <TableCell>{item.name}</TableCell>
-                            <TableCell>{item.quantity}</TableCell>
-                            <TableCell>{item.rate}</TableCell>
-                            <TableCell>{item.gross}</TableCell>
-                            <TableCell>{item.net}</TableCell>
-                          </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
-                  </div>
-                )}
-              </DialogContent>
-            </Dialog>
+            
           </TabsContent>
 
           <TabsContent value="visits" className="relative min-h-[300px] h-[90%] overflow-scroll p-4 ">
@@ -2120,6 +2107,29 @@ const AppointmentsDataTable = ({ data }) => {
               </DialogContent>
         </Dialog>
       </div>
+      <InvoiceDialog
+        isOpen={isInvoiceDialogOpen}
+        onClose={() => setIsInvoiceDialogOpen(false)}
+        onGenerate={handleGenerateInvoice}
+        invoiceItems={invoiceItems}
+        setInvoiceItems={setInvoiceItems}
+        finalAmount={finalAmount}
+        setFinalAmount={setFinalAmount}
+        sellables={sellables}
+      />
+
+      <InvoiceStatusDialog 
+        isOpen={isInvoiceStatusDialogOpen}
+        onClose={() => setIsInvoiceStatusDialogOpen(false)}
+        onUpdateStatus={updateInvoiceStatus}
+      />
+
+      <InvoiceDetailsDialog 
+        invoice={selectedInvoice}
+        isOpen={isInvoiceDetailDialogOpen}
+        onClose={() => setIsInvoiceDetailDialogOpen(false)}
+        onUpdateStatus={updateInvoiceStatus}
+      />
     </div>
   );
 };
