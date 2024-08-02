@@ -221,7 +221,7 @@ export default function Schedule() {
       // Convert Map back to array
       const finalData = Array.from(bookingsMap.values());
   
-      console.log("Final bookings data:", finalData);
+      // console.log("Final bookings data:", finalData);
   
       // Format the combined data
       const formattedEvents = finalData.map(booking => ({
@@ -257,7 +257,7 @@ export default function Schedule() {
     try {
       const data = await authenticatedFetch(`${import.meta.env.VITE_BASE_URL}/api/emp/clinic/${clinic_id}/sellable/`);
       const sellableData = await data.json()
-      console.log(sellableData)
+      // console.log(sellableData)
       setSellables(sellableData);
     } catch (error) {
       console.error("Failed to fetch sellables:", error);
@@ -303,7 +303,7 @@ export default function Schedule() {
 
         // Format dates as ISO strings, but remove the 'Z' to keep them as local time
         const formatLocalDate = (date) => date.toISOString().slice(0, -1);
-        console.log(formatLocalDate(localStartDateTime), localEndDateTime, durationInMinutes, newVisit.date, newVisit.time);
+        // console.log(formatLocalDate(localStartDateTime), localEndDateTime, durationInMinutes, newVisit.date, newVisit.time);
 
         // Convert weekdays to the format expected by the backend (e.g., "MO,TU,WE")
         const weekdayMap = {
@@ -316,7 +316,7 @@ export default function Schedule() {
           recurrenceRule = `RRULE:FREQ=WEEKLY;BYDAY=${formattedWeekdays}`;
           if (newVisit.endsOn) {
             const endDate = parseISO(newVisit.endsOn);
-            console.log(endDate)
+            // console.log(endDate)
             recurrenceRule += `;UNTIL=${format(endDate, "yyyyMMdd'T'HHmmss'Z'")}`;
           } else if (newVisit.sessions) {
             recurrenceRule += `;COUNT=${newVisit.sessions}`;
@@ -331,7 +331,7 @@ export default function Schedule() {
           recurrence: recurrenceRule,
           actor: "E",
         };
-        console.log(bookingData, "Rescheduling Appointment");
+        // console.log(bookingData, "Rescheduling Appointment");
         const response = await authenticatedFetch(`${import.meta.env.VITE_BASE_URL}/api/emp/clinic/${clinic_id}/schedule/booking/${newVisit.id}/reschedule/`, {
           method: 'PATCH',
           headers: {
@@ -379,7 +379,7 @@ export default function Schedule() {
   };
 
   const handleCancel = async (eventToCancel, cancelScope, tillDate = null) => {
-    console.log(eventToCancel);
+    // console.log(eventToCancel);
     try {
       const cancelData = {
         actor: 'E',
@@ -517,7 +517,7 @@ export default function Schedule() {
       
       // Format dates as ISO strings, but remove the 'Z' to keep them as local time
       const formatLocalDate = (date) => date.toISOString().slice(0, -1);
-      console.log(formatLocalDate(localStartDateTime), localEndDateTime, durationInMinutes, newVisit.date, newVisit.time);
+      // console.log(formatLocalDate(localStartDateTime), localEndDateTime, durationInMinutes, newVisit.date, newVisit.time);
       
       // Convert weekdays to the format expected by the backend (e.g., "MO,TU,WE")
       const weekdayMap = {
@@ -530,7 +530,7 @@ export default function Schedule() {
         recurrenceRule = `RRULE:FREQ=WEEKLY;BYDAY=${formattedWeekdays}`;
         if (newVisit.endsOn) {
           const endDate = parseISO(newVisit.endsOn);
-          console.log(endDate)
+          // console.log(endDate)
           recurrenceRule += `;UNTIL=${format(endDate, "yyyyMMdd'T'HHmmss'Z'")}`;
         } else if (newVisit.sessions) {
           recurrenceRule += `;COUNT=${newVisit.sessions}`;
@@ -547,7 +547,7 @@ export default function Schedule() {
         actor: "E",
       };
 
-      console.log(bookingData);
+      // console.log(bookingData);
 
       const response = await authenticatedFetch(`${import.meta.env.VITE_BASE_URL}/api/emp/clinic/${clinic_id}/schedule/booking/`, {
         method: 'POST',
@@ -620,10 +620,10 @@ export default function Schedule() {
   };
 
   const handleDoctorFilterChange = (doctorId) => {
-    console.log('Selecting doctor:', doctorId);
+    // console.log('Selecting doctor:', doctorId);
     setSelectedDoctorId(prev => {
       const newValue = prev === doctorId ? '' : doctorId;
-      console.log('New selected doctor ID:', newValue);
+      // console.log('New selected doctor ID:', newValue);
       return newValue;
     });
     if (doctorId) {
@@ -632,10 +632,10 @@ export default function Schedule() {
   };
   
   const handlePatientFilterChange = (patientId) => {
-    console.log('Selecting patient:', patientId);
+    // console.log('Selecting patient:', patientId);
     setSelectedPatientId(prev => {
       const newValue = prev === patientId ? '' : patientId;
-      console.log('New selected patient ID:', newValue);
+      // console.log('New selected patient ID:', newValue);
       return newValue;
     });
     if (patientId) {
@@ -717,13 +717,14 @@ export default function Schedule() {
   // };
 
   const handleSelectEvent = (event) => {
-    console.log(event)
+    // console.log(event)
     setSelectedEvent(event);
   };
 
   const getDaySchedule = (date) => {
     const dayIndex = date.getDay().toString();
-    return workingHours[dayIndex] || workingHours['0']; // Default to Sunday if no schedule found
+    console.log(workingHours)
+    return workingHours[dayIndex - 1] || workingHours['0']; // Default to Sunday if no schedule found
   };
   
   const updateCalendarTimes = (date) => {
@@ -907,7 +908,7 @@ export default function Schedule() {
   };
 
   const handleTimeChange = (time) => {
-    console.log('Selected time:', time); // Add this for debugging
+    // console.log('Selected time:', time); // Add this for debugging
     setNewVisit(prev => ({ ...prev, time }));
   };
 
@@ -1164,7 +1165,7 @@ export default function Schedule() {
       {/* add appointment */}
       <Dialog open={isVisitDialogOpen} onOpenChange={handleDialogOpenChange}>
         <DialogContent className="sm:max-w-[425px] max-h-[90vh] overflow-y-auto">
-          {console.log("Dialog rendering with date:", newVisit.date)}
+          {/* {console.log("Dialog rendering with date:", newVisit.date)} */}
           <DialogHeader>
             <DialogTitle>{isRescheduling ? 'Reschedule Appointment' : 'Add Appointment'}</DialogTitle>
           </DialogHeader>
@@ -1219,7 +1220,7 @@ export default function Schedule() {
                     id="date"
                     selected={newVisit.date}
                     value={newVisit.date}
-                    onChange={(date) => {setNewVisit({...newVisit, date: date}); console.log(date)}}
+                    onChange={(date) => {setNewVisit({...newVisit, date: date});}}
                     dateFormat="dd/MM/yyyy"
                   />
                 </div>
@@ -1233,7 +1234,7 @@ export default function Schedule() {
                   <ClockPicker
                     id="time"
                     value={newVisit.time}
-                    onChange={(time) => {setNewVisit({...newVisit, time: time}); console.log(newVisit.time)}}
+                    onChange={(time) => {setNewVisit({...newVisit, time: time});}}
                   />
                 </div>
               </div>
