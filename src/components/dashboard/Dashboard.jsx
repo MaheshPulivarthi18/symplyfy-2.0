@@ -16,6 +16,13 @@ import employee from "../../assets/employee.svg";
 import patient from "../../assets/patient.svg";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import DoctorVisitCounts from './DoctorVisitsCount';
+import { PlusCircle, Check, FileDownIcon } from "lucide-react"
+import ExcelJS from 'exceljs';
+import { DateRangePicker } from "@/components/ui/date-range-picker";
+import { addDays, isBefore, isAfter } from 'date-fns';
+import { useToast } from "@/components/ui/use-toast";
+
+
 
 const Dashboard = () => {
   const { clinic_id } = useParams();
@@ -41,6 +48,8 @@ const Dashboard = () => {
   const [showVisitsTable, setShowVisitsTable] = useState(false);
   const [filteredAppointments, setFilteredAppointments] = useState([]);
   const [patients, setPatients] = useState([]);
+  const [customDateRange, setCustomDateRange] = useState({ from: new Date(), to: new Date() });
+  const { toast } = useToast();
 
   useEffect(() => {
     let interval;
@@ -90,10 +99,15 @@ const Dashboard = () => {
         return { start: startOfMonth(now), end: endOfMonth(now) };
       case 'thisYear':
         return { start: startOfYear(now), end: endOfYear(now) };
-      default:
-        return { start: startOfDay(now), end: endOfDay(now) };
-    }
-  };
+        case 'custom':
+          return { 
+            start: customDateRange.from ? startOfDay(customDateRange.from) : startOfDay(now), 
+            end: customDateRange.to ? endOfDay(customDateRange.to) : endOfDay(now) 
+          };
+        default:
+          return { start: startOfDay(now), end: endOfDay(now) };
+      }
+    };
 
   const fetchEmployeeDetails = async (employeeId) => {
     if (employeeDetails[employeeId]) return;
@@ -124,6 +138,12 @@ const Dashboard = () => {
   const fetchVisits = async () => {
     try {
       const { start, end } = getDateRange();
+  
+      // Ensure start and end are valid dates
+      if (!start || !end) {
+        throw new Error('Invalid date range');
+      }
+  
       const response = await fetchWithTokenHandling(`${import.meta.env.VITE_BASE_URL}/api/emp/clinic/${clinic_id}/visit/?date_from=${start.toISOString().split('T')[0]}&date_to=${end.toISOString().split('T')[0]}`);
       setVisits(response);
       setSummary(prevSummary => ({ ...prevSummary, visits: response.length }));
@@ -135,6 +155,11 @@ const Dashboard = () => {
       await Promise.all(uniqueSellableIds.map(fetchSellableDetails));
     } catch (error) {
       console.error('Failed to fetch visits:', error);
+      toast({
+        title: "Error",
+        description: "Failed to fetch visits. Please try again.",
+        variant: "destructive",
+      });
     }
   };
 
@@ -143,7 +168,11 @@ const Dashboard = () => {
       setLoading(true);
       const { start, end } = getDateRange();
       
-      // Fetch main bookings
+      // Ensure start and end are valid dates
+      if (!start || !end) {
+        throw new Error('Invalid date range');
+      }
+  
       const response = await authenticatedFetch(`${import.meta.env.VITE_BASE_URL}/api/emp/clinic/${clinic_id}/schedule/booking/?date_from=${start.toISOString()}&date_to=${end.toISOString()}`);
       if (!response.ok) throw new Error('Failed to fetch bookings');
       const data = await response.json();
@@ -254,7 +283,7 @@ const Dashboard = () => {
     };
 
     fetchData();
-  }, [dateRange, selectedDoctor]);
+  }, [dateRange, selectedDoctor, customDateRange]);
 
   const VisitsDataTable = ({ data }) => {
     const columns = [
@@ -329,8 +358,13 @@ const Dashboard = () => {
     return (
       <>
         <div className="space-y-4">
-          <div className="flex justify-end">
+          <div className="flex justify-end gap-4">
             <DoctorVisitCounts data={processedData} />
+            <div className="flex justify-end mb-4">
+              <Button onClick={exportVisitsToExcel}>
+              <FileDownIcon className="h-4 w-4 mr-2" /> Export as Excel
+              </Button>
+            </div>
           </div>
           <DataTable
             columns={columns}
@@ -346,6 +380,58 @@ const Dashboard = () => {
         </div>
       </>
     );
+  };
+
+  const exportToExcel = async (data, filename, headers) => {
+    const workbook = new ExcelJS.Workbook();
+    const worksheet = workbook.addWorksheet('Sheet1');
+  
+    // Add headers
+    worksheet.addRow(headers);
+  
+    // Add data
+    data.forEach(row => {
+      worksheet.addRow(headers.map(header => row[header]));
+    });
+  
+    // Style the header row
+    worksheet.getRow(1).font = { bold: true };
+    worksheet.getRow(1).fill = {
+      type: 'pattern',
+      pattern: 'solid',
+      fgColor: { argb: 'FFD3D3D3' }
+    };
+  
+    // Auto-fit columns
+    worksheet.columns.forEach(column => {
+      column.width = Math.max(15, ...data.map(row => row[column.header] ? row[column.header].toString().length : 0));
+    });
+  
+    // Generate Excel file
+    const buffer = await workbook.xlsx.writeBuffer();
+    const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = `${filename}.xlsx`;
+    link.click();
+  };
+  
+  const exportVisitsToExcel = async () => {
+    const headers = ['Date', 'Time', 'Doctor', 'Service', 'Duration', 'Walk-in', 'Penalty'];
+    const processedData = visits.map(visit => ({
+      Date: format(parseISO(visit.date), 'EEEE dd MMMM yyyy'),
+      Time: visit.time,
+      Doctor: employeeDetails[visit.employee] 
+        ? `${employeeDetails[visit.employee].first_name} ${employeeDetails[visit.employee].last_name}`
+        : 'Loading...',
+      Service: sellableDetails[visit.sellable]
+        ? sellableDetails[visit.sellable].name
+        : 'Loading...',
+      Duration: `${visit.duration} minutes`,
+      'Walk-in': visit.walk_in ? "Yes" : "No",
+      Penalty: visit.penalty ? "Yes" : "No",
+    }));
+    await exportToExcel(processedData, 'patient_visits', headers);
   };
 
 
@@ -411,11 +497,14 @@ const Dashboard = () => {
                   <PopoverTrigger asChild>
                     <Button variant="outline"><Filter className="mr-2 h-4 w-4" /> Filter</Button>
                   </PopoverTrigger>
-                  <PopoverContent className="w-56">
-                    <Select value={dateRange} onValueChange={(value) => {
-                      setDateRange(value);
-                      // This will trigger a re-fetch of data and update of the summary
-                    }}>
+                  <PopoverContent className="">
+                    <Select value={dateRange}
+                      onValueChange={(value) => {
+                        setDateRange(value);
+                        if (value !== 'custom') {
+                          setCustomDateRange({ from: null, to: null });
+                        }
+                      }}>
                       <SelectTrigger className="w-full">
                         <SelectValue placeholder="Select date range" />
                       </SelectTrigger>
@@ -425,8 +514,25 @@ const Dashboard = () => {
                         <SelectItem value="thisWeek">This Week</SelectItem>
                         <SelectItem value="thisMonth">This Month</SelectItem>
                         <SelectItem value="thisYear">This Year</SelectItem>
+                        <SelectItem value="custom">Custom Range</SelectItem>
                       </SelectContent>
                     </Select>
+                    {dateRange === 'custom' && (
+                      <div className="mt-4">
+                        <DateRangePicker
+                          from={customDateRange.from}
+                          to={customDateRange.to}
+                          onSelect={(range) => {
+                            if (range?.from && range?.to) {
+                              setCustomDateRange(range);
+                              setDateRange('custom');
+                              fetchVisits();
+                              fetchAppointments();
+                            }
+                          }}
+                        />
+                      </div>
+                    )}
                   </PopoverContent>
                 </Popover>
               </div>
@@ -442,7 +548,7 @@ const Dashboard = () => {
                           <div className="text-2xl font-bold cursor-pointer">{value}</div>
                         </DialogTrigger>
                         <DialogContent className="max-w-5xl"> {/* Increased max-width */}
-                          <DialogHeader>
+                          <DialogHeader className="w-full flex justify-between">
                             <DialogTitle>Visits</DialogTitle>
                           </DialogHeader>
                           <VisitsDataTable data={visits} />

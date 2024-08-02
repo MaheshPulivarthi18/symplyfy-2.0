@@ -13,7 +13,7 @@ const DoctorVisitCounts = ({ data }) => {
   return (
     <Dialog>
       <DialogTrigger asChild>
-        <Button variant="outline">View Doctor Visit Counts</Button>
+        <Button variant="">View Doctor Visit Counts</Button>
       </DialogTrigger>
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>

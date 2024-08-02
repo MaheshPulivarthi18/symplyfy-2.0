@@ -10,6 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { DatePicker } from '../ui/datepicker';
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { useNavigate, useParams } from 'react-router-dom';
+import ClockPicker from '../ui/clock';
 
 const AppointmentPopup = ({ event, onClose, onReschedule, onCancel, onDelete, onMarkVisit, sellables }) => {
   const [isSheetOpen, setIsSheetOpen] = useState(true);
@@ -235,9 +236,14 @@ const AppointmentPopup = ({ event, onClose, onReschedule, onCancel, onDelete, on
                 dateFormat="dd/MM/yyyy"
               />
             </div>
-            <div className="mb-4">
+            <div className="mb-4 flex items-center gap-6">
               <Label>Visited Time</Label>
-              <TimeSelect
+              {/* <TimeSelect
+                id="time"
+                value={visitDetails.visitedTime}
+                onChange={(time) => setVisitDetails({ ...visitDetails, visitedTime: time })}
+              /> */}
+              <ClockPicker
                 id="time"
                 value={visitDetails.visitedTime}
                 onChange={(time) => setVisitDetails({ ...visitDetails, visitedTime: time })}

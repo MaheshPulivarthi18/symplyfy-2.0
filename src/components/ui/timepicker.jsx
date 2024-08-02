@@ -1,8 +1,4 @@
-/**
- * v0 by Vercel.
- * @see https://v0.dev/t/n9q1AkikV6O
- * Documentation: https://v0.dev/docs#integrating-generated-code-into-your-nextjs-app
- */
+// timepicker.jsx
 import React, { useState, useEffect } from 'react';
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover"
 import { Button } from "@/components/ui/button"

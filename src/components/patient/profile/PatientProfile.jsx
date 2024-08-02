@@ -19,6 +19,8 @@ import { DatePicker } from '@/components/ui/datepicker';
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+// import { Clock as Clock } from "@/components/ui/clock"
+import ClockPicker from "@/components/ui/clock"
 import { parseISO, format, addMinutes, addHours, addDays } from 'date-fns';
 import { CalendarIcon, Clock } from "lucide-react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -1657,7 +1659,12 @@ const AppointmentsDataTable = ({ data }) => {
                         </div>
                         <div>
                           <Label htmlFor="time">Time</Label>
-                          <TimeSelect
+                          {/* <TimeSelect
+                            id="time"
+                            value={newAppointment.time}
+                            onChange={(time) => setNewAppointment({...newAppointment, time: time})}
+                          /> */}
+                          <ClockPicker 
                             id="time"
                             value={newAppointment.time}
                             onChange={(time) => setNewAppointment({...newAppointment, time: time})}
@@ -1915,12 +1922,17 @@ const AppointmentsDataTable = ({ data }) => {
                         onChange={(date) => setNewVisit({...newVisit, date: date})}
                       />
                     </div>
-                    <div>
+                    <div className='flex items-center gap-6'>
                       <Label htmlFor="time">Visit Time</Label>
-                      <TimeSelect
+                      {/* <TimeSelect
                         id="time"
                         value={newVisit.time}
                         onChange={(time) => setNewVisit({...newVisit, time: time})}
+                      /> */}
+                      <ClockPicker 
+                        id="time"
+                        value={newVisit.time}
+                        onChange={(time) => setNewVisit({...newVisit, time: time})}  
                       />
                     </div>
                     <div>
@@ -2017,18 +2029,18 @@ const AppointmentsDataTable = ({ data }) => {
                         onChange={(date) => setNewVisit({...newVisit, date: date.toISOString().split('T')[0]})}
                         />
                     </div>
-                    <div>
+                    <div className='flex items-center gap-6'>
                       <Label htmlFor="time">Visit Time</Label>
-                      <TimeSelect
+                      {/* <TimeSelect
+                        id="time"
+                        value={newVisit.time}
+                        onChange={(time) => setNewVisit({...newVisit, time: time})}
+                      /> */}
+                      <ClockPicker 
                         id="time"
                         value={newVisit.time}
                         onChange={(time) => setNewVisit({...newVisit, time: time})}
                       />
-                      {/*
-                        id="time"
-                          value={newVisit.time}
-                          onChange={(time) => setNewVisit({...newVisit, time: time})} 
-                        */}
                     </div>
                     <div>
                       <Label htmlFor="employee">Doctor</Label>

@@ -17,7 +17,7 @@ import { Input } from '../ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "../ui/dialog"
-import { PlusCircle } from "lucide-react"
+import { PlusCircle, Search } from "lucide-react";
 import { Card } from '../ui/card';
 import { useToast } from "@/components/ui/use-toast";
 import { useParams } from 'react-router-dom';
@@ -29,6 +29,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { CalendarIcon } from "lucide-react";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Progress } from '@/components/ui/progress';
+import ClockPicker from '@/components/ui/clock';
 
 const locales = {
   'en-US': enUS,
@@ -84,7 +85,7 @@ export default function Schedule() {
     patientName: '',
     sellable: '',
     date: new Date(),
-    time: '',
+    time: '06:00',
     frequency: 'does_not_repeat',
     weekdays: [],
     endsOn: '',
@@ -95,6 +96,17 @@ export default function Schedule() {
     therapistName: '',
   });
   const [showCancelled, setShowCancelled] = useState(false);
+  const [doctorSearch, setDoctorSearch] = useState('');
+  const [patientSearch, setPatientSearch] = useState('');
+  const [therapistSearch, setTherapistSearch] = useState('');
+
+  const filteredTherapists = therapists.filter(therapist => 
+    `${therapist.first_name} ${therapist.last_name}`.toLowerCase().includes(doctorSearch.toLowerCase())
+  );
+  
+  const filteredPatients = patients.filter(patient => 
+    `${patient.first_name} ${patient.last_name}`.toLowerCase().includes(patientSearch.toLowerCase())
+  );
 
   useEffect(() => {
     let interval;
@@ -889,6 +901,45 @@ export default function Schedule() {
     );
   };
 
+  const handleTimeChange = (time) => {
+    console.log('Selected time:', time); // Add this for debugging
+    setNewVisit(prev => ({ ...prev, time }));
+  };
+
+  const SearchableSelect = ({ placeholder, options, value, onValueChange, searchPlaceholder }) => {
+    const [search, setSearch] = useState('');
+  
+    const filteredOptions = options.filter(option =>
+      `${option.first_name} ${option.last_name}`.toLowerCase().includes(search.toLowerCase())
+    );
+  
+    return (
+      <Select value={value} onValueChange={onValueChange}>
+        <SelectTrigger className="w-full">
+          <SelectValue placeholder={placeholder} />
+        </SelectTrigger>
+        <SelectContent>
+          <div className="relative mb-2 p-2">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+            <Input
+              type="text"
+              placeholder={searchPlaceholder}
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="pl-8"
+              onKeyDown={(e) => e.stopPropagation()}
+            />
+          </div>
+          {filteredOptions.map(option => (
+            <SelectItem key={option.id} value={option.id}>
+              {option.first_name} {option.last_name}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+    );
+  };
+
   if (loading) {
     return (
       <div className="w-full flex flex-col items-center justify-center">
@@ -922,7 +973,7 @@ export default function Schedule() {
           <div className="mb-4 flex-shrink-0">
             <div className='flex gap-4 justify-between items-center'>
               <Label htmlFor="startTime">From</Label>
-              <TimePicker
+              <ClockPicker
                 id="startTime"
                 value={calendarStartTime}
                 onChange={(time) => setCalendarStartTime(time)}
@@ -930,7 +981,7 @@ export default function Schedule() {
             </div>
             <div className='flex gap-4 justify-between items-center mt-2'>
               <Label htmlFor="endTime">To</Label>
-              <TimePicker
+              <ClockPicker
                 id="endTime"
                 value={calendarEndTime}
                 onChange={(time) => setCalendarEndTime(time)}
@@ -938,7 +989,7 @@ export default function Schedule() {
             </div>
             <div className='flex gap-4 justify-between items-center mt-2'>
               <Label htmlFor="breakStartTime">Break Start</Label>
-              <TimePicker
+              <ClockPicker
                 id="breakStartTime"
                 value={breakStartTime}
                 onChange={(time) => setBreakStartTime(time)}
@@ -946,7 +997,7 @@ export default function Schedule() {
             </div>
             <div className='flex gap-4 justify-between items-center mt-2'>
               <Label htmlFor="breakEndTime">Break End</Label>
-              <TimePicker
+              <ClockPicker
                 id="breakEndTime"
                 value={breakEndTime}
                 onChange={(time) => setBreakEndTime(time)}
@@ -961,32 +1012,52 @@ export default function Schedule() {
             >
               {selectedDoctorId === "" && selectedPatientId === "" ? "Apply Filter" : "Clear All Filters" }
             </Toggle>
+              <h1 className='font-bold text-lg mb-2'>Doctors</h1>
+              <div className="relative mb-2">
+                <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                <Input
+                  type="text"
+                  placeholder="Search doctors..."
+                  value={doctorSearch}
+                  onChange={(e) => setDoctorSearch(e.target.value)}
+                  className="pl-8"
+                />
+              </div>
+              <div className="flex flex-col gap-2 mb-4">
+                {filteredTherapists.map(therapist => (
+                  <Toggle
+                    key={therapist.id}
+                    pressed={selectedDoctorId === therapist.id}
+                    onPressedChange={() => handleDoctorFilterChange(therapist.id)}
+                  >
+                    {therapist.first_name} {therapist.last_name}
+                  </Toggle>
+                ))}
+              </div>
 
-            <h1 className='font-bold text-lg mb-2'>Doctors</h1>
-            <div className="flex flex-col gap-2 mb-4">
-              {therapists.map(therapist => (
-                <Toggle
-                  key={therapist.id}
-                  pressed={selectedDoctorId === therapist.id}
-                  onPressedChange={() => handleDoctorFilterChange(therapist.id)}
-                >
-                  {therapist.first_name} {therapist.last_name}
-                </Toggle>
-              ))}
-            </div>
+              <h1 className='font-bold text-lg mb-2'>Patients</h1>
+              <div className="relative mb-2">
+                <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                <Input
+                  type="text"
+                  placeholder="Search patients..."
+                  value={patientSearch}
+                  onChange={(e) => setPatientSearch(e.target.value)}
+                  className="pl-8"
+                />
+              </div>
+              <div className="flex flex-col gap-2 mb-4">
+                {filteredPatients.map(patient => (
+                  <Toggle
+                    key={patient.id}
+                    pressed={selectedPatientId === patient.id}
+                    onPressedChange={() => handlePatientFilterChange(patient.id)}
+                  >
+                    {patient.first_name} {patient.last_name}
+                  </Toggle>
+                ))}
+              </div>
 
-            <h1 className='font-bold text-lg mb-2'>Patients</h1>
-            <div className="flex flex-col gap-2 mb-4">
-              {patients.map(patient => (
-                <Toggle
-                  key={patient.id}
-                  pressed={selectedPatientId === patient.id}
-                  onPressedChange={() => handlePatientFilterChange(patient.id)}
-                >
-                  {patient.first_name} {patient.last_name}
-                </Toggle>
-              ))}
-            </div>
 
             <Toggle 
             pressed={showCancelled} 
@@ -1095,37 +1166,21 @@ export default function Schedule() {
               </>
             ) : (
               <>
-                <Select 
-                  value={newVisit.patient} 
-                  onValueChange={(value) => setNewVisit({...newVisit, patient: value})}
-                >
-                  <SelectTrigger className="w-full">
-                    <SelectValue placeholder="Select Patient" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {patients.map(patient => (
-                      <SelectItem key={patient.id} value={patient.id}>
-                        {patient.first_name} {patient.last_name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+              <SearchableSelect
+                placeholder="Select Patient"
+                options={patients}
+                value={newVisit.patient}
+                onValueChange={(value) => setNewVisit({...newVisit, patient: value})}
+                searchPlaceholder="Search patients..."
+              />
 
-                <Select 
-                  value={newVisit.therapist} 
-                  onValueChange={(value) => setNewVisit({...newVisit, therapist: value})}
-                >
-                  <SelectTrigger className="w-full">
-                    <SelectValue placeholder="Select Therapist" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {therapists.map(therapist => (
-                      <SelectItem key={therapist.id} value={therapist.id}>
-                        {therapist.first_name} {therapist.last_name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+              <SearchableSelect
+                placeholder="Select Therapist"
+                options={therapists}
+                value={newVisit.therapist}
+                onValueChange={(value) => setNewVisit({...newVisit, therapist: value})}
+                searchPlaceholder="Search therapists..."
+              />
               </>
             )}
 
@@ -1148,7 +1203,7 @@ export default function Schedule() {
             <div className="flex flex-col space-y-2">
               <div className="flex space-x-2">
                 <div className="flex-grow">
-                  <Label htmlFor="date">{isRescheduling ? ("Reschedule To") : ("Starts On")} (DD/MM/YYYY)</Label>
+                  <Label htmlFor="date">{isRescheduling ? ("Reschedule To") : ("Starts On")}</Label>
                   <DatePicker
                     id="date"
                     selected={newVisit.date}
@@ -1159,7 +1214,12 @@ export default function Schedule() {
                 </div>
                 <div>
                   <Label htmlFor="time">Time</Label>
-                  <TimeSelect
+                  {/* <TimeSelect
+                    id="time"
+                    value={newVisit.time}
+                    onChange={(time) => {setNewVisit({...newVisit, time: time}); console.log(newVisit.time)}}
+                  /> */}
+                  <ClockPicker
                     id="time"
                     value={newVisit.time}
                     onChange={(time) => {setNewVisit({...newVisit, time: time}); console.log(newVisit.time)}}
