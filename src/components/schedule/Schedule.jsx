@@ -728,10 +728,15 @@ export default function Schedule() {
   
   const updateCalendarTimes = (date) => {
     const schedule = getDaySchedule(date);
-    setCalendarStartTime(new Date(0, 0, 0, ...schedule.morning.start.split(':').map(Number)));
-    setCalendarEndTime(new Date(0, 0, 0, ...schedule.afternoon.end.split(':').map(Number)));
-    setBreakStartTime(new Date(0, 0, 0, ...schedule.morning.end.split(':').map(Number)));
-    setBreakEndTime(new Date(0, 0, 0, ...schedule.afternoon.start.split(':').map(Number)));
+    setCalendarStartTime(parseTimeString(schedule.morning.start));
+    setCalendarEndTime(parseTimeString(schedule.afternoon.end));
+    setBreakStartTime(parseTimeString(schedule.morning.end));
+    setBreakEndTime(parseTimeString(schedule.afternoon.start));
+  };
+
+  const parseTimeString = (timeString) => {
+    const [hours, minutes] = timeString.split(':').map(Number);
+    return new Date(0, 0, 0, hours, minutes);
   };
 
   const handleNavigate = (newDate) => {
@@ -974,34 +979,40 @@ export default function Schedule() {
             <div className='flex gap-4 justify-between items-center'>
               <Label htmlFor="startTime">From</Label>
               <ClockPicker
-                id="startTime"
-                value={calendarStartTime}
-                onChange={(time) => setCalendarStartTime(time)}
-              />
+  id="startTime"
+  value={format(calendarStartTime, 'HH:mm')}
+  onChange={(time) => setCalendarStartTime(parseTimeString(time))}
+/>
+
+
             </div>
             <div className='flex gap-4 justify-between items-center mt-2'>
               <Label htmlFor="endTime">To</Label>
               <ClockPicker
-                id="endTime"
-                value={calendarEndTime}
-                onChange={(time) => setCalendarEndTime(time)}
-              />
+  id="endTime"
+  value={format(calendarEndTime, 'HH:mm')}
+  onChange={(time) => setCalendarEndTime(parseTimeString(time))}
+/>
+
+
             </div>
             <div className='flex gap-4 justify-between items-center mt-2'>
               <Label htmlFor="breakStartTime">Break Start</Label>
               <ClockPicker
-                id="breakStartTime"
-                value={breakStartTime}
-                onChange={(time) => setBreakStartTime(time)}
-              />
+  id="breakStartTime"
+  value={format(breakStartTime, 'HH:mm')}
+  onChange={(time) => setBreakStartTime(parseTimeString(time))}
+/>
+
             </div>
             <div className='flex gap-4 justify-between items-center mt-2'>
               <Label htmlFor="breakEndTime">Break End</Label>
+
               <ClockPicker
-                id="breakEndTime"
-                value={breakEndTime}
-                onChange={(time) => setBreakEndTime(time)}
-              />
+  id="breakEndTime"
+  value={format(breakEndTime, 'HH:mm')}
+  onChange={(time) => setBreakEndTime(parseTimeString(time))}
+/>  
             </div>
           </div>
           <ScrollArea className="flex-grow overflow-y-auto pr-4">

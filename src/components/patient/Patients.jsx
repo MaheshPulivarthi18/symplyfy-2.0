@@ -118,7 +118,7 @@ const PatientList = () => {
                     <div className="flex items-center">
                       <Avatar className="mr-2">
                         <AvatarImage src={`https://api.dicebear.com/6.x/initials/svg?seed=${patient.first_name} ${patient.last_name}`} />
-                        <AvatarFallback>{patient.first_name[0]}{patient.last_name[0]}</AvatarFallback>
+                        <AvatarFallback>{patient.first_name.charAt(0)}{patient.last_name}</AvatarFallback>
                       </Avatar>
                       {patient.first_name} {patient.last_name}
                     </div>

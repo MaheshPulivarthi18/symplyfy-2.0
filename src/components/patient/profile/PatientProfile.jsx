@@ -1176,7 +1176,7 @@ const AppointmentsDataTable = ({ data }) => {
             <div className="flex flex-col items-center space-y-4">
               <Avatar className="w-24 h-24">
                 <AvatarImage src={`https://api.dicebear.com/6.x/initials/svg?seed=${formData.first_name} ${formData.last_name}`} />
-                <AvatarFallback>{formData.first_name[0]}{formData.last_name[0]}</AvatarFallback>
+                <AvatarFallback>{formData.first_name}{formData.last_name}</AvatarFallback>
               </Avatar>
               <div className="w-full space-y-4">
                 {/* Add form fields for all patient properties */}
