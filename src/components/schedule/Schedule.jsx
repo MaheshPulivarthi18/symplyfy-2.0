@@ -132,11 +132,15 @@ export default function Schedule() {
     fetchSellables();
   }, [clinic_id]);
 
+  // useEffect(() => {
+  //   if (patients.length > 0) {
+  //     fetchBookings();
+  //   }
+  // }, [patients]);
+
   useEffect(() => {
-    if (patients.length > 0) {
-      fetchBookings();
-    }
-  }, [patients]);
+    fetchBookings();
+  }, [date, view, clinic_id, selectedDoctorId]);
 
   const fetchTherapists = async () => {
     try {
@@ -196,35 +200,111 @@ export default function Schedule() {
   };
 
 
+  // const fetchBookings = async () => {
+  //   try {
+  //     // Fetch main bookings
+  //     const response = await authenticatedFetch(`${import.meta.env.VITE_BASE_URL}/api/emp/clinic/${clinic_id}/schedule/booking/`);
+  //     if (!response.ok) throw new Error('Failed to fetch bookings');
+  //     const data = await response.json();
+  
+  //     // Use a Map to store unique bookings by ID
+  //     const bookingsMap = new Map(data.map(booking => [booking.id, booking]));
+  
+  //     // Fetch patient bookings and add only if not already present
+  //     for (const patient of patients) {
+  //       const patResponse = await authenticatedFetch(`${import.meta.env.VITE_BASE_URL}/api/emp/clinic/${clinic_id}/patient/${patient.id}/booking/`);
+  //       if (!patResponse.ok) throw new Error('Failed to fetch patient bookings');
+  //       const patientBookings = await patResponse.json();
+  //       patientBookings.forEach(booking => {
+  //         if (!bookingsMap.has(booking.id)) {
+  //           bookingsMap.set(booking.id, booking);
+  //         }
+  //       });
+  //     }
+  
+  //     // Convert Map back to array
+  //     const finalData = Array.from(bookingsMap.values());
+  
+  //     // console.log("Final bookings data:", finalData);
+  
+  //     // Format the combined data
+  //     const formattedEvents = finalData.map(booking => ({
+  //       id: booking.id,
+  //       title: `${booking.patient.first_name} ${booking.patient.last_name}`,
+  //       start: new Date(booking.start),
+  //       end: new Date(booking.end),
+  //       patientId: booking.patient.id,
+  //       patientName: `${booking.patient.first_name} ${booking.patient.last_name}`,
+  //       doctorId: booking.employee.id,
+  //       doctorName: `${booking.employee.first_name} ${booking.employee.last_name === null ? "" : booking.employee.last_name}`,
+  //       service: booking.sellable,
+  //       resourceId: booking.employee.id,
+  //       status_patient: booking.status_patient,
+  //       status_employee: booking.status_employee,
+  //       recurrence: booking.recurrence
+  //     }));
+  
+  //     setEvents(formattedEvents);
+  //   } catch (error) {
+  //     toast({
+  //       title: "Error",
+  //       description: "Failed to fetch bookings. Please try again.",
+  //       variant: "destructive",
+  //     });
+  //   } finally {
+  //     setLoading(false);
+  //   }
+  // };
+  
+  const formatDateForAPI = (date) => {
+    return date.toISOString()
+      .replace(/\.\d{3}Z$/, '')
+  };
+  
   const fetchBookings = async () => {
     try {
-      // Fetch main bookings
-      const response = await authenticatedFetch(`${import.meta.env.VITE_BASE_URL}/api/emp/clinic/${clinic_id}/schedule/booking/`);
-      if (!response.ok) throw new Error('Failed to fetch bookings');
-      const data = await response.json();
+      let viewStart = startOfDay(date);
+      let viewEnd = endOfDay(date);
   
-      // Use a Map to store unique bookings by ID
-      const bookingsMap = new Map(data.map(booking => [booking.id, booking]));
-  
-      // Fetch patient bookings and add only if not already present
-      for (const patient of patients) {
-        const patResponse = await authenticatedFetch(`${import.meta.env.VITE_BASE_URL}/api/emp/clinic/${clinic_id}/patient/${patient.id}/booking/`);
-        if (!patResponse.ok) throw new Error('Failed to fetch patient bookings');
-        const patientBookings = await patResponse.json();
-        patientBookings.forEach(booking => {
-          if (!bookingsMap.has(booking.id)) {
-            bookingsMap.set(booking.id, booking);
-          }
-        });
+      if (view === 'week') {
+        viewStart = startOfWeek(date);
+        viewEnd = endOfWeek(date);
+      } else if (view === 'month') {
+        viewStart = startOfMonth(date);
+        viewEnd = endOfMonth(date);
       }
   
-      // Convert Map back to array
-      const finalData = Array.from(bookingsMap.values());
+      const timeFrom = formatDateForAPI(viewStart);
+      const timeTo = formatDateForAPI(viewEnd);
   
-      // console.log("Final bookings data:", finalData);
+      const url = new URL(`${import.meta.env.VITE_BASE_URL}/api/emp/clinic/${clinic_id}/schedule/booking/`);
+      url.searchParams.append('time_from', timeFrom);
+      url.searchParams.append('time_to', timeTo);
   
-      // Format the combined data
-      const formattedEvents = finalData.map(booking => ({
+      // If a specific doctor is selected, add the employee_uuid parameter
+      if (selectedDoctorId) {
+        url.searchParams.append('employee_uuid', selectedDoctorId);
+      } else {
+        url.searchParams.append('employee_uuid', 'all');
+      }
+  
+      const response = await authenticatedFetch(url.toString());
+      
+      if (!response.ok) {
+        if (response.status === 401) {
+          throw new Error('Authentication failed. Please log in again.');
+        } else if(response.StatusCode === 400) {
+          throw new Error("Error creating a booking", response.body)
+        }
+        const errorData = await response.json();
+        console.log(errorData)
+        throw new Error(errorData || 'Failed to fetch bookings');
+      }
+  
+      const data = await response.json();
+  
+      // Format the data
+      const formattedEvents = data.map(booking => ({
         id: booking.id,
         title: `${booking.patient.first_name} ${booking.patient.last_name}`,
         start: new Date(booking.start),
@@ -232,7 +312,7 @@ export default function Schedule() {
         patientId: booking.patient.id,
         patientName: `${booking.patient.first_name} ${booking.patient.last_name}`,
         doctorId: booking.employee.id,
-        doctorName: `${booking.employee.first_name} ${booking.employee.last_name === null ? "" : booking.employee.last_name}`,
+        doctorName: `${booking.employee.first_name} ${booking.employee.last_name || ""}`,
         service: booking.sellable,
         resourceId: booking.employee.id,
         status_patient: booking.status_patient,
@@ -242,16 +322,19 @@ export default function Schedule() {
   
       setEvents(formattedEvents);
     } catch (error) {
+      console.error('Error fetching bookings:', error);
       toast({
         title: "Error",
-        description: "Failed to fetch bookings. Please try again.",
+        description: error.message || "Failed to fetch bookings. Please try again.",
         variant: "destructive",
       });
+      if (error.message.includes('Authentication failed')) {
+        // Handle authentication error (e.g., redirect to login page)
+      }
     } finally {
       setLoading(false);
     }
   };
-  
 
   const fetchSellables = async () => {
     try {
@@ -557,9 +640,25 @@ export default function Schedule() {
         body: JSON.stringify(bookingData),
       });
 
-      if (!response.ok) {
-        throw new Error(isRescheduling ? 'Failed to reschedule appointment' : 'Failed to book appointment');
+      if(response.status === 400) {
+        const errData = await response.json()
+        let err
+        if(errData.end){
+          err = errData.end[0]
+          console.log(errData.end[0])
+        } else if (errData.patient){
+          err = "Patient " + errData.patient[0]
+          console.log(err)
+        } else if (errData.employee){
+          err = "Employee " + errData.employee[0]
+        } else if (errData.start){
+          err= errData.start[0]
+        }
+        throw new Error(err)
       }
+      // if (!response.ok) {
+      //   throw new Error(isRescheduling ? 'Failed to reschedule appointment' : 'Failed to book appointment');
+      // }
 
       const newBooking = await response.json();
       if (isRescheduling) {
@@ -740,9 +839,15 @@ export default function Schedule() {
     return new Date(0, 0, 0, hours, minutes);
   };
 
+  // const handleNavigate = (newDate) => {
+  //   setDate(newDate);
+  //   updateCalendarTimes(newDate);
+  // };
+
   const handleNavigate = (newDate) => {
     setDate(newDate);
     updateCalendarTimes(newDate);
+    fetchBookings();
   };
 
   const isWithinBreakTime = (time) => {
@@ -1098,7 +1203,10 @@ export default function Schedule() {
             onSelectSlot={handleSelect}
             onSelectEvent={handleSelectEvent}
             view={view}
-            onView={setView}
+            onView={(newView) => {
+              setView(newView);
+              fetchBookings();
+            }}
             date={date}
             // onNavigate={setDate}
             className="font-sans"
