@@ -1068,7 +1068,7 @@ export default function Schedule() {
   return (
     <Card className="p-4 w-full max-w-[90vw] lg:h-[90vh] shadow-lg overflow-hidden">
       <div className='flex flex-col-reverse lg:flex-row-reverse gap-8 lg:gap-8 w-full h-full relative'>
-        <div className={`w-full flex flex-col h-full transition-all duration-300 ease-in-out ${isSidebarOpen ? 'lg:translate-x-0 lg:w-[17.75%]' : 'lg:translate-x-full relative -right-10 lg:w-0 '}`}>
+        <div className={`w-full flex flex-col h-full transition-all duration-300 ease-in-out ${isSidebarOpen ? 'lg:translate-x-0 lg:w-[17.75%]' : 'lg:translate-x-full relative -right-10 lg:w-0 '} `}>
           <div className="mb-4 flex-shrink-0">
             <Button 
               onClick={() => {
@@ -1191,7 +1191,7 @@ export default function Schedule() {
             {isSidebarOpen ? <EyeOff /> : <Eye /> }
             
           </button>
-        <div className={`bg-white rounded-lg shadow-lg transition-all duration-300 ease-in-out flex-grow ${isSidebarOpen ? 'w-full' : 'w-full'}`}>
+        <div className={`bg-white rounded-lg shadow-lg transition-all duration-300 ease-in-out flex-grow ${isSidebarOpen ? 'w-full' : 'w-full'} ${(view === "week") || (view === "day") || (view === "month") ? "w-[82.25%]" : ""}`}>
           <Calendar
             localizer={localizer}
             events={formattedFilteredEvents}
