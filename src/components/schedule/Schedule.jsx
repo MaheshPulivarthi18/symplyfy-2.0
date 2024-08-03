@@ -17,7 +17,7 @@ import { Input } from '../ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "../ui/dialog"
-import { PlusCircle, Search } from "lucide-react";
+import { PlusCircle, Search, EyeOff, Eye } from "lucide-react";
 import { Card } from '../ui/card';
 import { useToast } from "@/components/ui/use-toast";
 import { useParams } from 'react-router-dom';
@@ -99,6 +99,7 @@ export default function Schedule() {
   const [doctorSearch, setDoctorSearch] = useState('');
   const [patientSearch, setPatientSearch] = useState('');
   const [therapistSearch, setTherapistSearch] = useState('');
+  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
 
   const filteredTherapists = therapists.filter(therapist => 
     `${therapist.first_name} ${therapist.last_name}`.toLowerCase().includes(doctorSearch.toLowerCase())
@@ -107,6 +108,10 @@ export default function Schedule() {
   const filteredPatients = patients.filter(patient => 
     `${patient.first_name} ${patient.last_name}`.toLowerCase().includes(patientSearch.toLowerCase())
   );
+
+  const toggleSidebar = () => {
+    setIsSidebarOpen(!isSidebarOpen);
+  };
 
   useEffect(() => {
     let interval;
@@ -1061,9 +1066,9 @@ export default function Schedule() {
   }
 
   return (
-    <Card className="p-4 w-full max-w-[90vw] lg:h-[90vh] shadow-lg">
-      <div className='flex flex-col-reverse lg:flex-row-reverse gap-8 lg:gap-8 w-full h-full'>
-        <div className="w-full lg:w-[17.75%] flex flex-col h-full">
+    <Card className="p-4 w-full max-w-[90vw] lg:h-[90vh] shadow-lg overflow-hidden">
+      <div className='flex flex-col-reverse lg:flex-row-reverse gap-8 lg:gap-8 w-full h-full relative'>
+        <div className={`w-full lg:w-[17.75%] flex flex-col h-full transition-all duration-300 ease-in-out ${isSidebarOpen ? 'lg:translate-x-0' : 'lg:translate-x-full lg:w-0 lg:px-4'}`}>
           <div className="mb-4 flex-shrink-0">
             <Button 
               onClick={() => {
@@ -1085,40 +1090,34 @@ export default function Schedule() {
             <div className='flex gap-4 justify-between items-center'>
               <Label htmlFor="startTime">From</Label>
               <ClockPicker
-  id="startTime"
-  value={format(calendarStartTime, 'HH:mm')}
-  onChange={(time) => setCalendarStartTime(parseTimeString(time))}
-/>
-
-
+                id="startTime"
+                value={format(calendarStartTime, 'HH:mm')}
+                onChange={(time) => setCalendarStartTime(parseTimeString(time))}
+              />
             </div>
             <div className='flex gap-4 justify-between items-center mt-2'>
               <Label htmlFor="endTime">To</Label>
               <ClockPicker
-  id="endTime"
-  value={format(calendarEndTime, 'HH:mm')}
-  onChange={(time) => setCalendarEndTime(parseTimeString(time))}
-/>
-
-
+                id="endTime"
+                value={format(calendarEndTime, 'HH:mm')}
+                onChange={(time) => setCalendarEndTime(parseTimeString(time))}
+              />
             </div>
             <div className='flex gap-4 justify-between items-center mt-2'>
               <Label htmlFor="breakStartTime">Break Start</Label>
               <ClockPicker
-  id="breakStartTime"
-  value={format(breakStartTime, 'HH:mm')}
-  onChange={(time) => setBreakStartTime(parseTimeString(time))}
-/>
-
+                id="breakStartTime"
+                value={format(breakStartTime, 'HH:mm')}
+                onChange={(time) => setBreakStartTime(parseTimeString(time))}
+              />
             </div>
             <div className='flex gap-4 justify-between items-center mt-2'>
               <Label htmlFor="breakEndTime">Break End</Label>
-
               <ClockPicker
-  id="breakEndTime"
-  value={format(breakEndTime, 'HH:mm')}
-  onChange={(time) => setBreakEndTime(parseTimeString(time))}
-/>  
+                id="breakEndTime"
+                value={format(breakEndTime, 'HH:mm')}
+                onChange={(time) => setBreakEndTime(parseTimeString(time))}
+              />  
             </div>
           </div>
           <ScrollArea className="flex-grow overflow-y-auto pr-4">
@@ -1185,7 +1184,14 @@ export default function Schedule() {
             </Toggle>
           </ScrollArea>
         </div>
-        <div className="bg-white rounded-lg shadow-lg w-full lg:w-[80%]">
+          <button 
+            onClick={toggleSidebar}
+            className="absolute top-5 right-0 transform -translate-y-1/2 bg-secondary p-2 rounded-full"
+          >
+            {isSidebarOpen ? <EyeOff /> : <Eye /> }
+            
+          </button>
+        <div className={`bg-white rounded-lg shadow-lg transition-all duration-300 ease-in-out flex-grow ${isSidebarOpen ? 'w-full' : 'w-full'}`}>
           <Calendar
             localizer={localizer}
             events={formattedFilteredEvents}
@@ -1209,8 +1215,8 @@ export default function Schedule() {
             }}
             date={date}
             // onNavigate={setDate}
-            className="font-sans"
-            style={{ minHeight: '500px' }}
+            className="font-sans h-full"
+            style={{ height: '100%', width: '100%' }}
             components={{
               toolbar: CustomToolbar,
               resourceHeader: ResourceHeader,

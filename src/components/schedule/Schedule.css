@@ -268,3 +268,9 @@
   .rbc-calendar {
     min-height: 500px;
   }
+
+  @media (max-width: 1024px) {
+    .lg\:translate-x-full {
+      transform: translateX(0) !important;
+    }
+  }

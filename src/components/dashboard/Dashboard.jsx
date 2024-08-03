@@ -89,25 +89,30 @@ const Dashboard = () => {
     const now = new Date();
     switch (dateRange) {
       case 'today':
-        return { start: startOfDay(now), end: endOfDay(now) };
+        const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+        const todayEnd = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999);
+        return { start: addDays(todayStart, 1), end: addDays(todayEnd, 1) };
       case 'yesterday':
-        const yesterday = new Date(now.setDate(now.getDate() - 1));
-        return { start: startOfDay(yesterday), end: endOfDay(yesterday) };
+        const yesterday = new Date(now);
+        yesterday.setDate(yesterday.getDate() - 1);
+        const yesterdayStart = new Date(yesterday.getFullYear(), yesterday.getMonth(), yesterday.getDate());
+        const yesterdayEnd = new Date(yesterday.getFullYear(), yesterday.getMonth(), yesterday.getDate(), 23, 59, 59, 999);
+        return { start: addDays(yesterdayStart, 1), end: addDays(yesterdayEnd, 1) };
       case 'thisWeek':
         return { start: startOfWeek(now), end: endOfWeek(now) };
       case 'thisMonth':
         return { start: startOfMonth(now), end: endOfMonth(now) };
       case 'thisYear':
         return { start: startOfYear(now), end: endOfYear(now) };
-        case 'custom':
-          return { 
-            start: customDateRange.from ? startOfDay(customDateRange.from) : startOfDay(now), 
-            end: customDateRange.to ? endOfDay(customDateRange.to) : endOfDay(now) 
-          };
-        default:
-          return { start: startOfDay(now), end: endOfDay(now) };
-      }
-    };
+      case 'custom':
+        return { 
+          start: customDateRange.from ? new Date(customDateRange.from.setHours(0, 0, 0, 0)) : new Date(now.setHours(0, 0, 0, 0)), 
+          end: customDateRange.to ? new Date(customDateRange.to.setHours(23, 59, 59, 999)) : new Date(now.setHours(23, 59, 59, 999)) 
+        };
+      default:
+        return { start: new Date(now.setHours(0, 0, 0, 0)), end: new Date(now.setHours(23, 59, 59, 999)) };
+    }
+  };
 
   const fetchEmployeeDetails = async (employeeId) => {
     if (employeeDetails[employeeId]) return;
