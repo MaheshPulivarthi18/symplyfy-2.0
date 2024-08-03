@@ -268,10 +268,12 @@ export default function Schedule() {
   
   const fetchBookings = async () => {
     try {
-      let viewStart = startOfDay(date);
-      let viewEnd = endOfDay(date);
+      let viewStart, viewEnd;
   
-      if (view === 'week') {
+      if (view === 'day') {
+        viewStart = startOfDay(date);
+        viewEnd = endOfDay(date);
+      } else if (view === 'week') {
         viewStart = startOfWeek(date);
         viewEnd = endOfWeek(date);
       } else if (view === 'month') {
@@ -286,7 +288,6 @@ export default function Schedule() {
       url.searchParams.append('time_from', timeFrom);
       url.searchParams.append('time_to', timeTo);
   
-      // If a specific doctor is selected, add the employee_uuid parameter
       if (selectedDoctorId) {
         url.searchParams.append('employee_uuid', selectedDoctorId);
       } else {
@@ -298,17 +299,15 @@ export default function Schedule() {
       if (!response.ok) {
         if (response.status === 401) {
           throw new Error('Authentication failed. Please log in again.');
-        } else if(response.StatusCode === 400) {
-          throw new Error("Error creating a booking", response.body)
+        } else if (response.status === 400) {
+          throw new Error("Error fetching bookings");
         }
         const errorData = await response.json();
-        console.log(errorData)
         throw new Error(errorData || 'Failed to fetch bookings');
       }
   
       const data = await response.json();
   
-      // Format the data
       const formattedEvents = data.map(booking => ({
         id: booking.id,
         title: `${booking.patient.first_name} ${booking.patient.last_name}`,
@@ -852,7 +851,6 @@ export default function Schedule() {
   const handleNavigate = (newDate) => {
     setDate(newDate);
     updateCalendarTimes(newDate);
-    fetchBookings();
   };
 
   const isWithinBreakTime = (time) => {
@@ -1191,7 +1189,7 @@ export default function Schedule() {
             {isSidebarOpen ? <EyeOff /> : <Eye /> }
             
           </button>
-        <div className={`bg-white rounded-lg shadow-lg transition-all duration-300 ease-in-out flex-grow ${isSidebarOpen ? 'w-full' : 'w-full'} ${(view === "week") || (view === "day") || (view === "month") ? "w-[82.25%]" : ""}`}>
+        <div className={`bg-white rounded-lg shadow-lg transition-all duration-300 ease-in-out flex-grow ${isSidebarOpen ? 'w-[82%]' : 'w-[90%]'}`}>
           <Calendar
             localizer={localizer}
             events={formattedFilteredEvents}
@@ -1216,10 +1214,17 @@ export default function Schedule() {
             date={date}
             // onNavigate={setDate}
             className="font-sans h-full"
-            style={{ height: '100%', width: '100%' }}
+            style={{ height: '100%' }}
             components={{
               toolbar: CustomToolbar,
               resourceHeader: ResourceHeader,
+            }}
+            formats={{
+              monthHeaderFormat: (date, culture, localizer) =>
+                localizer.format(date, 'MMMM yyyy', culture),
+              dayFormat: 'dd',
+              dayRangeHeaderFormat: ({ start, end }, culture, localizer) =>
+                `${localizer.format(start, 'MMMM dd', culture)} - ${localizer.format(end, 'MMMM dd', culture)}`
             }}
             min={calendarStartTime}
             max={calendarEndTime}
