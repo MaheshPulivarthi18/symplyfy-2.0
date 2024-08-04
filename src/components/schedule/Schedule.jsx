@@ -100,6 +100,9 @@ export default function Schedule() {
   const [patientSearch, setPatientSearch] = useState('');
   const [therapistSearch, setTherapistSearch] = useState('');
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  const [totalScheduled, setTotalScheduled] = useState(0);
+  const [totalVisited, setTotalVisited] = useState(0);
+  const [totalCancelled, setTotalCancelled] = useState(0);
 
   const filteredTherapists = therapists.filter(therapist => 
     `${therapist.first_name} ${therapist.last_name}`.toLowerCase().includes(doctorSearch.toLowerCase())
@@ -265,7 +268,7 @@ export default function Schedule() {
     return date.toISOString()
       .replace(/\.\d{3}Z$/, '')
   };
-  
+
   const fetchBookings = async () => {
     try {
       let viewStart, viewEnd;
@@ -323,7 +326,9 @@ export default function Schedule() {
         status_employee: booking.status_employee,
         recurrence: booking.recurrence
       }));
-  
+      
+      setEvents(formattedEvents);
+      updateAppointmentCounts(formattedEvents);
       setEvents(formattedEvents);
     } catch (error) {
       console.error('Error fetching bookings:', error);
@@ -564,6 +569,7 @@ export default function Schedule() {
       if (!response.ok) throw new Error('Failed to mark visit');
 
       const updatedBooking = await response.json();
+      console.log(updatedBooking)
       
       // Update the local state to mark the event as attended
       setEvents(prevEvents => prevEvents.map(event => 
@@ -761,24 +767,6 @@ export default function Schedule() {
     setShowCanceled(false);
   };
 
-  // const handleSelect = ({ start, end, resourceId }) => {
-  //   if (isWithinBreakTime(start) || isWithinBreakTime(end)) {
-  //     toast({
-  //       title: "Invalid Selection",
-  //       description: "You cannot schedule appointments during break time.",
-  //       variant: "destructive",
-  //     });
-  //     return;
-  //   }
-  //   setNewVisit(prev => ({ 
-  //     ...prev, 
-  //     date: format(start, 'yyyy-MM-dd'),
-  //     time: format(start, 'HH:mm'),
-  //     therapist: resourceId || ''
-  //   }));
-  //   setIsVisitDialogOpen(true);
-  // };
-
   const handleSelect = ({ start, end, resourceId }) => {
     if (isWithinBreakTime(start) || isWithinBreakTime(end)) {
       toast({
@@ -796,28 +784,6 @@ export default function Schedule() {
     }));
     setIsVisitDialogOpen(true);
   };
-
-  // const handleInputChange = (e) => {
-  //   const { name, value } = e.target;
-  //   setNewEvent(prev => ({ ...prev, [name]: value }));
-  // };
-
-  // const handleDateChange = (date) => {
-  //   setNewEvent(prev => ({ ...prev, date }));
-  // };
-
-  // const handleTimeChange = (time) => {
-  //   setNewEvent(prev => ({ ...prev, time }));
-  // };
-
-  // const handleDurationChange = (duration) => {
-  //   if (duration === 'custom') {
-  //     setIsCustomDuration(true);
-  //   } else {
-  //     setNewEvent(prev => ({ ...prev, duration: parseInt(duration) }));
-  //     setIsCustomDuration(false);
-  //   }
-  // };
 
   const handleSelectEvent = (event) => {
     // console.log(event)
@@ -904,6 +870,30 @@ export default function Schedule() {
     recurrence: event.recurrence
   }));
 
+  const updateAppointmentCounts = (events) => {
+    let scheduled = 0;
+    let visited = 0;
+    let cancelled = 0;
+  
+    events.forEach(event => {
+      if (event.status_patient === 'X' || event.status_employee === 'X') {
+        cancelled++;
+      } else if (event.attended || event.status_employee === "C" || event.status_patient === "C") {
+        visited++;
+      } else {
+        scheduled++;
+      }
+    });
+  
+    setTotalScheduled(scheduled);
+    setTotalVisited(visited);
+    setTotalCancelled(cancelled);
+  };
+
+  useEffect(() => {
+    updateAppointmentCounts(formattedFilteredEvents);
+  }, [formattedFilteredEvents, view]);
+
   // const formattedFilteredEvents = filteredEvents.map(event => ({
   //   id: event.id,
   //   doctor: event.doctorName,
@@ -972,7 +962,11 @@ export default function Schedule() {
             <i className="fa-solid fa-angle-right"></i>
           </button>
         </span>
-        <span className="rbc-toolbar-label">{label()}</span>
+        <div className="rbc-toolbar-label">{label()} 
+        <div className="text-sm mt-1">
+          Scheduled: {totalScheduled} | Visited: {totalVisited} | Cancelled: {totalCancelled}
+        </div>
+        </div>
         <span className="rbc-btn-group">
           {toolbar.views.map(view => (
             <button
@@ -1062,6 +1056,32 @@ export default function Schedule() {
       </div>
     );
   }
+
+  const CustomEvent = ({ event }) => {
+    let badgeColor = 'transparent';
+    if (event.status_patient === 'C' || event.status_employee === 'C') {
+      badgeColor = '#116530'; // Green color for confirmed events
+    } else if (event.attended) {
+      badgeColor = '#FFA500'; // Orange color for attended events
+    }
+  
+    return (
+      <div style={{ height: '100%', width: '100%', position: 'relative' }}>
+        <div style={{ 
+          height: '14px', 
+          width: '8%', 
+          backgroundColor: badgeColor, 
+          position: 'absolute', 
+          top: 0, 
+          right: 0 
+        }} />
+        <div style={{ padding: '4px 2px'}}>
+            {event.title.split(" ")[0] + "  -  Dr. "} 
+            {event.doctor.split(" ")[0]}
+        </div>
+      </div>
+    );
+  };
 
   return (
     <Card className="p-4 w-full max-w-[90vw] lg:h-[90vh] shadow-lg overflow-hidden">
@@ -1218,6 +1238,7 @@ export default function Schedule() {
             components={{
               toolbar: CustomToolbar,
               resourceHeader: ResourceHeader,
+              event: CustomEvent,  // Add this line
             }}
             formats={{
               monthHeaderFormat: (date, culture, localizer) =>
@@ -1230,24 +1251,17 @@ export default function Schedule() {
             max={calendarEndTime}
             onNavigate={handleNavigate}
             eventPropGetter={(event) => {
-              let backgroundColor = '#3174ad';  // Default blue color
-              let textColor = 'white';
+              let style = {
+                backgroundColor: '#7EC8E3',  // Lighter blue color
+                color: 'black',
+              };
 
               if (event.status_patient === 'X' || event.status_employee === 'X') {
-                backgroundColor = 'lightgrey';
-                textColor = 'darkgrey';
-              } else if (event.attended) {
-                backgroundColor = '#4CAF50';  // Green color for attended events
-              } else if (event.status_patient === 'C' && event.status_employee === 'C') {
-                backgroundColor = '#FFA500';  // Orange color for confirmed events
+                style.backgroundColor = 'lightgrey';
+                style.color = 'darkgrey';
               }
 
-              return {
-                style: {
-                  backgroundColor: backgroundColor,
-                  color: textColor,
-                }
-              };
+              return { style };
             }}
             dayPropGetter={(date) => ({
               style: {

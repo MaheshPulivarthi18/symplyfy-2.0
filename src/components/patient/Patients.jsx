@@ -7,18 +7,36 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/components/ui/use-toast';
-import { Progress } from '@/components/ui/progress'
+import { Progress } from '@/components/ui/progress';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { ChevronDown, ChevronUp, ChevronsUpDown } from 'lucide-react';
 
 const PatientList = () => {
   const [patients, setPatients] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [filteredPatients, setFilteredPatients] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [sortField, setSortField] = useState('last_name');
+  const [sortDirection, setSortDirection] = useState('asc');
   const navigate = useNavigate();
   const { clinic_id } = useParams();
   const { authenticatedFetch } = useAuth();
   const { toast } = useToast();
   const [progress, setProgress] = useState(13);
+  const [therapists, setTherapists] = useState([])
 
   useEffect(() => {
     let interval;
@@ -39,15 +57,16 @@ const PatientList = () => {
 
   useEffect(() => {
     fetchPatients();
+    fetchTherapists();
   }, [clinic_id]);
 
   useEffect(() => {
-    setFilteredPatients(
-      patients.filter(patient =>
-        `${patient.first_name} ${patient.last_name}`.toLowerCase().includes(searchTerm.toLowerCase())
-      )
+    const filtered = patients.filter(patient =>
+      `${patient.first_name} ${patient.last_name}`.toLowerCase().includes(searchTerm.toLowerCase())
     );
-  }, [searchTerm, patients]);
+    const sorted = sortPatients(filtered);
+    setFilteredPatients(sorted);
+  }, [searchTerm, patients, sortField, sortDirection]);
 
   const fetchPatients = async () => {
     try {
@@ -66,11 +85,54 @@ const PatientList = () => {
     }
   };
 
+  const fetchTherapists = async () => {
+    try {
+      const response = await authenticatedFetch(`${import.meta.env.VITE_BASE_URL}/api/emp/clinic/${clinic_id}/employee/`);
+      if (!response.ok) throw new Error('Failed to fetch therapists');
+      const data = await response.json();
+      const therapistList = data.filter(employee => employee.is_therapist);
+      setTherapists(therapistList);
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to fetch therapists. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const getTherapistName = (therapistId) => {
+    const therapist = therapists.find(t => t.id === therapistId);
+    return therapist ? `${therapist.first_name} ${therapist.last_name}` : 'Not Assigned';
+  };
+
+  const sortPatients = (patients) => {
+    return patients.sort((a, b) => {
+      if (a[sortField] < b[sortField]) return sortDirection === 'asc' ? -1 : 1;
+      if (a[sortField] > b[sortField]) return sortDirection === 'asc' ? 1 : -1;
+      return 0;
+    });
+  };
+
+  const handleSort = (field) => {
+    if (field === sortField) {
+      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortField(field);
+      setSortDirection('asc');
+    }
+  };
+
+  const SortIcon = ({ field }) => {
+    if (field !== sortField) return <ChevronsUpDown className="ml-2 h-4 w-4" />;
+    return sortDirection === 'asc' ? <ChevronUp className="ml-2 h-4 w-4" /> : <ChevronDown className="ml-2 h-4 w-4" />;
+  };
+
   if (loading) {
     return (
       <div className="w-full flex flex-col items-center justify-center">
         <Progress value={progress} className="w-[60%]" />
-        <p className="mt-4 text-sm text-gray-500">Loading employees... {Math.round(progress)}%</p>
+        <p className="mt-4 text-sm text-gray-500">Loading patients... {Math.round(progress)}%</p>
       </div>
     );
   }
@@ -101,40 +163,68 @@ const PatientList = () => {
             <p>No patients match your search.</p>
           </div>
         ) : (
-          <table className="w-full">
-            <thead>
-              <tr>
-                <th>Name</th>
-                <th>Email</th>
-                <th>Mobile</th>
-                <th>Primary Therapist</th>
-                <th>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead className='text-center'>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="ghost">Name <SortIcon field="last_name" /></Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent>
+                      <DropdownMenuItem onClick={() => handleSort('last_name')}>Sort by Last Name</DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => handleSort('first_name')}>Sort by First Name</DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </TableHead>
+                <TableHead className='text-center'>
+                  <Button variant="ghost" 
+                    // onClick={() => handleSort('email')}
+                  >
+                    Email 
+                    {/* <SortIcon field="email" /> */}
+                  </Button>
+                </TableHead>
+                <TableHead className='text-center'>
+                  <Button variant="ghost" 
+                    // onClick={() => handleSort('mobile')}
+                    >
+                    Mobile
+                    {/* <SortIcon field="email" /> */}
+                  </Button>
+                </TableHead>
+                <TableHead>
+                  <Button variant="ghost" onClick={() => handleSort('therapist_primary')}>
+                    Primary Therapist <SortIcon field="therapist_primary" />
+                  </Button>
+                </TableHead>
+                <TableHead>Actions</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
               {filteredPatients.map(patient => (
-                <tr key={patient.id} className="border-t">
-                  <td className="py-2">
+                <TableRow key={patient.id}>
+                  <TableCell className="py-2">
                     <div className="flex items-center">
                       <Avatar className="mr-2">
                         <AvatarImage src={`https://api.dicebear.com/6.x/initials/svg?seed=${patient.first_name} ${patient.last_name}`} />
-                        <AvatarFallback>{patient.first_name.charAt(0)}{patient.last_name}</AvatarFallback>
+                        <AvatarFallback>{patient.first_name}{patient.last_name}</AvatarFallback>
                       </Avatar>
                       {patient.first_name} {patient.last_name}
                     </div>
-                  </td>
-                  <td>{patient.email}</td>
-                  <td>{patient.mobile}</td>
-                  <td>{patient.therapist_primary}</td>
-                  <td>
+                  </TableCell>
+                  <TableCell>{patient.email}</TableCell>
+                  <TableCell>{patient.mobile}</TableCell>
+                  <TableCell>{getTherapistName(patient.therapist_primary)}</TableCell>
+                  <TableCell>
                     <Link to={`/clinic/${clinic_id}/patients/${patient.id}`}>
                       <Button variant="outline">View Profile</Button>
                     </Link>
-                  </td>
-                </tr>
+                  </TableCell>
+                </TableRow>
               ))}
-            </tbody>
-          </table>
+    </TableBody>
+          </Table>
         )}
       </CardContent>
     </Card>

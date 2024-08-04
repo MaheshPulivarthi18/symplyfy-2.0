@@ -21,7 +21,7 @@ import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 // import { Clock as Clock } from "@/components/ui/clock"
 import ClockPicker from "@/components/ui/clock"
-import { parseISO, format, addMinutes, addHours, addDays } from 'date-fns';
+import { parseISO, format, addMinutes, addHours, addDays, startOfWeek, startOfMonth, startOfYear, endOfWeek, endOfMonth, endOfYear } from 'date-fns';
 import { CalendarIcon, Clock } from "lucide-react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { date } from 'zod';
@@ -41,6 +41,9 @@ import { ArrowUpDown } from "lucide-react"
 // import { excel}
 import ExcelJS from 'exceljs';
 import { InvoiceDialog, InvoiceDetailsDialog, InvoiceStatusDialog } from '../payments/GenarateInvoice';
+import { Filter } from "lucide-react";
+import { DateRangePicker } from "@/components/ui/date-range-picker";
+import TherapistCountsDialog from './TherapistCounts';
 
 const PatientProfile = () => {
   const { clinic_id, patient_id } = useParams();
@@ -109,6 +112,9 @@ const PatientProfile = () => {
     channel: ''
   });
   const [invoices, setInvoices] = useState([]);
+  const [dateRange, setDateRange] = useState('thisWeek');
+  const [customDateRange, setCustomDateRange] = useState({ from: new Date(), to: new Date() });
+  const [isTherapistCountsDialogOpen, setIsTherapistCountsDialogOpen] = useState(false);
   
   // Visits DataTable
   const VisitsDataTable = ({ data }) => {
@@ -593,36 +599,44 @@ const AppointmentsDataTable = ({ data }) => {
     }
   };
 
-  const fetchAppointments = async () => {
-    try {
-      const data = await fetchWithTokenHandling(`${import.meta.env.VITE_BASE_URL}/api/emp/clinic/${clinic_id}/patient/${patient_id}/booking/`);
-      setAppointments(data);
-      
-      const employeeIds = new Set();
-      const sellableIds = new Set();
-  
-      data.forEach(appointment => {
-        if (appointment.employee?.id) {
-          employeeIds.add(appointment.employee.id);
-        }
-        if (appointment.sellable) {
-          sellableIds.add(appointment.sellable);
-        }
-      });
-  
-      const fetchEmployeePromises = Array.from(employeeIds).map(id => fetchEmployeeDetails(id));
-      const fetchSellablePromises = Array.from(sellableIds).map(id => fetchSellableDetails(id));
-      
-      await Promise.all([...fetchEmployeePromises, ...fetchSellablePromises]);
-      
-      console.log(employeeIds);
-      console.log(sellableIds);
-  
-    } catch (error) {
-      console.error("Failed to fetch appointments:", error);
-      setAppointments([]);
+  const getDateRange = () => {
+    const now = new Date();
+    switch (dateRange) {
+      case 'thisWeek':
+        return { start: startOfWeek(now), end: endOfWeek(now) };
+      case 'thisMonth':
+        return { start: startOfMonth(now), end: endOfMonth(now) };
+      case 'thisYear':
+        return { start: startOfYear(now), end: endOfYear(now) };
+      case 'custom':
+        return { 
+          start: customDateRange.from ? new Date(customDateRange.from.setHours(0, 0, 0, 0)) : new Date(now.setHours(0, 0, 0, 0)), 
+          end: customDateRange.to ? new Date(customDateRange.to.setHours(23, 59, 59, 999)) : new Date(now.setHours(23, 59, 59, 999)) 
+        };
+      default:
+        return { start: new Date(now.setHours(0, 0, 0, 0)), end: new Date(now.setHours(23, 59, 59, 999)) };
     }
   };
+
+  const fetchAppointments = async () => {
+    try {
+      const { start, end } = getDateRange();
+      
+      const response = await fetchWithTokenHandling(`${import.meta.env.VITE_BASE_URL}/api/emp/clinic/${clinic_id}/patient/${patient_id}/booking/?time_from=${start.toISOString().replace(/\.\d{3}Z$/, '')}&time_to=${end.toISOString().replace(/\.\d{3}Z$/, '')}`);
+      setAppointments(response);
+    } catch (error) {
+      console.error("Failed to fetch appointments:", error);
+      toast({
+        title: "Error",
+        description: "Failed to fetch appointments. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  useEffect(() => {
+    fetchAppointments();
+  }, [dateRange, customDateRange]);
   
   const handleAddAppointment = async (e) => {
     e.preventDefault();
@@ -1018,7 +1032,7 @@ const AppointmentsDataTable = ({ data }) => {
     fetchPayments();
     fetchPaymentChannels();
     fetchVisits();
-    fetchInvoices(); // Add this line
+    fetchInvoices();
   }, [clinic_id, patient_id]);
 
 
@@ -1084,7 +1098,6 @@ const AppointmentsDataTable = ({ data }) => {
     const updatedItems = [...invoiceItems];
     updatedItems[index][field] = value;
     
-    // Recalculate gross and net
     const item = updatedItems[index];
     item.gross = item.quantity * item.rate;
     item.net = item.gross - item.discount;
@@ -1589,6 +1602,49 @@ const AppointmentsDataTable = ({ data }) => {
           
           {/* Appointment TabsContent */}
           <TabsContent value="appointments" className="relative min-h-[300px] h-[90%] overflow-scroll p-4">
+            <div className="flex justify-end mb-4">
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button variant="outline"><Filter className="mr-2 h-4 w-4" /> Filter</Button>
+                </PopoverTrigger>
+                <PopoverContent className="">
+                  <Select value={dateRange} onValueChange={(value) => {
+                    setDateRange(value);
+                    if (value !== 'custom') {
+                      setCustomDateRange({ from: null, to: null });
+                    }
+                  }}>
+                    <SelectTrigger className="w-full">
+                      <SelectValue placeholder="Select date range" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="thisWeek">This Week</SelectItem>
+                      <SelectItem value="thisMonth">This Month</SelectItem>
+                      <SelectItem value="thisYear">This Year</SelectItem>
+                      <SelectItem value="custom">Custom Range</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  {dateRange === 'custom' && (
+                    <div className="mt-4">
+                      <DateRangePicker
+                        from={customDateRange.from}
+                        to={customDateRange.to}
+                        onSelect={(range) => {
+                          if (range?.from && range?.to) {
+                            setCustomDateRange(range);
+                            setDateRange('custom');
+                            fetchAppointments();
+                          }
+                        }}
+                      />
+                    </div>
+                  )}
+                </PopoverContent>
+              </Popover>
+              <Button onClick={() => setIsTherapistCountsDialogOpen(true)} className="ml-2">
+                View Therapist Counts
+              </Button>
+            </div>
             {appointments.length === 0 ? (
               <p>No upcoming appointments for this patient.</p>
             ) : (
@@ -1760,6 +1816,12 @@ const AppointmentsDataTable = ({ data }) => {
                 </form>
               </DialogContent>
             </Dialog>
+            
+            <TherapistCountsDialog
+              isOpen={isTherapistCountsDialogOpen}
+              onClose={() => setIsTherapistCountsDialogOpen(false)}
+              appointments={appointments}
+            />
           </TabsContent>
           
           <TabsContent value="payments" className="relative min-h-[300px] h-[90%] overflow-scroll p-4 ">
