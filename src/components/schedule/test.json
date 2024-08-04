@@ -1,8 +1,8 @@
 [
     {
-        "id": "ea6983b3-2d54-41aa-bf03-023e8a0a77c4",
-        "start": "2024-08-05T11:00:00Z",
-        "end": "2024-08-05T11:30:00Z",
+        "id": "fc190af5-b995-4b0b-9697-dde1c3336e49",
+        "start": "2024-08-12T10:00:00Z",
+        "end": "2024-08-12T10:30:00Z",
         "patient": {
             "id": "673e604f-c54d-485d-8f4d-355282704e90",
             "first_name": "Nishanth",
@@ -10,32 +10,32 @@
             "mobile": "+919182664777"
         },
         "employee": {
-            "id": "02cb204b-08b5-48d0-a955-a9a15af9b814",
-            "first_name": "Dilshaan",
-            "last_name": "Momin",
+            "id": "73c03040-bdc4-46a6-b2eb-649397460ad6",
+            "first_name": "Srinivas",
+            "last_name": "Adepu",
             "is_therapist": true
         },
         "status_patient": "P",
         "status_employee": "C",
         "status_patient_updated_on": null,
-        "status_employee_updated_on": "2024-08-04T09:29:37.877102Z",
+        "status_employee_updated_on": "2024-08-04T14:26:35.445967Z",
         "status_patient_updated_by": null,
         "status_employee_updated_by": {
             "id": "15c91132-3b67-41ad-a0bc-b348a9c2e223",
             "first_name": "srinivas",
             "last_name": "adepu"
         },
-        "sellable": "bc8208bc-3a31-401a-9ab8-05e994662016",
+        "sellable": null,
         "attended": false,
-        "recurrence": null,
+        "recurrence": "fd5b6d8e-93e2-4c7d-b3eb-3b28372eeadb",
         "penalty_employee": "0.00",
         "penalty_patient": "0.00",
         "visit_related": null
     },
     {
-        "id": "5a8ac8c1-cc2f-4da8-b78e-281d731cf9d5",
-        "start": "2024-08-05T04:30:00Z",
-        "end": "2024-08-05T05:00:00Z",
+        "id": "8ba4de2f-3d1c-4ab7-a9f2-18cf6e3fff30",
+        "start": "2024-08-29T10:00:00Z",
+        "end": "2024-08-29T10:30:00Z",
         "patient": {
             "id": "673e604f-c54d-485d-8f4d-355282704e90",
             "first_name": "Nishanth",
@@ -43,9 +43,9 @@
             "mobile": "+919182664777"
         },
         "employee": {
-            "id": "02cb204b-08b5-48d0-a955-a9a15af9b814",
-            "first_name": "Dilshaan",
-            "last_name": "Momin",
+            "id": "73c03040-bdc4-46a6-b2eb-649397460ad6",
+            "first_name": "Srinivas",
+            "last_name": "Adepu",
             "is_therapist": true
         },
         "status_patient": "P",
@@ -54,9 +54,444 @@
         "status_employee_updated_on": null,
         "status_patient_updated_by": null,
         "status_employee_updated_by": null,
-        "sellable": "bc8208bc-3a31-401a-9ab8-05e994662016",
+        "sellable": null,
         "attended": false,
-        "recurrence": null,
+        "recurrence": "fd5b6d8e-93e2-4c7d-b3eb-3b28372eeadb",
+        "penalty_employee": "0.00",
+        "penalty_patient": "0.00",
+        "visit_related": null
+    },
+    {
+        "id": "bcec2d99-795c-47b1-b5aa-11d60fcf6c7e",
+        "start": "2024-08-28T10:00:00Z",
+        "end": "2024-08-28T10:30:00Z",
+        "patient": {
+            "id": "673e604f-c54d-485d-8f4d-355282704e90",
+            "first_name": "Nishanth",
+            "last_name": "Martha",
+            "mobile": "+919182664777"
+        },
+        "employee": {
+            "id": "73c03040-bdc4-46a6-b2eb-649397460ad6",
+            "first_name": "Srinivas",
+            "last_name": "Adepu",
+            "is_therapist": true
+        },
+        "status_patient": "P",
+        "status_employee": "P",
+        "status_patient_updated_on": null,
+        "status_employee_updated_on": null,
+        "status_patient_updated_by": null,
+        "status_employee_updated_by": null,
+        "sellable": null,
+        "attended": false,
+        "recurrence": "fd5b6d8e-93e2-4c7d-b3eb-3b28372eeadb",
+        "penalty_employee": "0.00",
+        "penalty_patient": "0.00",
+        "visit_related": null
+    },
+    {
+        "id": "a2da9f39-0451-49cf-b69b-a5ddd07675e5",
+        "start": "2024-08-27T10:00:00Z",
+        "end": "2024-08-27T10:30:00Z",
+        "patient": {
+            "id": "673e604f-c54d-485d-8f4d-355282704e90",
+            "first_name": "Nishanth",
+            "last_name": "Martha",
+            "mobile": "+919182664777"
+        },
+        "employee": {
+            "id": "73c03040-bdc4-46a6-b2eb-649397460ad6",
+            "first_name": "Srinivas",
+            "last_name": "Adepu",
+            "is_therapist": true
+        },
+        "status_patient": "P",
+        "status_employee": "P",
+        "status_patient_updated_on": null,
+        "status_employee_updated_on": null,
+        "status_patient_updated_by": null,
+        "status_employee_updated_by": null,
+        "sellable": null,
+        "attended": false,
+        "recurrence": "fd5b6d8e-93e2-4c7d-b3eb-3b28372eeadb",
+        "penalty_employee": "0.00",
+        "penalty_patient": "0.00",
+        "visit_related": null
+    },
+    {
+        "id": "8294ce27-a23b-4721-a5f2-0589f0d352be",
+        "start": "2024-08-26T10:00:00Z",
+        "end": "2024-08-26T10:30:00Z",
+        "patient": {
+            "id": "673e604f-c54d-485d-8f4d-355282704e90",
+            "first_name": "Nishanth",
+            "last_name": "Martha",
+            "mobile": "+919182664777"
+        },
+        "employee": {
+            "id": "73c03040-bdc4-46a6-b2eb-649397460ad6",
+            "first_name": "Srinivas",
+            "last_name": "Adepu",
+            "is_therapist": true
+        },
+        "status_patient": "P",
+        "status_employee": "P",
+        "status_patient_updated_on": null,
+        "status_employee_updated_on": null,
+        "status_patient_updated_by": null,
+        "status_employee_updated_by": null,
+        "sellable": null,
+        "attended": false,
+        "recurrence": "fd5b6d8e-93e2-4c7d-b3eb-3b28372eeadb",
+        "penalty_employee": "0.00",
+        "penalty_patient": "0.00",
+        "visit_related": null
+    },
+    {
+        "id": "490a17a0-6edc-4efb-9832-f7f056691eca",
+        "start": "2024-08-23T10:00:00Z",
+        "end": "2024-08-23T10:30:00Z",
+        "patient": {
+            "id": "673e604f-c54d-485d-8f4d-355282704e90",
+            "first_name": "Nishanth",
+            "last_name": "Martha",
+            "mobile": "+919182664777"
+        },
+        "employee": {
+            "id": "73c03040-bdc4-46a6-b2eb-649397460ad6",
+            "first_name": "Srinivas",
+            "last_name": "Adepu",
+            "is_therapist": true
+        },
+        "status_patient": "P",
+        "status_employee": "P",
+        "status_patient_updated_on": null,
+        "status_employee_updated_on": null,
+        "status_patient_updated_by": null,
+        "status_employee_updated_by": null,
+        "sellable": null,
+        "attended": false,
+        "recurrence": "fd5b6d8e-93e2-4c7d-b3eb-3b28372eeadb",
+        "penalty_employee": "0.00",
+        "penalty_patient": "0.00",
+        "visit_related": null
+    },
+    {
+        "id": "3b54ebaf-d86f-47c4-b85f-7bf09931e1c5",
+        "start": "2024-08-22T10:00:00Z",
+        "end": "2024-08-22T10:30:00Z",
+        "patient": {
+            "id": "673e604f-c54d-485d-8f4d-355282704e90",
+            "first_name": "Nishanth",
+            "last_name": "Martha",
+            "mobile": "+919182664777"
+        },
+        "employee": {
+            "id": "73c03040-bdc4-46a6-b2eb-649397460ad6",
+            "first_name": "Srinivas",
+            "last_name": "Adepu",
+            "is_therapist": true
+        },
+        "status_patient": "P",
+        "status_employee": "P",
+        "status_patient_updated_on": null,
+        "status_employee_updated_on": null,
+        "status_patient_updated_by": null,
+        "status_employee_updated_by": null,
+        "sellable": null,
+        "attended": false,
+        "recurrence": "fd5b6d8e-93e2-4c7d-b3eb-3b28372eeadb",
+        "penalty_employee": "0.00",
+        "penalty_patient": "0.00",
+        "visit_related": null
+    },
+    {
+        "id": "e7e4ea19-6031-4e83-adca-a83a0554dc0d",
+        "start": "2024-08-21T10:00:00Z",
+        "end": "2024-08-21T10:30:00Z",
+        "patient": {
+            "id": "673e604f-c54d-485d-8f4d-355282704e90",
+            "first_name": "Nishanth",
+            "last_name": "Martha",
+            "mobile": "+919182664777"
+        },
+        "employee": {
+            "id": "73c03040-bdc4-46a6-b2eb-649397460ad6",
+            "first_name": "Srinivas",
+            "last_name": "Adepu",
+            "is_therapist": true
+        },
+        "status_patient": "P",
+        "status_employee": "P",
+        "status_patient_updated_on": null,
+        "status_employee_updated_on": null,
+        "status_patient_updated_by": null,
+        "status_employee_updated_by": null,
+        "sellable": null,
+        "attended": false,
+        "recurrence": "fd5b6d8e-93e2-4c7d-b3eb-3b28372eeadb",
+        "penalty_employee": "0.00",
+        "penalty_patient": "0.00",
+        "visit_related": null
+    },
+    {
+        "id": "23deed64-4475-4765-967a-2c2b3bec4456",
+        "start": "2024-08-20T10:00:00Z",
+        "end": "2024-08-20T10:30:00Z",
+        "patient": {
+            "id": "673e604f-c54d-485d-8f4d-355282704e90",
+            "first_name": "Nishanth",
+            "last_name": "Martha",
+            "mobile": "+919182664777"
+        },
+        "employee": {
+            "id": "73c03040-bdc4-46a6-b2eb-649397460ad6",
+            "first_name": "Srinivas",
+            "last_name": "Adepu",
+            "is_therapist": true
+        },
+        "status_patient": "P",
+        "status_employee": "P",
+        "status_patient_updated_on": null,
+        "status_employee_updated_on": null,
+        "status_patient_updated_by": null,
+        "status_employee_updated_by": null,
+        "sellable": null,
+        "attended": false,
+        "recurrence": "fd5b6d8e-93e2-4c7d-b3eb-3b28372eeadb",
+        "penalty_employee": "0.00",
+        "penalty_patient": "0.00",
+        "visit_related": null
+    },
+    {
+        "id": "50e99b48-6b4e-41df-adaa-716c99e90050",
+        "start": "2024-08-19T10:00:00Z",
+        "end": "2024-08-19T10:30:00Z",
+        "patient": {
+            "id": "673e604f-c54d-485d-8f4d-355282704e90",
+            "first_name": "Nishanth",
+            "last_name": "Martha",
+            "mobile": "+919182664777"
+        },
+        "employee": {
+            "id": "73c03040-bdc4-46a6-b2eb-649397460ad6",
+            "first_name": "Srinivas",
+            "last_name": "Adepu",
+            "is_therapist": true
+        },
+        "status_patient": "P",
+        "status_employee": "P",
+        "status_patient_updated_on": null,
+        "status_employee_updated_on": null,
+        "status_patient_updated_by": null,
+        "status_employee_updated_by": null,
+        "sellable": null,
+        "attended": false,
+        "recurrence": "fd5b6d8e-93e2-4c7d-b3eb-3b28372eeadb",
+        "penalty_employee": "0.00",
+        "penalty_patient": "0.00",
+        "visit_related": null
+    },
+    {
+        "id": "ad6b60dc-6bf0-479a-ba38-529ff80b4da8",
+        "start": "2024-08-16T10:00:00Z",
+        "end": "2024-08-16T10:30:00Z",
+        "patient": {
+            "id": "673e604f-c54d-485d-8f4d-355282704e90",
+            "first_name": "Nishanth",
+            "last_name": "Martha",
+            "mobile": "+919182664777"
+        },
+        "employee": {
+            "id": "73c03040-bdc4-46a6-b2eb-649397460ad6",
+            "first_name": "Srinivas",
+            "last_name": "Adepu",
+            "is_therapist": true
+        },
+        "status_patient": "P",
+        "status_employee": "P",
+        "status_patient_updated_on": null,
+        "status_employee_updated_on": null,
+        "status_patient_updated_by": null,
+        "status_employee_updated_by": null,
+        "sellable": null,
+        "attended": false,
+        "recurrence": "fd5b6d8e-93e2-4c7d-b3eb-3b28372eeadb",
+        "penalty_employee": "0.00",
+        "penalty_patient": "0.00",
+        "visit_related": null
+    },
+    {
+        "id": "a79468a8-0d45-4cd3-9fe2-1d2564042a29",
+        "start": "2024-08-15T10:00:00Z",
+        "end": "2024-08-15T10:30:00Z",
+        "patient": {
+            "id": "673e604f-c54d-485d-8f4d-355282704e90",
+            "first_name": "Nishanth",
+            "last_name": "Martha",
+            "mobile": "+919182664777"
+        },
+        "employee": {
+            "id": "73c03040-bdc4-46a6-b2eb-649397460ad6",
+            "first_name": "Srinivas",
+            "last_name": "Adepu",
+            "is_therapist": true
+        },
+        "status_patient": "P",
+        "status_employee": "P",
+        "status_patient_updated_on": null,
+        "status_employee_updated_on": null,
+        "status_patient_updated_by": null,
+        "status_employee_updated_by": null,
+        "sellable": null,
+        "attended": false,
+        "recurrence": "fd5b6d8e-93e2-4c7d-b3eb-3b28372eeadb",
+        "penalty_employee": "0.00",
+        "penalty_patient": "0.00",
+        "visit_related": null
+    },
+    {
+        "id": "3b2849fd-91f5-4198-bf2a-7e6156ae2ddd",
+        "start": "2024-08-14T10:00:00Z",
+        "end": "2024-08-14T10:30:00Z",
+        "patient": {
+            "id": "673e604f-c54d-485d-8f4d-355282704e90",
+            "first_name": "Nishanth",
+            "last_name": "Martha",
+            "mobile": "+919182664777"
+        },
+        "employee": {
+            "id": "73c03040-bdc4-46a6-b2eb-649397460ad6",
+            "first_name": "Srinivas",
+            "last_name": "Adepu",
+            "is_therapist": true
+        },
+        "status_patient": "P",
+        "status_employee": "P",
+        "status_patient_updated_on": null,
+        "status_employee_updated_on": null,
+        "status_patient_updated_by": null,
+        "status_employee_updated_by": null,
+        "sellable": null,
+        "attended": false,
+        "recurrence": "fd5b6d8e-93e2-4c7d-b3eb-3b28372eeadb",
+        "penalty_employee": "0.00",
+        "penalty_patient": "0.00",
+        "visit_related": null
+    },
+    {
+        "id": "c8bfdec4-19e9-4ebb-b98d-c42d6892328f",
+        "start": "2024-08-13T10:00:00Z",
+        "end": "2024-08-13T10:30:00Z",
+        "patient": {
+            "id": "673e604f-c54d-485d-8f4d-355282704e90",
+            "first_name": "Nishanth",
+            "last_name": "Martha",
+            "mobile": "+919182664777"
+        },
+        "employee": {
+            "id": "73c03040-bdc4-46a6-b2eb-649397460ad6",
+            "first_name": "Srinivas",
+            "last_name": "Adepu",
+            "is_therapist": true
+        },
+        "status_patient": "P",
+        "status_employee": "P",
+        "status_patient_updated_on": null,
+        "status_employee_updated_on": null,
+        "status_patient_updated_by": null,
+        "status_employee_updated_by": null,
+        "sellable": null,
+        "attended": false,
+        "recurrence": "fd5b6d8e-93e2-4c7d-b3eb-3b28372eeadb",
+        "penalty_employee": "0.00",
+        "penalty_patient": "0.00",
+        "visit_related": null
+    },
+    {
+        "id": "21f56b34-89de-43f4-851e-6da368d16fb9",
+        "start": "2024-08-09T10:00:00Z",
+        "end": "2024-08-09T10:30:00Z",
+        "patient": {
+            "id": "673e604f-c54d-485d-8f4d-355282704e90",
+            "first_name": "Nishanth",
+            "last_name": "Martha",
+            "mobile": "+919182664777"
+        },
+        "employee": {
+            "id": "73c03040-bdc4-46a6-b2eb-649397460ad6",
+            "first_name": "Srinivas",
+            "last_name": "Adepu",
+            "is_therapist": true
+        },
+        "status_patient": "P",
+        "status_employee": "P",
+        "status_patient_updated_on": null,
+        "status_employee_updated_on": null,
+        "status_patient_updated_by": null,
+        "status_employee_updated_by": null,
+        "sellable": null,
+        "attended": false,
+        "recurrence": "fd5b6d8e-93e2-4c7d-b3eb-3b28372eeadb",
+        "penalty_employee": "0.00",
+        "penalty_patient": "0.00",
+        "visit_related": null
+    },
+    {
+        "id": "10916fbc-2860-4f92-be2a-732f58883ee2",
+        "start": "2024-08-08T10:00:00Z",
+        "end": "2024-08-08T10:30:00Z",
+        "patient": {
+            "id": "673e604f-c54d-485d-8f4d-355282704e90",
+            "first_name": "Nishanth",
+            "last_name": "Martha",
+            "mobile": "+919182664777"
+        },
+        "employee": {
+            "id": "73c03040-bdc4-46a6-b2eb-649397460ad6",
+            "first_name": "Srinivas",
+            "last_name": "Adepu",
+            "is_therapist": true
+        },
+        "status_patient": "P",
+        "status_employee": "P",
+        "status_patient_updated_on": null,
+        "status_employee_updated_on": null,
+        "status_patient_updated_by": null,
+        "status_employee_updated_by": null,
+        "sellable": null,
+        "attended": false,
+        "recurrence": "fd5b6d8e-93e2-4c7d-b3eb-3b28372eeadb",
+        "penalty_employee": "0.00",
+        "penalty_patient": "0.00",
+        "visit_related": null
+    },
+    {
+        "id": "3991cf3e-e06c-42d8-ba4d-b5304b5f6a46",
+        "start": "2024-08-07T10:00:00Z",
+        "end": "2024-08-07T10:30:00Z",
+        "patient": {
+            "id": "673e604f-c54d-485d-8f4d-355282704e90",
+            "first_name": "Nishanth",
+            "last_name": "Martha",
+            "mobile": "+919182664777"
+        },
+        "employee": {
+            "id": "73c03040-bdc4-46a6-b2eb-649397460ad6",
+            "first_name": "Srinivas",
+            "last_name": "Adepu",
+            "is_therapist": true
+        },
+        "status_patient": "P",
+        "status_employee": "P",
+        "status_patient_updated_on": null,
+        "status_employee_updated_on": null,
+        "status_patient_updated_by": null,
+        "status_employee_updated_by": null,
+        "sellable": null,
+        "attended": false,
+        "recurrence": "fd5b6d8e-93e2-4c7d-b3eb-3b28372eeadb",
         "penalty_employee": "0.00",
         "penalty_patient": "0.00",
         "visit_related": null
@@ -120,9 +555,9 @@
         "visit_related": null
     },
     {
-        "id": "97d79d36-e690-491f-8339-0ff31b5aa50e",
-        "start": "2024-08-02T06:31:00Z",
-        "end": "2024-08-02T07:01:00Z",
+        "id": "05a6a488-ba73-4fea-8841-ade0dc7e64d3",
+        "start": "2024-08-08T11:00:00Z",
+        "end": "2024-08-08T11:30:00Z",
         "patient": {
             "id": "673e604f-c54d-485d-8f4d-355282704e90",
             "first_name": "Nishanth",
@@ -141,17 +576,17 @@
         "status_employee_updated_on": null,
         "status_patient_updated_by": null,
         "status_employee_updated_by": null,
-        "sellable": "20d111fb-c294-49b9-9cb8-73a242bb2909",
+        "sellable": null,
         "attended": false,
-        "recurrence": null,
+        "recurrence": "8507089e-026d-4e59-aded-0bf464c8e4b8",
         "penalty_employee": "0.00",
         "penalty_patient": "0.00",
         "visit_related": null
     },
     {
-        "id": "6bc763d6-e4e7-4746-91cc-548cc6619c6e",
-        "start": "2024-08-03T12:00:00Z",
-        "end": "2024-08-03T12:30:00Z",
+        "id": "ebc57ebb-ec6a-4591-9bdc-b98fce6756bd",
+        "start": "2024-08-07T11:00:00Z",
+        "end": "2024-08-07T11:30:00Z",
         "patient": {
             "id": "673e604f-c54d-485d-8f4d-355282704e90",
             "first_name": "Nishanth",
@@ -165,18 +600,18 @@
             "is_therapist": true
         },
         "status_patient": "P",
-        "status_employee": "C",
+        "status_employee": "R",
         "status_patient_updated_on": null,
-        "status_employee_updated_on": "2024-08-04T09:30:52.975310Z",
+        "status_employee_updated_on": "2024-07-30T13:47:48.300028Z",
         "status_patient_updated_by": null,
         "status_employee_updated_by": {
             "id": "15c91132-3b67-41ad-a0bc-b348a9c2e223",
             "first_name": "srinivas",
             "last_name": "adepu"
         },
-        "sellable": "20d111fb-c294-49b9-9cb8-73a242bb2909",
+        "sellable": null,
         "attended": false,
-        "recurrence": null,
+        "recurrence": "8507089e-026d-4e59-aded-0bf464c8e4b8",
         "penalty_employee": "0.00",
         "penalty_patient": "0.00",
         "visit_related": null
@@ -235,68 +670,6 @@
         "sellable": null,
         "attended": false,
         "recurrence": "8507089e-026d-4e59-aded-0bf464c8e4b8",
-        "penalty_employee": "0.00",
-        "penalty_patient": "0.00",
-        "visit_related": null
-    },
-    {
-        "id": "018befce-a1bd-496d-b250-c1f62b017e4e",
-        "start": "2024-08-02T07:00:00Z",
-        "end": "2024-08-02T07:30:00Z",
-        "patient": {
-            "id": "673e604f-c54d-485d-8f4d-355282704e90",
-            "first_name": "Nishanth",
-            "last_name": "Martha",
-            "mobile": "+919182664777"
-        },
-        "employee": {
-            "id": "c655d4e1-9f71-4e79-900e-a184dd4e4890",
-            "first_name": "Arti",
-            "last_name": "Kirna",
-            "is_therapist": true
-        },
-        "status_patient": "P",
-        "status_employee": "P",
-        "status_patient_updated_on": null,
-        "status_employee_updated_on": null,
-        "status_patient_updated_by": null,
-        "status_employee_updated_by": null,
-        "sellable": "bc8208bc-3a31-401a-9ab8-05e994662016",
-        "attended": false,
-        "recurrence": null,
-        "penalty_employee": "0.00",
-        "penalty_patient": "0.00",
-        "visit_related": null
-    },
-    {
-        "id": "22c45057-a1f2-421f-99c2-bc5065727507",
-        "start": "2024-08-02T06:00:00Z",
-        "end": "2024-08-02T06:30:00Z",
-        "patient": {
-            "id": "673e604f-c54d-485d-8f4d-355282704e90",
-            "first_name": "Nishanth",
-            "last_name": "Martha",
-            "mobile": "+919182664777"
-        },
-        "employee": {
-            "id": "c655d4e1-9f71-4e79-900e-a184dd4e4890",
-            "first_name": "Arti",
-            "last_name": "Kirna",
-            "is_therapist": true
-        },
-        "status_patient": "P",
-        "status_employee": "X",
-        "status_patient_updated_on": null,
-        "status_employee_updated_on": "2024-08-02T03:46:07.618828Z",
-        "status_patient_updated_by": null,
-        "status_employee_updated_by": {
-            "id": "15c91132-3b67-41ad-a0bc-b348a9c2e223",
-            "first_name": "srinivas",
-            "last_name": "adepu"
-        },
-        "sellable": "bc8208bc-3a31-401a-9ab8-05e994662016",
-        "attended": false,
-        "recurrence": null,
         "penalty_employee": "0.00",
         "penalty_patient": "0.00",
         "visit_related": null

@@ -21,6 +21,7 @@ import ExcelJS from 'exceljs';
 import { DateRangePicker } from "@/components/ui/date-range-picker";
 import { addDays, isBefore, isAfter } from 'date-fns';
 import { useToast } from "@/components/ui/use-toast";
+import { Clock, XCircle, CheckCircle } from 'lucide-react';
 
 
 
@@ -50,6 +51,7 @@ const Dashboard = () => {
   const [patients, setPatients] = useState([]);
   const [customDateRange, setCustomDateRange] = useState({ from: new Date(), to: new Date() });
   const { toast } = useToast();
+  const [visitsLoading, setVisitsLoading] = useState(false);
 
   useEffect(() => {
     let interval;
@@ -142,9 +144,9 @@ const Dashboard = () => {
 
   const fetchVisits = async () => {
     try {
+      setVisitsLoading(true);
       const { start, end } = getDateRange();
   
-      // Ensure start and end are valid dates
       if (!start || !end) {
         throw new Error('Invalid date range');
       }
@@ -165,6 +167,8 @@ const Dashboard = () => {
         description: "Failed to fetch visits. Please try again.",
         variant: "destructive",
       });
+    } finally {
+      setVisitsLoading(false);
     }
   };
 
@@ -219,7 +223,7 @@ const Dashboard = () => {
       updateFilteredAppointments(formattedAppointments, selectedDoctor);
       setSummary(prevSummary => ({
         ...prevSummary,
-        upcomingAppointments: formattedAppointments.filter(app => (app.status_patient === 'C' || app.status_employee === 'P') && (app.status_employee === 'C' || app.status_employee === 'P')).length,
+        upcomingAppointments: formattedAppointments.filter(app => (app.status_patient !== 'X' || app.status_employee !== 'X') && (app.status_employee !== 'X' || app.status_employee !== 'X')).length,
         canceledBookings: formattedAppointments.filter(app => app.status_patient === 'X' || app.status_employee === 'X').length,
         receivedAppointments: formattedAppointments.filter(app => app.status_patient === 'P' && app.status_employee === 'P').length,
       }));
@@ -281,12 +285,14 @@ const Dashboard = () => {
   useEffect(() => {
     const fetchData = async () => {
       setLoading(true);
+      setVisitsLoading(true);
       await Promise.all([fetchVisits(), fetchAppointments()]);
       setProgress(100);
       setLoading(false);
+      setVisitsLoading(false);
       setIsVisible(true);
     };
-
+  
     fetchData();
   }, [dateRange, selectedDoctor, customDateRange]);
 
@@ -544,24 +550,46 @@ const Dashboard = () => {
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-2 gap-4">
-                {Object.entries(summary).map(([key, value]) => (
-                  <div key={key} className="border rounded-md p-2 shadow-inner">
-                    <div className="text-sm text-gray-600">{key}</div>
-                    {key === 'visits' ? (
-                      <Dialog>
-                        <DialogTrigger asChild>
-                          <div className="text-2xl font-bold cursor-pointer">{value}</div>
-                        </DialogTrigger>
-                        <DialogContent className="max-w-5xl"> {/* Increased max-width */}
-                          <DialogHeader className="w-full flex justify-between">
-                            <DialogTitle>Visits</DialogTitle>
-                          </DialogHeader>
-                          <VisitsDataTable data={visits} />
-                        </DialogContent>
-                      </Dialog>
-                    ) : (
-                      <div className="text-2xl font-bold">{value}</div>
-                    )}
+                {[
+                  { key: 'visits', icon: <Calendar className="w-6 h-6 text-blue-500" />, label: 'Total Visits' },
+                  { key: 'upcomingAppointments', icon: <Clock className="w-6 h-6 text-green-500" />, label: 'Upcoming Appointments' },
+                  { key: 'canceledBookings', icon: <XCircle className="w-6 h-6 text-red-500" />, label: 'Canceled Bookings' },
+                  { key: 'receivedAppointments', icon: <CheckCircle className="w-6 h-6 text-purple-500" />, label: 'Received Appointments' },
+                ].map(({ key, icon, label }) => (
+                  <div key={key} className="border rounded-md p-4 shadow-inner bg-white flex items-center justify-center">
+                    <div className="mr-4">{icon}</div>
+                    <div>
+                      <div className="text-sm text-gray-600">{label}</div>
+                      {key === 'visits' ? (
+                        <Dialog>
+                          <DialogTrigger asChild>
+                            <div className="text-2xl font-bold cursor-pointer">
+                              {visitsLoading ? (
+                                <Skeleton className="h-8 w-16" />
+                              ) : (
+                                summary[key]
+                              )}
+                            </div>
+                          </DialogTrigger>
+                          <DialogContent className="max-w-5xl">
+                            <DialogHeader className="w-full flex justify-between">
+                              <DialogTitle>Visits</DialogTitle>
+                            </DialogHeader>
+                            {visitsLoading ? (
+                              <div className="space-y-2">
+                                <Skeleton className="h-4 w-full" />
+                                <Skeleton className="h-4 w-full" />
+                                <Skeleton className="h-4 w-full" />
+                              </div>
+                            ) : (
+                              <VisitsDataTable data={visits} />
+                            )}
+                          </DialogContent>
+                        </Dialog>
+                      ) : (
+                        <div className="text-2xl font-bold">{summary[key]}</div>
+                      )}
+                    </div>
                   </div>
                 ))}
               </div>
