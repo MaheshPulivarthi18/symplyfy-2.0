@@ -1117,9 +1117,10 @@ export default function Schedule() {
     let badgeColor = 'transparent';
     if (event.attended) {
       badgeColor = '#116530'; // Green color for confirmed events
-    } else if (event.status_employee === 'C' || event.status_patient === 'C') {
-      badgeColor = '#FFA500'; // Orange color for attended events
-    }
+    } 
+    // else if (event.status_employee === 'C' || event.status_patient === 'C') {
+    //   badgeColor = '#FFA500'; // Orange color for attended events
+    // }
   
     return (
       <div style={{ height: '100%', width: '100%', position: 'relative' }}>

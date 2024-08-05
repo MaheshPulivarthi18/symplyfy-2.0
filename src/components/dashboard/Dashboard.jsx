@@ -52,6 +52,8 @@ const Dashboard = () => {
   const [customDateRange, setCustomDateRange] = useState({ from: new Date(), to: new Date() });
   const { toast } = useToast();
   const [visitsLoading, setVisitsLoading] = useState(false);
+  const [upcomingAppointmentsLoading, setUpcomingAppointmentsLoading] = useState(true);
+  const [receivedAppointmentsLoading, setReceivedAppointmentsLoading] = useState(true);
 
   useEffect(() => {
     let interval;
@@ -174,6 +176,8 @@ const Dashboard = () => {
 
   const fetchAppointments = async () => {
     try {
+      setUpcomingAppointmentsLoading(true);
+      setReceivedAppointmentsLoading(true);
       setLoading(true);
       const { start, end } = getDateRange();
       
@@ -233,6 +237,8 @@ const Dashboard = () => {
       });
     } finally {
       setLoading(false);
+      setUpcomingAppointmentsLoading(false);
+      setReceivedAppointmentsLoading(false);
     }
   };
 
@@ -354,7 +360,7 @@ const Dashboard = () => {
         : 'Loading...',
       service: sellableDetails[visit.sellable]
         ? sellableDetails[visit.sellable].name
-        : 'Loading...',
+        : 'N/A',
     }));
 
     const doctorVisitCounts = processedData.reduce((acc, visit) => {
@@ -472,24 +478,25 @@ const Dashboard = () => {
               </Select>
             </CardHeader>
             <CardContent className="p-4 rounded-md">
-              {loading ? (
-                  <div className="space-y-2">
-                    <Skeleton className="h-4 w-full" />
-                    <Skeleton className="h-4 w-full" />
-                  </div>
-                ) : filteredAppointments.length === 0 ? (
-                  "No upcoming appointments for today"
-                ) : (
-                  <ul className='flex flex-col gap-4'>
-                    {filteredAppointments.map(appointment => (
-                      <li key={appointment.id}>
-                        <Button className="w-full text-left justify-start">
-                          {format(appointment.start, 'EEEE dd MMM HH:mm')} - {appointment.doctorName} - {appointment.patientName}
-                        </Button>
-                      </li>
-                    ))}
-                  </ul>
-                )}
+              {upcomingAppointmentsLoading ? (
+                <div className="space-y-2">
+                  <Skeleton className="h-4 w-full" />
+                  <Skeleton className="h-4 w-full" />
+                  <Skeleton className="h-4 w-full" />
+                </div>
+              ) : filteredAppointments.length === 0 ? (
+                "No upcoming appointments for today"
+              ) : (
+                <ul className='flex flex-col gap-4'>
+                  {filteredAppointments.map(appointment => (
+                    <li key={appointment.id}>
+                      <Button className="w-full text-left justify-start">
+                        {format(appointment.start, 'EEEE dd MMM HH:mm')} - {appointment.doctorName} - {appointment.patientName}
+                      </Button>
+                    </li>
+                  ))}
+                </ul>
+              )}
             </CardContent>
           </Card>
 
@@ -555,7 +562,7 @@ const Dashboard = () => {
                 ].map(({ key, icon, label }) => (
                   <div key={key} className="border rounded-md p-4 shadow-inner bg-white flex items-center justify-center">
                     <div className="mr-4">{icon}</div>
-                    <div>
+                    <div className='flex flex-col items-center'>
                       <div className="text-sm text-gray-600">{label}</div>
                       {key === 'visits' ? (
                         <Dialog>
@@ -583,6 +590,18 @@ const Dashboard = () => {
                             )}
                           </DialogContent>
                         </Dialog>
+                      ) : key === 'upcomingAppointments' ? (
+                        upcomingAppointmentsLoading ? (
+                          <Skeleton className="h-8 w-16" />
+                        ) : (
+                          <div className="text-2xl font-bold">{summary[key]}</div>
+                        )
+                      ) : key === 'receivedAppointments' ? (
+                        receivedAppointmentsLoading ? (
+                          <Skeleton className="h-8 w-16" />
+                        ) : (
+                          <div className="text-2xl font-bold">{summary[key]}</div>
+                        )
                       ) : (
                         <div className="text-2xl font-bold">{summary[key]}</div>
                       )}
