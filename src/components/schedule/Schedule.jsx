@@ -22,7 +22,7 @@ import { Card } from '../ui/card';
 import { useToast } from "@/components/ui/use-toast";
 import { useParams } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
-import { parseISO, addMinutes } from 'date-fns';
+import { parseISO, addMinutes, addDays } from 'date-fns';
 import { DatePicker } from '@/components/ui/datepicker';
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 // import { Calendar } from "@/components/ui/calendar";
@@ -94,6 +94,7 @@ export default function Schedule() {
     customDuration: '',
     therapist: '',
     therapistName: '',
+    attended: false,
   });
   const [showCancelled, setShowCancelled] = useState(false);
   const [doctorSearch, setDoctorSearch] = useState('');
@@ -103,6 +104,8 @@ export default function Schedule() {
   const [totalScheduled, setTotalScheduled] = useState(0);
   const [totalVisited, setTotalVisited] = useState(0);
   const [totalCancelled, setTotalCancelled] = useState(0);
+  const [dateRange, setDateRange] = useState('today');
+
 
   const filteredTherapists = therapists.filter(therapist => 
     `${therapist.first_name} ${therapist.last_name}`.toLowerCase().includes(doctorSearch.toLowerCase())
@@ -148,7 +151,8 @@ export default function Schedule() {
 
   useEffect(() => {
     fetchBookings();
-  }, [date, view, clinic_id, selectedDoctorId]);
+    fetchVisits()
+  }, [date, view, clinic_id, selectedDoctorId, dateRange]);
 
   const fetchTherapists = async () => {
     try {
@@ -324,7 +328,8 @@ export default function Schedule() {
         resourceId: booking.employee.id,
         status_patient: booking.status_patient,
         status_employee: booking.status_employee,
-        recurrence: booking.recurrence
+        recurrence: booking.recurrence,
+        attended: booking.attended,
       }));
       
       setEvents(formattedEvents);
@@ -374,6 +379,7 @@ export default function Schedule() {
       sessions: '',
       duration: (new Date(event.end) - new Date(event.start)) / (1000 * 60),
       customDuration: '',
+      attended: false,
     });
     setIsRescheduling(true);
     setIsVisitDialogOpen(true);
@@ -453,6 +459,7 @@ export default function Schedule() {
           duration: 30,
           customDuration: '',
           therapist: '',
+          attended: false,
         });
         setIsRescheduling(false);
         setIsVisitDialogOpen(false);
@@ -870,6 +877,59 @@ export default function Schedule() {
     recurrence: event.recurrence
   }));
 
+  const getDateRange = () => {
+    const now = new Date();
+    switch (dateRange) {
+      case 'today':
+        const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+        const todayEnd = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999);
+        return { start: addDays(todayStart, 1), end: addDays(todayEnd, 1) };
+      case 'week':
+        return { start: startOfWeek(now), end: endOfWeek(now) };
+      case 'month':
+        return { start: startOfMonth(now), end: endOfMonth(now) };
+      default:
+        return { start: new Date(now.setHours(0, 0, 0, 0)), end: new Date(now.setHours(23, 59, 59, 999)) };
+    }
+  };
+
+  const fetchVisits = async () => {
+    try {
+      // const { start, end } = getDateRange();
+      let viewStart, viewEnd;
+
+      if (view === 'day') {
+        viewStart = startOfDay(date);
+        viewEnd = endOfDay(date);
+      } else if (view === 'week') {
+        viewStart = startOfWeek(date);
+        viewEnd = endOfWeek(date);
+      } else if (view === 'month') {
+        viewStart = startOfMonth(date);
+        viewEnd = endOfMonth(date);
+      }
+
+      const dateFrom = viewStart.toISOString().split("T")[0]
+      const dateTo = viewEnd.toISOString().split("T")[0]
+  
+      // if (!start || !end) {
+      //   throw new Error('Invalid date range');
+      // }
+  
+      const response = await authenticatedFetch(`${import.meta.env.VITE_BASE_URL}/api/emp/clinic/${clinic_id}/visit/?date_from=${dateFrom}&date_to=${dateTo}`);
+      const data = await response.json()
+      setTotalVisited(data.length)
+      console.log(data.length)
+    } catch (error) {
+      console.error('Failed to fetch visits:', error);
+      toast({
+        title: "Error",
+        description: "Failed to fetch visits. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+
   const updateAppointmentCounts = (events) => {
     let scheduled = 0;
     let visited = 0;
@@ -878,15 +938,12 @@ export default function Schedule() {
     events.forEach(event => {
       if (event.status_patient === 'X' || event.status_employee === 'X') {
         cancelled++;
-      } else if (event.attended || event.status_employee === "C" || event.status_patient === "C") {
-        visited++;
       } else {
         scheduled++;
       }
     });
   
     setTotalScheduled(scheduled);
-    setTotalVisited(visited);
     setTotalCancelled(cancelled);
   };
 
@@ -1059,11 +1116,12 @@ export default function Schedule() {
 
   const CustomEvent = ({ event }) => {
     let badgeColor = 'transparent';
-    if (event.status_patient === 'C' || event.status_employee === 'C') {
+    if (event.attended) {
       badgeColor = '#116530'; // Green color for confirmed events
-    } else if (event.attended) {
-      badgeColor = '#FFA500'; // Orange color for attended events
-    }
+    } 
+    // else if (event.attended) {
+    //   badgeColor = '#FFA500'; // Orange color for attended events
+    // }
   
     return (
       <div style={{ height: '100%', width: '100%', position: 'relative' }}>
@@ -1073,7 +1131,8 @@ export default function Schedule() {
           backgroundColor: badgeColor, 
           position: 'absolute', 
           top: 0, 
-          right: 0 
+          right: 0,
+          flexDirection: "row"
         }} />
         <div style={{ padding: '4px 2px'}}>
             {event.title.split(" ")[0] + "  -  Dr. "} 
@@ -1229,6 +1288,7 @@ export default function Schedule() {
             view={view}
             onView={(newView) => {
               setView(newView);
+              setDateRange(newView)
               fetchBookings();
             }}
             date={date}
@@ -1254,6 +1314,7 @@ export default function Schedule() {
               let style = {
                 backgroundColor: '#7EC8E3',  // Lighter blue color
                 color: 'black',
+                height: '100%',
               };
 
               if (event.status_patient === 'X' || event.status_employee === 'X') {
