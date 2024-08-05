@@ -44,6 +44,7 @@ import { InvoiceDialog, InvoiceDetailsDialog, InvoiceStatusDialog } from '../pay
 import { Filter } from "lucide-react";
 import { DateRangePicker } from "@/components/ui/date-range-picker";
 import TherapistCountsDialog from './TherapistCounts';
+import VisitCountsDialog from './VisitCountsDialog';
 
 const PatientProfile = () => {
   const { clinic_id, patient_id } = useParams();
@@ -101,6 +102,9 @@ const PatientProfile = () => {
     penalty: false,
     duration: 30
   });
+  const [allVisits, setAllVisits] = useState([]);
+  const [filteredVisits, setFilteredVisits] = useState([]);
+  const [isVisitCountsDialogOpen, setIsVisitCountsDialogOpen] = useState(false);
 
   const [payments, setPayments] = useState([]);
   const [paymentChannels, setPaymentChannels] = useState([]);
@@ -112,7 +116,7 @@ const PatientProfile = () => {
     channel: ''
   });
   const [invoices, setInvoices] = useState([]);
-  const [dateRange, setDateRange] = useState('thisWeek');
+  const [dateRange, setDateRange] = useState('all');
   const [customDateRange, setCustomDateRange] = useState({ from: new Date(), to: new Date() });
   const [isTherapistCountsDialogOpen, setIsTherapistCountsDialogOpen] = useState(false);
   
@@ -524,34 +528,43 @@ const AppointmentsDataTable = ({ data }) => {
 
   const fetchVisits = async () => {
     try {
-      const data = await fetchWithTokenHandling(`${import.meta.env.VITE_BASE_URL}/api/emp/clinic/${clinic_id}/patient/${patient_id}/visit/`);
-      setVisits(data);
-  
-      const employeeIds = new Set();
-      const sellableIds = new Set();
-  
-      data.forEach(visit => {
-        if (visit.employee) {
-          employeeIds.add(visit.employee);
-        }
-        if (visit.sellable) {
-          sellableIds.add(visit.sellable);
-        }
-      });
-  
+      const response = await fetchWithTokenHandling(`${import.meta.env.VITE_BASE_URL}/api/emp/clinic/${clinic_id}/patient/${patient_id}/visit/`);
+      setVisits(response);
+      setFilteredVisits(response);
+
+      // Fetch employee and sellable details
+      const employeeIds = new Set(response.map(visit => visit.employee).filter(Boolean));
+      const sellableIds = new Set(response.map(visit => visit.sellable).filter(Boolean));
+
       const fetchEmployeePromises = Array.from(employeeIds).map(id => fetchEmployeeDetails(id));
       const fetchSellablePromises = Array.from(sellableIds).map(id => fetchSellableDetails(id));
-  
+
       await Promise.all([...fetchEmployeePromises, ...fetchSellablePromises]);
-  
-      console.log(employeeIds);
-      console.log(sellableIds);
-  
+
     } catch (error) {
       console.error("Failed to fetch visits:", error);
       setVisits([]);
+      setFilteredVisits([]);
     }
   };
+
+  const filterVisits = () => {
+    if (dateRange === 'all') {
+      setFilteredVisits(visits);
+      return;
+    }
+
+    const { start, end } = getDateRange();
+    const filtered = visits.filter(visit => {
+      const visitDate = new Date(visit.date);
+      return visitDate >= start && visitDate <= end;
+    });
+    setFilteredVisits(filtered);
+  };
+
+  useEffect(() => {
+    filterVisits();
+  }, [dateRange, customDateRange, visits]);
 
   const completeTask = async (taskId) => {
     try {
@@ -602,6 +615,8 @@ const AppointmentsDataTable = ({ data }) => {
   const getDateRange = () => {
     const now = new Date();
     switch (dateRange) {
+      case 'all':
+        return { start: "", end: ""};
       case 'thisWeek':
         return { start: startOfWeek(now), end: endOfWeek(now) };
       case 'thisMonth':
@@ -621,9 +636,13 @@ const AppointmentsDataTable = ({ data }) => {
   const fetchAppointments = async () => {
     try {
       const { start, end } = getDateRange();
-      
-      const response = await fetchWithTokenHandling(`${import.meta.env.VITE_BASE_URL}/api/emp/clinic/${clinic_id}/patient/${patient_id}/booking/?time_from=${start.toISOString().replace(/\.\d{3}Z$/, '')}&time_to=${end.toISOString().replace(/\.\d{3}Z$/, '')}`);
-      setAppointments(response);
+      if(start === ""){
+        const response = await fetchWithTokenHandling(`${import.meta.env.VITE_BASE_URL}/api/emp/clinic/${clinic_id}/patient/${patient_id}/booking`);
+        setAppointments(response);
+      }else {
+        const response = await fetchWithTokenHandling(`${import.meta.env.VITE_BASE_URL}/api/emp/clinic/${clinic_id}/patient/${patient_id}/booking/?time_from=${start.toISOString().replace(/\.\d{3}Z$/, '')}&time_to=${end.toISOString().replace(/\.\d{3}Z$/, '')}`);
+        setAppointments(response);
+      }
     } catch (error) {
       console.error("Failed to fetch appointments:", error);
       toast({
@@ -1602,7 +1621,7 @@ const AppointmentsDataTable = ({ data }) => {
           
           {/* Appointment TabsContent */}
           <TabsContent value="appointments" className="relative min-h-[300px] h-[90%] overflow-scroll p-4">
-            <div className="flex justify-end mb-4">
+            <div className="flex justify-end mb-4 space-x-2">
               <Popover>
                 <PopoverTrigger asChild>
                   <Button variant="outline"><Filter className="mr-2 h-4 w-4" /> Filter</Button>
@@ -1618,6 +1637,7 @@ const AppointmentsDataTable = ({ data }) => {
                       <SelectValue placeholder="Select date range" />
                     </SelectTrigger>
                     <SelectContent>
+                      <SelectItem value="all">All Appointments</SelectItem>
                       <SelectItem value="thisWeek">This Week</SelectItem>
                       <SelectItem value="thisMonth">This Month</SelectItem>
                       <SelectItem value="thisYear">This Year</SelectItem>
@@ -1644,16 +1664,14 @@ const AppointmentsDataTable = ({ data }) => {
               <Button onClick={() => setIsTherapistCountsDialogOpen(true)} className="ml-2">
                 View Therapist Counts
               </Button>
+              <Button onClick={exportAppointmentsToExcel}>
+                  <FileDownIcon className="h-4 w-4 mr-2" /> Export as Excel
+              </Button>
             </div>
             {appointments.length === 0 ? (
               <p>No upcoming appointments for this patient.</p>
             ) : (
               <>
-                <div className="flex justify-end mb-4">
-                <Button onClick={exportAppointmentsToExcel}>
-                  <FileDownIcon className="h-4 w-4 mr-2" /> Export as Excel
-                </Button>
-                </div>
                 <AppointmentsDataTable data={appointments} />
               </>
             )}
@@ -1950,18 +1968,56 @@ const AppointmentsDataTable = ({ data }) => {
             
           </TabsContent>
 
-          <TabsContent value="visits" className="relative min-h-[300px] h-[90%] overflow-scroll p-4 ">
-            {visits.length === 0 ? (
+          <TabsContent value="visits" className="relative min-h-[300px] h-[90%] overflow-scroll p-4">
+            <div className="flex justify-end mb-4 space-x-2">
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button variant="outline"><Filter className="mr-2 h-4 w-4" /> Filter</Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-80">
+                  <Select value={dateRange} onValueChange={(value) => {
+                    setDateRange(value);
+                    if (value !== 'custom') {
+                      setCustomDateRange({ from: null, to: null });
+                    }
+                  }}>
+                    <SelectTrigger className="w-full">
+                      <SelectValue placeholder="Select date range" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Visits</SelectItem>
+                      <SelectItem value="thisWeek">This Week</SelectItem>
+                      <SelectItem value="thisMonth">This Month</SelectItem>
+                      <SelectItem value="thisYear">This Year</SelectItem>
+                      <SelectItem value="custom">Custom Range</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  {dateRange === 'custom' && (
+                    <div className="mt-4">
+                      <DateRangePicker
+                        from={customDateRange.from}
+                        to={customDateRange.to}
+                        onSelect={(range) => {
+                          if (range?.from && range?.to) {
+                            setCustomDateRange(range);
+                          }
+                        }}
+                      />
+                    </div>
+                  )}
+                </PopoverContent>
+              </Popover>
+              <Button onClick={() => setIsVisitCountsDialogOpen(true)}>
+                View Therapist Visit Counts
+              </Button>
+              <Button onClick={exportVisitsToExcel}>
+                <FileDownIcon className="h-4 w-4 mr-2" /> Export as Excel
+              </Button>
+            </div>
+            {filteredVisits.length === 0 ? (
               <p>No visits recorded for this patient.</p>
             ) : (
-                <>
-                  <div className="flex justify-end mb-4">
-                    <Button onClick={exportVisitsToExcel}>
-                    <FileDownIcon className="h-4 w-4 mr-2" /> Export as Excel
-                    </Button>
-                  </div>
-                  <VisitsDataTable data={visits} />
-                </>
+              <VisitsDataTable data={filteredVisits} />
             )}
             <Dialog open={isVisitDialogOpen} onOpenChange={setIsVisitDialogOpen}>
               <DialogTrigger asChild>
@@ -2073,6 +2129,12 @@ const AppointmentsDataTable = ({ data }) => {
                 </form>
               </DialogContent>
             </Dialog>
+            <VisitCountsDialog
+              isOpen={isVisitCountsDialogOpen}
+              onClose={() => setIsVisitCountsDialogOpen(false)}
+              visits={filteredVisits}
+              employeeDetails={employeeDetails}
+            />
           </TabsContent>
         </Tabs>
         <Dialog open={isVisitDialogOpen} onOpenChange={setIsVisitDialogOpen}>
