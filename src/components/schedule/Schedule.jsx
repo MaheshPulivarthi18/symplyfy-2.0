@@ -630,8 +630,6 @@ export default function Schedule() {
         }
       }
 
-      
-
       const bookingData = {
         start: formatLocalDate(localStartDateTime),
         end: formatLocalDate(localEndDateTime),
