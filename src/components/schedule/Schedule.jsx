@@ -853,9 +853,8 @@ export default function Schedule() {
     
     const isCancelled = event.status_patient === 'X' || event.status_employee === 'X';
   
-    // If showCancelled is true, show only cancelled events
-    // If showCancelled is false, show all non-cancelled events
-    const statusMatch = showCancelled ? isCancelled : !isCancelled;
+    // Only filter out cancelled events if showCancelled is false
+    const statusMatch = showCancelled ? true : !isCancelled;
   
     return (doctorMatch && patientMatch && statusMatch);
   });
@@ -948,8 +947,8 @@ export default function Schedule() {
   };
 
   useEffect(() => {
-    updateAppointmentCounts(formattedFilteredEvents);
-  }, [formattedFilteredEvents, view]);
+    updateAppointmentCounts(events);
+  }, [events, view]);
 
   // const formattedFilteredEvents = filteredEvents.map(event => ({
   //   id: event.id,
