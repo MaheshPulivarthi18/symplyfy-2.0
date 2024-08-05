@@ -37,6 +37,12 @@
     padding: 2px 6px;
     color: white;
     font-size: 0.875rem;
+    height: 10%
+  }
+
+  .rbc-day-slot .rbc-event, .rbc-day-slot .rbc-background-event {
+    flex-direction: row;
+    height: 10%;
   }
   
   .rbc-event:hover {
