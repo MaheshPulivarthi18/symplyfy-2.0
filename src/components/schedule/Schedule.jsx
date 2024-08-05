@@ -1365,6 +1365,13 @@ export default function Schedule() {
           <div className="grid gap-4 py-4">
             {isRescheduling ? (
               <>
+                <SearchableSelect
+                  placeholder="Select Therapist"
+                  options={therapists}
+                  value={newVisit.therapist}
+                  onValueChange={(value) => setNewVisit({...newVisit, therapist: value})}
+                  searchPlaceholder="Search therapists..."
+                />
                 <div>
                   <Label>{format(new Date(newVisit.date), 'EEEE dd MMMM yyyy')} - {newVisit.time}</Label>
                 </div>

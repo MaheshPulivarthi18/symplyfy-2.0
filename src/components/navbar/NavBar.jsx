@@ -7,7 +7,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { useAuth } from '../../contexts/AuthContext';
 import logo from "../../assets/logo_ai 2.svg";
 import { Card } from '../ui/card';
-import { ChevronRight } from 'lucide-react';
+import { ChevronRight, LogOut } from 'lucide-react';
 
 const Navbar = () => {
   const navigate = useNavigate();
@@ -21,6 +21,9 @@ const Navbar = () => {
   useEffect(() => {
     generateBreadcrumbs();
   }, [location, clinicName, employeeName, patientName]);
+
+  const pathName = location.pathname
+  console.log(pathName)
 
   useEffect(() => {
     if (location.pathname.includes('/clinic/')) {
@@ -122,24 +125,29 @@ const Navbar = () => {
             </React.Fragment>
           ))}
         </div>
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Avatar className="h-8 w-8 text-center text-primary">
-              <AvatarFallback>{user?.first_name[0]}</AvatarFallback>
-            </Avatar>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <DropdownMenuItem onClick={() => navigate(`/clinic/${clinicId}/profile`)}>
-              Profile
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => navigate(`/clinic/${clinicId}/settings`)}>
-              Settings
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={logout}>
-              Logout
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
+        {pathName.endsWith('/clinic') ? (
+            <Button onClick={logout}> Logout <LogOut className='w-4 h-4 ml-2' /> </Button>
+          ) : (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Avatar className="h-8 w-8 text-center text-primary">
+                  <AvatarFallback>{user?.first_name[0]}</AvatarFallback>
+                </Avatar>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={() => navigate(`/clinic/${clinicId}/profile`)}>
+                  Profile
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => navigate(`/clinic/${clinicId}/settings`)}>
+                  Settings
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={logout}>
+                  Logout
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          )}
+
       </div>
     </Card>
   );

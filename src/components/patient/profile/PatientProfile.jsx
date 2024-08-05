@@ -119,6 +119,8 @@ const PatientProfile = () => {
   const [dateRange, setDateRange] = useState('all');
   const [customDateRange, setCustomDateRange] = useState({ from: new Date(), to: new Date() });
   const [isTherapistCountsDialogOpen, setIsTherapistCountsDialogOpen] = useState(false);
+  const [isGeneratingInvoice, setIsGeneratingInvoice] = useState(false);
+  const [isConfirmingInvoice, setIsConfirmingInvoice] = useState(false);
   
   // Visits DataTable
   const VisitsDataTable = ({ data }) => {
@@ -873,6 +875,7 @@ const AppointmentsDataTable = ({ data }) => {
   const [isInvoiceDetailDialogOpen, setIsInvoiceDetailDialogOpen] = useState(false);
 
   const handleGenerateInvoice = async () => {
+    setIsGeneratingInvoice(true);
     try {
       const response = await fetchWithTokenHandling(`${import.meta.env.VITE_BASE_URL}/api/emp/clinic/${clinic_id}/patient/${patient_id}/invoice/`, {
         method: 'POST',
@@ -893,10 +896,13 @@ const AppointmentsDataTable = ({ data }) => {
       setIsInvoiceStatusDialogOpen(true);
     } catch (error) {
       toast({ title: "Error", description: error.message, variant: "destructive" });
+    } finally {
+      setIsGeneratingInvoice(false);
     }
   };
 
   const updateInvoiceStatus = async (status) => {
+    setIsConfirmingInvoice(true);
     try {
       await fetchWithTokenHandling(`${import.meta.env.VITE_BASE_URL}/api/emp/clinic/${clinic_id}/patient/${patient_id}/invoice/${selectedInvoice.id}/`, {
         method: 'PATCH',
@@ -914,6 +920,8 @@ const AppointmentsDataTable = ({ data }) => {
       setFinalAmount(0);
     } catch (error) {
       toast({ title: "Error", description: error.message, variant: "destructive" });
+    } finally {
+      setIsConfirmingInvoice(false);
     }
   };
 
@@ -2252,12 +2260,14 @@ const AppointmentsDataTable = ({ data }) => {
         finalAmount={finalAmount}
         setFinalAmount={setFinalAmount}
         sellables={sellables}
+        isLoading={isGeneratingInvoice}
       />
 
       <InvoiceStatusDialog 
         isOpen={isInvoiceStatusDialogOpen}
         onClose={() => setIsInvoiceStatusDialogOpen(false)}
         onUpdateStatus={updateInvoiceStatus}
+        isLoading={isConfirmingInvoice}
       />
 
       <InvoiceDetailsDialog 
@@ -2265,6 +2275,7 @@ const AppointmentsDataTable = ({ data }) => {
         isOpen={isInvoiceDetailDialogOpen}
         onClose={() => setIsInvoiceDetailDialogOpen(false)}
         onUpdateStatus={updateInvoiceStatus}
+        isLoading={isConfirmingInvoice}
       />
     </div>
   );

@@ -6,9 +6,10 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { format } from 'date-fns';
+import { Loader2 } from 'lucide-react';
 
 // Invoice Dialog
-const InvoiceDialog = ({ isOpen, onClose, onGenerate, invoiceItems, setInvoiceItems, finalAmount, setFinalAmount, sellables }) => {
+const InvoiceDialog = ({ isOpen, onClose, onGenerate, invoiceItems, setInvoiceItems, finalAmount, setFinalAmount, sellables, isLoading }) => {
   const [selectedSellable, setSelectedSellable] = useState('');
 
   const handleAddInvoiceItem = () => {
@@ -143,7 +144,16 @@ const InvoiceDialog = ({ isOpen, onClose, onGenerate, invoiceItems, setInvoiceIt
           </div>
         </div>
         <DialogFooter>
-          <Button onClick={onGenerate}>Generate Invoice</Button>
+          <Button onClick={onGenerate} disabled={isLoading}>
+            {isLoading ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Generating...
+              </>
+            ) : (
+              'Generate Invoice'
+            )}
+          </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
@@ -151,7 +161,7 @@ const InvoiceDialog = ({ isOpen, onClose, onGenerate, invoiceItems, setInvoiceIt
 };
 
 // Invoice Status Dialog
-const InvoiceStatusDialog = ({ isOpen, onClose, onUpdateStatus }) => {
+const InvoiceStatusDialog = ({ isOpen, onClose, onUpdateStatus, isLoading }) => {
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent>
@@ -159,9 +169,15 @@ const InvoiceStatusDialog = ({ isOpen, onClose, onUpdateStatus }) => {
           <DialogTitle>Set Invoice Status</DialogTitle>
         </DialogHeader>
         <div className="flex flex-row gap-4 justify-between">
-          <Button onClick={() => onUpdateStatus('d')}>Save as Draft</Button>
-          <Button onClick={() => onUpdateStatus('c')}>Confirm Invoice</Button>
-          <Button variant="destructive" onClick={() => onUpdateStatus('x')}>Cancel Invoice</Button>
+          <Button onClick={() => onUpdateStatus('d')} disabled={isLoading}>
+            {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Save as Draft'}
+          </Button>
+          <Button onClick={() => onUpdateStatus('c')} disabled={isLoading}>
+            {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Confirm Invoice'}
+          </Button>
+          <Button variant="destructive" onClick={() => onUpdateStatus('x')} disabled={isLoading}>
+            {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Cancel Invoice'}
+          </Button>
         </div>
       </DialogContent>
     </Dialog>
@@ -169,7 +185,7 @@ const InvoiceStatusDialog = ({ isOpen, onClose, onUpdateStatus }) => {
 };
 
 // Invoice Details Dialog
-const InvoiceDetailsDialog = ({ invoice, isOpen, onClose, onUpdateStatus }) => {
+const InvoiceDetailsDialog = ({ invoice, isOpen, onClose, onUpdateStatus, isLoading }) => {
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent>
@@ -208,8 +224,26 @@ const InvoiceDetailsDialog = ({ invoice, isOpen, onClose, onUpdateStatus }) => {
             </Table>
             {invoice.status === 'd' && (
               <div className="flex space-x-2">
-                <Button onClick={() => onUpdateStatus('c')}>Confirm Invoice</Button>
-                <Button variant="destructive" onClick={() => onUpdateStatus('x')}>Cancel Invoice</Button>
+                <Button onClick={() => onUpdateStatus('c')} disabled={isLoading}>
+                  {isLoading ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Confirming...
+                    </>
+                  ) : (
+                    'Confirm Invoice'
+                  )}
+                </Button>
+                <Button variant="destructive" onClick={() => onUpdateStatus('x')} disabled={isLoading}>
+                  {isLoading ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Cancelling...
+                    </>
+                  ) : (
+                    'Cancel Invoice'
+                  )}
+                </Button>
               </div>
             )}
           </div>

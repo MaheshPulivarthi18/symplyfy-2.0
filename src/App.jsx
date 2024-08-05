@@ -55,6 +55,7 @@ function App() {
             } />
             <Route path="/clinic" element={
               <ProtectedRoute>
+                <Navbar />
                 <Clinic />
               </ProtectedRoute>
               } />
