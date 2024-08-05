@@ -177,21 +177,19 @@ const Dashboard = () => {
       setLoading(true);
       const { start, end } = getDateRange();
       
-      // Ensure start and end are valid dates
       if (!start || !end) {
         throw new Error('Invalid date range');
       }
   
-      const response = await authenticatedFetch(`${import.meta.env.VITE_BASE_URL}/api/emp/clinic/${clinic_id}/schedule/booking/?date_from=${start.toISOString()}&date_to=${end.toISOString()}`);
+      const response = await authenticatedFetch(`${import.meta.env.VITE_BASE_URL}/api/emp/clinic/${clinic_id}/schedule/booking/?time_from=${start.toISOString().replace(/\.\d{3}Z$/, '')}&time_to=${end.toISOString().replace(/\.\d{3}Z$/, '')}`);
       if (!response.ok) throw new Error('Failed to fetch bookings');
       const data = await response.json();
   
       // Use a Map to store unique bookings by ID
       const bookingsMap = new Map(data.map(booking => [booking.id, booking]));
   
-      // Fetch patient bookings and add only if not already present
       for (const patient of patients) {
-        const patResponse = await authenticatedFetch(`${import.meta.env.VITE_BASE_URL}/api/emp/clinic/${clinic_id}/patient/${patient.id}/booking/?date_from=${start.toISOString()}&date_to=${end.toISOString()}`);
+        const patResponse = await authenticatedFetch(`${import.meta.env.VITE_BASE_URL}/api/emp/clinic/${clinic_id}/patient/${patient.id}/booking/?time_from=${start.toISOString().replace(/\.\d{3}Z$/, '')}&time_to=${end.toISOString().replace(/\.\d{3}Z$/, '')}`);
         if (!patResponse.ok) throw new Error('Failed to fetch patient bookings');
         const patientBookings = await patResponse.json();
         patientBookings.forEach(booking => {
@@ -204,7 +202,6 @@ const Dashboard = () => {
       // Convert Map back to array
       const finalData = Array.from(bookingsMap.values());
   
-      // Format the combined data
       const formattedAppointments = finalData.map(booking => ({
         id: booking.id,
         patientName: `${booking.patient.first_name} ${booking.patient.last_name}`,
