@@ -156,6 +156,11 @@ export const AuthProvider = ({ children }) => {
 
       if (!response.ok) {
         const errorData = await response.json();
+        let err;
+        if(errorData.email){
+          err = errorData.email[0]
+          throw new Error(err || 'Pre-registration failed');
+        }
         throw new Error(errorData.detail || 'Pre-registration failed');
       }
 
