@@ -212,7 +212,11 @@ export const AuthProvider = ({ children }) => {
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.detail || 'Registration failed');
+        let err
+        if(errorData.mobile){
+          err = errorData.mobile[0]
+        }
+        throw new Error(err || 'Registration failed');
       }
 
       const data = await response.json();
