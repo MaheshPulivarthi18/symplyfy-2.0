@@ -75,13 +75,17 @@ const AddClinic = () => {
   });
 
   const onSubmit = async (values) => {
+    const submitData = {
+      ...values,
+      type: 'ph'
+    };
     try {
       const response = await authenticatedFetch(`${import.meta.env.VITE_BASE_URL}/api/emp/clinic/`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(values),
+        body: JSON.stringify(submitData),
       });
 
       if (!response.ok) {

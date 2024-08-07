@@ -11,6 +11,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { Form, FormControl, FormField, FormItem, FormLabel } from '@/components/ui/form';
+import { format } from 'date-fns';
 
 const patientSchema = z.object({
   first_name: z.string().min(2, "First name is required"),
@@ -21,7 +22,17 @@ const patientSchema = z.object({
   .regex(/^\d{10}$/, "Mobile number must be 10 digits.")
   .transform(val => `+91${val}`),
   sex: z.enum(["m", "f", "o"]),
-  dob: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Invalid date format"),
+  dob: z.string()
+  .regex(/^\d{4}-\d{2}-\d{2}$/, "Date must be in YYYY-MM-DD format")
+  .refine((date) => {
+    if (!date) return true; // Allow empty string
+    const parsedDate = new Date(date);
+    return !isNaN(parsedDate.getTime()); // Check if it's a valid date
+  }, {
+    message: "Invalid date. Please enter a valid date in YYYY-MM-DD format."
+  })
+  .optional()
+  .or(z.literal('')),  
   guardian_name: z.string().optional(),
   // mobile_alternate: z.string().regex(/^\d{10}$/, "Alternate mobile number must be 10 digits").optional().transform(val => val ? `+91${val}` : undefined),
   therapist_primary: z.string().uuid("Invalid therapist ID"),
@@ -74,6 +85,7 @@ const NewPatient = () => {
   const onSubmit = async (values) => {
     const submitData = {
       ...values,
+      dob: values.dob || null,
       has_app_access: true,
       is_active: true,
       email_alternate: null,
@@ -90,7 +102,12 @@ const NewPatient = () => {
       });
 
       if (!response.ok) {
-        throw new Error('Failed to add patient');
+        let err
+        const errData = await response.json()
+        if(errData.mobile){
+          err = errData.mobile[0]
+        }
+        throw new Error(err || "Failed to add patient");
       }
 
       const newPatient = await response.json();
@@ -161,9 +178,18 @@ const NewPatient = () => {
                   name="dob"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Date of birth (DD/MM/YYYY)</FormLabel>
+                      <FormLabel>Date of birth (Optional)</FormLabel>
                       <FormControl>
-                        <Input {...field} type="date" />
+                        <Input 
+                          {...field} 
+                          type="date" 
+                          onBlur={(e) => {
+                            if (e.target.value) {
+                              const date = new Date(e.target.value);
+                              field.onChange(date.toISOString().split('T')[0]);
+                            }
+                          }}
+                        />
                       </FormControl>
                     </FormItem>
                   )}
