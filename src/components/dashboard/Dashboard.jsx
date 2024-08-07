@@ -91,17 +91,22 @@ const Dashboard = () => {
 
   const getDateRange = () => {
     const now = new Date();
+    const todayStart = new Date(now);
+    todayStart.setHours(0, 0, 0, 0);
+    const todayEnd = new Date(now);
+    todayEnd.setHours(23, 59, 59, 999);
+  
     switch (dateRange) {
       case 'today':
         const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
         const todayEnd = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999);
-        return { start: addDays(todayStart, 1), end: addDays(todayEnd, 1) };
+        return { start: todayStart, end: todayEnd };
       case 'yesterday':
         const yesterday = new Date(now);
         yesterday.setDate(yesterday.getDate() - 1);
         const yesterdayStart = new Date(yesterday.getFullYear(), yesterday.getMonth(), yesterday.getDate());
         const yesterdayEnd = new Date(yesterday.getFullYear(), yesterday.getMonth(), yesterday.getDate(), 23, 59, 59, 999);
-        return { start: addDays(yesterdayStart, 1), end: addDays(yesterdayEnd, 1) };
+        return { start: yesterdayStart, end: yesterdayEnd };
       case 'thisWeek':
         return { start: startOfWeek(now), end: endOfWeek(now) };
       case 'thisMonth':
@@ -185,7 +190,19 @@ const Dashboard = () => {
         throw new Error('Invalid date range');
       }
   
-      const response = await authenticatedFetch(`${import.meta.env.VITE_BASE_URL}/api/emp/clinic/${clinic_id}/schedule/booking/?time_from=${start.toISOString().replace(/\.\d{3}Z$/, '')}&time_to=${end.toISOString().replace(/\.\d{3}Z$/, '')}`);
+      // Function to format date to YYYY-MM-DDTHH:mm:ss
+      const formatDateForAPI = (date) => {
+        return date.getFullYear() +
+          '-' + String(date.getMonth() + 1).padStart(2, '0') +
+          '-' + String(date.getDate()).padStart(2, '0') +
+          'T' + String(date.getHours()).padStart(2, '0') +
+          ':' + String(date.getMinutes()).padStart(2, '0') +
+          ':' + String(date.getSeconds()).padStart(2, '0');
+      };
+  
+      const response = await authenticatedFetch(
+        `${import.meta.env.VITE_BASE_URL}/api/emp/clinic/${clinic_id}/schedule/booking/?time_from=${formatDateForAPI(start)}&time_to=${formatDateForAPI(end)}`
+      );
       if (!response.ok) throw new Error('Failed to fetch bookings');
       const data = await response.json();
   
@@ -485,7 +502,7 @@ const Dashboard = () => {
                   <Skeleton className="h-4 w-full" />
                 </div>
               ) : filteredAppointments.length === 0 ? (
-                "No upcoming appointments for today"
+                "No upcoming appointments for selected date range"
               ) : (
                 <ul className='flex flex-col gap-4'>
                   {filteredAppointments.map(appointment => (
