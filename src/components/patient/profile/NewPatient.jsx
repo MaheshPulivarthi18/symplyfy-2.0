@@ -14,15 +14,16 @@ import { Form, FormControl, FormField, FormItem, FormLabel } from '@/components/
 
 const patientSchema = z.object({
   first_name: z.string().min(2, "First name is required"),
-  last_name: z.string().min(2, "Last name is required"),
-  email: z.string().email("Invalid email address"),
+  last_name: z.string().optional(),
+  email: z.string().email("Invalid email address").optional().or(z.literal('')),
+  mobile_alternate: z.string().regex(/^\d{10}$/, "Alternate mobile number must be 10 digits").optional().or(z.literal('')),
   mobile: z.string()
   .regex(/^\d{10}$/, "Mobile number must be 10 digits.")
   .transform(val => `+91${val}`),
   sex: z.enum(["m", "f", "o"]),
   dob: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Invalid date format"),
   guardian_name: z.string().optional(),
-  mobile_alternate: z.string().regex(/^\d{10}$/, "Alternate mobile number must be 10 digits").optional().transform(val => `+91${val}`),
+  // mobile_alternate: z.string().regex(/^\d{10}$/, "Alternate mobile number must be 10 digits").optional().transform(val => val ? `+91${val}` : undefined),
   therapist_primary: z.string().uuid("Invalid therapist ID"),
   priority: z.number().int().min(1).max(10),
 });
@@ -76,6 +77,7 @@ const NewPatient = () => {
       has_app_access: true,
       is_active: true,
       email_alternate: null,
+      priority: 9,
     };
 
     try {
@@ -195,7 +197,7 @@ const NewPatient = () => {
                   name="email"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Email</FormLabel>
+                      <FormLabel>Email (Optional)</FormLabel>
                       <FormControl>
                         <Input {...field} type="email" />
                       </FormControl>
@@ -219,7 +221,7 @@ const NewPatient = () => {
                   name="mobile_alternate"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Alternate mobile number</FormLabel>
+                      <FormLabel>Alternate mobile number (Optional)</FormLabel>
                       <FormControl>
                         <Input {...field} />
                       </FormControl>
