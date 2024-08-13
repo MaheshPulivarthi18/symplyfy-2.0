@@ -558,44 +558,63 @@ export default function Schedule() {
 
   const handleMarkVisit = async (bookingId, visitDetails) => {
     try {
-      const response = await authenticatedFetch(`${import.meta.env.VITE_BASE_URL}/api/emp/clinic/${clinic_id}/schedule/booking/${bookingId}/confirm/`, {
-        method: 'PATCH',
+      const bookingEvent = events.find(event => event.id === bookingId);
+      console.log(bookingEvent)
+      if (!bookingEvent) {
+        throw new Error('Booking not found');
+      }
+
+      const visitDate = format(new Date(bookingEvent.start), 'yyyy-MM-dd');
+      const visitTime = format(new Date(bookingEvent.start), 'HH:mm');
+
+      const visitData = {
+        date: visitDate,
+        time: visitTime,
+        comment: visitDetails.comment || '',
+        employee: bookingEvent.doctorId,
+        booking: bookingId,
+        sellable_reduce_balance: visitDetails.removeSessionBalance || false,
+        sellable: bookingEvent.service,
+        walk_in: visitDetails.walkIn || false,
+        penalty: visitDetails.markPenalty || false
+      };
+
+      const response = await authenticatedFetch(`${import.meta.env.VITE_BASE_URL}/api/emp/clinic/${clinic_id}/patient/${bookingEvent.patientId}/visit/`, {
+        method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          actor: 'E',
-          // visited_time: visitDetails.visitedTime,
-          // product: visitDetails.product,
-          // walk_in: visitDetails.walkIn,
-          // mark_penalty: visitDetails.markPenalty,
-          // remove_session_balance: visitDetails.removeSessionBalance,
-        }),
+        body: JSON.stringify(visitData),
       });
 
-      if (!response.ok) throw new Error('Failed to mark visit');
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to mark visit');
+      }
 
-      const updatedBooking = await response.json();
-      console.log(updatedBooking)
+      const newVisit = await response.json();
       
       // Update the local state to mark the event as attended
       setEvents(prevEvents => prevEvents.map(event => 
         event.id === bookingId 
-          ? { ...event, ...updatedBooking, attended: true }
+          ? { ...event, attended: true }
           : event
       ));
-      await fetchBookings();
       
       toast({
         title: "Success",
         description: "Visit marked successfully.",
         variant: "default",
       });
+
+      // Optionally, you might want to refresh the bookings or visits data
+      await fetchBookings();
+      await fetchVisits();
     } catch (error) {
       console.error('Error marking visit:', error);
       toast({
         title: "Error",
-        description: "Failed to mark visit. Please try again.",
+        description: error.message || "Failed to mark visit. Please try again.",
         variant: "destructive",
       });
     }
@@ -1134,7 +1153,7 @@ export default function Schedule() {
           flexDirection: "row"
         }} />
         <div style={{ padding: '4px 2px'}}>
-            {event.title.split(" ")[0] + "  -  Dr. "} 
+            {event.title !== "" ? (event.title.split(" ")[0] + "  -  Dr. ") : (event.title)} 
             {event.doctor.split(" ")[0]}
         </div>
       </div>
