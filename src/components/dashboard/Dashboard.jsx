@@ -158,7 +158,7 @@ const Dashboard = () => {
         throw new Error('Invalid date range');
       }
   
-      const response = await fetchWithTokenHandling(`${import.meta.env.VITE_BASE_URL}/api/emp/clinic/${clinic_id}/visit/?date_from=${start.toISOString().split('T')[0]}&date_to=${end.toISOString().split('T')[0]}`);
+      const response = await fetchWithTokenHandling(`${import.meta.env.VITE_BASE_URL}/api/emp/clinic/${clinic_id}/visit/?date_from=${addDays(start, 1).toISOString().split('T')[0]}&date_to=${addDays(end, 0).toISOString().split('T')[0]}`);
       setVisits(response);
       setSummary(prevSummary => ({ ...prevSummary, visits: response.length }));
       

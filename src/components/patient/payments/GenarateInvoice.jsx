@@ -6,7 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { format } from 'date-fns';
-import { Loader2 } from 'lucide-react';
+import { Loader2, ExternalLink, FileDown } from 'lucide-react';
 
 // Invoice Dialog
 const InvoiceDialog = ({ isOpen, onClose, onGenerate, invoiceItems, setInvoiceItems, finalAmount, setFinalAmount, sellables, isLoading }) => {
@@ -186,9 +186,21 @@ const InvoiceStatusDialog = ({ isOpen, onClose, onUpdateStatus, isLoading }) => 
 
 // Invoice Details Dialog
 const InvoiceDetailsDialog = ({ invoice, isOpen, onClose, onUpdateStatus, isLoading }) => {
+  const handleViewInvoiceHtml = () => {
+    if (invoice && invoice.html) {
+      window.open(invoice.html, '_blank');
+    }
+  };
+
+  const handleDownloadInvoicePdf = () => {
+    if (invoice && invoice.pdf) {
+      window.open(invoice.pdf, '_blank');
+    }
+  };
+
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent>
+      <DialogContent className="sm:max-w-[700px]">
         <DialogHeader>
           <DialogTitle>Invoice Details</DialogTitle>
         </DialogHeader>
@@ -199,6 +211,18 @@ const InvoiceDetailsDialog = ({ invoice, isOpen, onClose, onUpdateStatus, isLoad
             <p><strong>Status:</strong> {invoice.status === 'd' ? 'Draft' : invoice.status === 'c' ? 'Confirmed' : 'Cancelled'}</p>
             <p><strong>Gross Amount:</strong> {invoice.gross_amount}</p>
             <p><strong>Final Amount:</strong> {invoice.final_amount}</p>
+            
+            <div className="flex space-x-2">
+              <Button onClick={handleViewInvoiceHtml} disabled={!invoice.html}>
+                <ExternalLink className="mr-2 h-4 w-4" />
+                View Invoice
+              </Button>
+              {/* <Button onClick={handleDownloadInvoicePdf} disabled={!invoice.pdf}>
+                <FileDown className="mr-2 h-4 w-4" />
+                Download PDF
+              </Button> */}
+            </div>
+
             <h3 className="font-semibold">Items:</h3>
             <Table>
               <TableHeader>

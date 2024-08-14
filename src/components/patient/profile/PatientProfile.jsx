@@ -925,10 +925,27 @@ const AppointmentsDataTable = ({ data }) => {
     }
   };
 
-  const handleViewInvoice = (invoiceId) => {
-    const invoice = invoices.find(inv => inv.id === invoiceId);
-    setSelectedInvoice(invoice);
-    setIsInvoiceDetailDialogOpen(true);
+  const handleViewInvoice = async (invoiceId) => {
+    try {
+      const response = await authenticatedFetch(`${import.meta.env.VITE_BASE_URL}/api/emp/clinic/${clinic_id}/patient/${patient_id}/invoice/${invoiceId}/`);
+      const invoiceData = await response.json();
+      setSelectedInvoice(invoiceData);
+      setIsInvoiceDetailDialogOpen(true);
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to fetch invoice details. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleViewInvoiceHtml = (htmlUrl) => {
+    window.open(htmlUrl, '_blank');
+  };
+
+  const handleDownloadInvoicePdf = (pdfUrl) => {
+    window.open(pdfUrl, '_blank');
   };
 
   const exportToCSV = (data, filename, headers) => {
@@ -1138,6 +1155,12 @@ const AppointmentsDataTable = ({ data }) => {
     setFinalAmount(total);
   };
 
+  const handleAddNewInvoice = () => {
+    setInvoiceItems([]);
+    setFinalAmount(0);
+    setIsInvoiceDialogOpen(true);
+  };
+
   if (loading) {
     return (
       <div className="w-full flex flex-col items-center justify-center">
@@ -1175,7 +1198,7 @@ const AppointmentsDataTable = ({ data }) => {
   };
 
   return (
-    <div className="flex w-full h-full gap-8 p-8 shadow-xl">
+    <div className="flex w-full h-full gap-8 shadow-xl">
       <Card className="w-[40%]">
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
           <CardTitle>Patient Information</CardTitle>
@@ -1936,7 +1959,12 @@ const AppointmentsDataTable = ({ data }) => {
               </DialogContent>
             </Dialog>
           </TabsContent>
-          <TabsContent value="invoices">
+          <TabsContent value="invoices" className="relative min-h-[300px] h-[90%] overflow-scroll p-4">
+            <div className="flex justify-end mb-4">
+              <Button onClick={handleAddNewInvoice} className="absolute bottom-0 right-0">
+                <PlusCircle className="h-4 w-4" />
+              </Button>
+            </div>
             {invoices.length === 0 ? (
               <p>No invoices recorded for this patient.</p>
             ) : (
@@ -1973,8 +2001,8 @@ const AppointmentsDataTable = ({ data }) => {
                 </TableBody>
               </Table>
             )}
-            
           </TabsContent>
+
 
           <TabsContent value="visits" className="relative min-h-[300px] h-[90%] overflow-scroll p-4">
             <div className="flex justify-end mb-4 space-x-2">

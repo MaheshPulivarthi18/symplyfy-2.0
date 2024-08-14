@@ -8,7 +8,7 @@ import 'react-big-calendar/lib/css/react-big-calendar.css';
 import AppointmentPopup from './Appointment';
 import './Schedule.css'
 import '../../index.css'
-import { format, startOfWeek, endOfWeek, startOfMonth, endOfMonth, isSameMonth, startOfDay, endOfDay, isSameDay, addWeeks, addMonths, isBefore } from 'date-fns';
+import { format, startOfWeek, endOfWeek, startOfMonth, endOfMonth, isSameMonth, startOfDay, endOfDay, isSameDay, addWeeks, isBefore, setHours, setMinutes } from 'date-fns';
 import { Toggle } from '../ui/toggle';
 import { Button } from '../ui/button';
 import TimePicker from '../ui/timepicker';
@@ -17,12 +17,12 @@ import { Input } from '../ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "../ui/dialog"
-import { PlusCircle, Search, EyeOff, Eye } from "lucide-react";
+import { PlusCircle, Search, EyeOff, Eye, X } from "lucide-react";
 import { Card } from '../ui/card';
 import { useToast } from "@/components/ui/use-toast";
 import { useParams } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
-import { parseISO, addMinutes, addDays } from 'date-fns';
+import { parseISO, addMinutes, addDays, addMonths } from 'date-fns';
 import { DatePicker } from '@/components/ui/datepicker';
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 // import { Calendar } from "@/components/ui/calendar";
@@ -105,6 +105,7 @@ export default function Schedule() {
   const [totalVisited, setTotalVisited] = useState(0);
   const [totalCancelled, setTotalCancelled] = useState(0);
   const [dateRange, setDateRange] = useState('today');
+  const [selectedFilters, setSelectedFilters] = useState([]);
 
 
   const filteredTherapists = therapists.filter(therapist => 
@@ -153,6 +154,28 @@ export default function Schedule() {
     fetchBookings();
     fetchVisits()
   }, [date, view, clinic_id, selectedDoctorId, dateRange]);
+
+  useEffect(() => {
+    fetchWorkingHours();
+  }, [clinic_id]);
+
+  const fetchWorkingHours = async () => {
+    try {
+      const response = await authenticatedFetch(`${import.meta.env.VITE_BASE_URL}/api/emp/clinic/${clinic_id}/schedule/settings/`);
+      if (!response.ok) throw new Error('Failed to fetch working hours');
+      const data = await response.json();
+      if (data.working_hours) {
+        setWorkingHours(data.working_hours);
+      }
+    } catch (error) {
+      console.error('Error fetching working hours:', error);
+      toast({
+        title: "Error",
+        description: "Failed to fetch working hours. Some features may not work correctly.",
+        variant: "destructive",
+      });
+    }
+  };
 
   const fetchTherapists = async () => {
     try {
@@ -335,6 +358,7 @@ export default function Schedule() {
       setEvents(formattedEvents);
       updateAppointmentCounts(formattedEvents);
       setEvents(formattedEvents);
+      console.log(formattedEvents)
     } catch (error) {
       console.error('Error fetching bookings:', error);
       toast({
@@ -569,12 +593,12 @@ export default function Schedule() {
 
       const visitData = {
         date: visitDate,
-        time: visitTime,
+        time: visitDetails.visitedTime,
         comment: visitDetails.comment || '',
         employee: bookingEvent.doctorId,
         booking: bookingId,
         sellable_reduce_balance: visitDetails.removeSessionBalance || false,
-        sellable: bookingEvent.service,
+        sellable: visitDetails.sellable,
         walk_in: visitDetails.walkIn || false,
         penalty: visitDetails.markPenalty || false
       };
@@ -755,10 +779,14 @@ export default function Schedule() {
   };
 
   const handleDoctorFilterChange = (doctorId) => {
-    // console.log('Selecting doctor:', doctorId);
     setSelectedDoctorId(prev => {
       const newValue = prev === doctorId ? '' : doctorId;
-      // console.log('New selected doctor ID:', newValue);
+      if (newValue) {
+        const doctor = therapists.find(t => t.id === doctorId);
+        setSelectedFilters(prev => [...prev.filter(f => f.type !== 'doctor'), { type: 'doctor', id: doctorId, name: `${doctor.first_name} ${doctor.last_name}` }]);
+      } else {
+        setSelectedFilters(prev => prev.filter(f => f.type !== 'doctor'));
+      }
       return newValue;
     });
     if (doctorId) {
@@ -767,10 +795,14 @@ export default function Schedule() {
   };
   
   const handlePatientFilterChange = (patientId) => {
-    // console.log('Selecting patient:', patientId);
     setSelectedPatientId(prev => {
       const newValue = prev === patientId ? '' : patientId;
-      // console.log('New selected patient ID:', newValue);
+      if (newValue) {
+        const patient = patients.find(p => p.id === patientId);
+        setSelectedFilters(prev => [...prev.filter(f => f.type !== 'patient'), { type: 'patient', id: patientId, name: `${patient.first_name} ${patient.last_name}` }]);
+      } else {
+        setSelectedFilters(prev => prev.filter(f => f.type !== 'patient'));
+      }
       return newValue;
     });
     if (patientId) {
@@ -781,16 +813,70 @@ export default function Schedule() {
   const handleCancelledToggle = () => {
     setShowCancelled(!showCancelled);
     if (!showCancelled) {
+      setSelectedFilters(prev => [...prev, { type: 'cancelled', name: 'Show Cancelled' }]);
       setView('month');
       setSelectedDoctorId('');
       setSelectedPatientId('');
+    } else {
+      setSelectedFilters(prev => prev.filter(f => f.type !== 'cancelled'));
     }
   };
   
+  const removeFilter = (filter) => {
+    if (filter.type === 'doctor') {
+      setSelectedDoctorId('');
+    } else if (filter.type === 'patient') {
+      setSelectedPatientId('');
+    } else if (filter.type === 'cancelled') {
+      setShowCancelled(false);
+    }
+    setSelectedFilters(prev => prev.filter(f => f !== filter));
+  };
+
   const clearAllFilters = () => {
     setSelectedDoctorId('');
     setSelectedPatientId('');
-    setShowCanceled(false);
+    setShowCancelled(false);
+    setSelectedFilters([]);
+  };
+
+  const onCopyRecurringAppointments = async (newAppointment) => {
+    try {
+      const response = await authenticatedFetch(`${import.meta.env.VITE_BASE_URL}/api/emp/clinic/${clinic_id}/schedule/booking/`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(newAppointment),
+      });
+  
+      if (!response.ok) {
+        const errorData = await response.json();
+        console.error("API Error Response:", errorData);
+        let errorMessage = "Failed to copy recurring appointments.";
+        if (errorData.start) {
+          errorMessage = errorData.start[0];
+        } else if (errorData.end) {
+          errorMessage = errorData.end[0];
+        }
+        throw new Error(errorMessage);
+      }
+  
+      await fetchBookings();
+  
+      toast({
+        title: "Success",
+        description: "Recurring appointments copied successfully.",
+        variant: "default",
+      });
+    } catch (error) {
+      console.error("Error in onCopyRecurringAppointments:", error);
+      toast({
+        title: "Error",
+        description: error.message || "Failed to copy recurring appointments. Please try again.",
+        variant: "destructive",
+      });
+    }
   };
 
   const handleSelect = ({ start, end, resourceId }) => {
@@ -812,7 +898,7 @@ export default function Schedule() {
   };
 
   const handleSelectEvent = (event) => {
-    // console.log(event)
+    console.log(event)
     setSelectedEvent(event);
   };
 
@@ -890,7 +976,7 @@ export default function Schedule() {
     doctor: event.doctorName,
     patient: event.patientName,
     patientId: event.patientId,
-    doctorId: event.employeeId,
+    doctorId: event.doctorId,
     service: event.sellable,
     recurrence: event.recurrence
   }));
@@ -917,8 +1003,8 @@ export default function Schedule() {
       let viewStart, viewEnd;
 
       if (view === 'day') {
-        viewStart = startOfDay(date);
-        viewEnd = endOfDay(date);
+        viewStart = addDays(startOfDay(date), 1);
+        viewEnd = addDays(endOfDay(date), 1);
       } else if (view === 'week') {
         viewStart = startOfWeek(date);
         viewEnd = endOfWeek(date);
@@ -1161,9 +1247,9 @@ export default function Schedule() {
   };
 
   return (
-    <Card className="p-4 w-full max-w-[90vw] lg:h-[90vh] shadow-lg overflow-hidden">
+    <Card className="p-4 w-full max-w-[90vw] lg:h-[90vh] shadow-lg">
       <div className='flex flex-col-reverse lg:flex-row-reverse gap-8 lg:gap-8 w-full h-full relative'>
-        <div className={`w-full flex flex-col h-full transition-all duration-300 ease-in-out ${isSidebarOpen ? 'lg:translate-x-0 lg:w-[17.75%]' : 'lg:translate-x-full relative -right-10 lg:w-0 '} `}>
+        <div className={`w-full flex flex-col h-full transition-all duration-300 ease-in-out ${isSidebarOpen ? 'lg:translate-x-0 lg:w-[17.75%]' : 'lg:translate-x-full relative lg:-right-40 lg:w-0 '} `}>
           <div className="mb-4 flex-shrink-0">
             <Button 
               onClick={() => {
@@ -1214,6 +1300,21 @@ export default function Schedule() {
                 onChange={(time) => setBreakEndTime(parseTimeString(time))}
               />  
             </div>
+          </div>
+          <div className="flex flex-wrap gap-2 mb-4 p-2">
+            {selectedFilters.map((filter, index) => (
+              <div key={index} className="bg-primary text-primary-foreground px-3 py-1 rounded-full flex items-center">
+                <span>{filter.name}</span>
+                <button onClick={() => removeFilter(filter)} className="ml-2">
+                  <X size={14} />
+                </button>
+              </div>
+            ))}
+            {selectedFilters.length > 0 && (
+              <button onClick={clearAllFilters} className="text-sm text-gray-600 hover:text-gray-800">
+                Clear all
+              </button>
+            )}
           </div>
           <ScrollArea className="flex-grow overflow-y-auto pr-4">
             <Toggle
@@ -1286,7 +1387,7 @@ export default function Schedule() {
             {isSidebarOpen ? <EyeOff /> : <Eye /> }
             
           </button>
-        <div className={`bg-white rounded-lg shadow-lg transition-all duration-300 ease-in-out flex-grow ${isSidebarOpen ? 'w-[82%]' : 'w-[90%]'}`}>
+        <div className={`bg-white rounded-lg shadow-lg transition-all duration-300 ease-in-out flex-grow ${isSidebarOpen ? 'w-[80%]' : 'w-[90%]'}`}>
           <Calendar
             localizer={localizer}
             events={formattedFilteredEvents}
@@ -1372,6 +1473,8 @@ export default function Schedule() {
           onDelete={handleDelete}
           onMarkVisit={handleMarkVisit}
           sellables={sellables}  // Pass sellables to AppointmentPopup
+          onCopyRecurringAppointments={onCopyRecurringAppointments}
+          workingHours={workingHours}
         />
       )}
       {/* add appointment */}

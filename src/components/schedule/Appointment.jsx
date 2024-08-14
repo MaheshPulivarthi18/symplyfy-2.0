@@ -7,12 +7,14 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { format, parseISO, isBefore, isAfter, setHours, setMinutes, addMonths, addDays, addMinutes, isSunday, setSeconds, setMilliseconds } from 'date-fns';
+import { useToast } from "@/components/ui/use-toast";
 import { DatePicker } from '../ui/datepicker';
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { useNavigate, useParams } from 'react-router-dom';
 import ClockPicker from '../ui/clock';
 
-const AppointmentPopup = ({ event, onClose, onReschedule, onCancel, onDelete, onMarkVisit, sellables }) => {
+const AppointmentPopup = ({ event, onClose, onReschedule, onCancel, onDelete, onMarkVisit, sellables, onCopyRecurringAppointments, workingHours }) => {
   const [isSheetOpen, setIsSheetOpen] = useState(true);
   const [isCancelDialogOpen, setIsCancelDialogOpen] = useState(false);
   const [isRescheduleDialogOpen, setIsRescheduleDialogOpen] = useState(false);
@@ -21,21 +23,36 @@ const AppointmentPopup = ({ event, onClose, onReschedule, onCancel, onDelete, on
   const [cancelAllUpcoming, setCancelAllUpcoming] = useState(false);
   const [cancelRequestedByPatient, setCancelRequestedByPatient] = useState(false);
   const [visitDetails, setVisitDetails] = useState({
-    visitedTime: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-    product: event.service || '',
+    visitedTime: event.start.toTimeString().split(" ")[0],
+    sellable: event.service || '',
     walkIn: false,
     markPenalty: false,
     removeSessionBalance: false,
   });
-  const {clinic_id} = useParams()
-  const navigate = useNavigate()
+  const {clinic_id} = useParams();
+  const navigate = useNavigate();
   const [date, setDate] = useState(new Date());
   const [deleteScope, setDeleteScope] = useState('0');
   const [cancelScope, setCancelScope] = useState('T');
   const [tillDate, setTillDate] = useState(null);
+  const { toast } = useToast();
+
+  const [isCopyDialogOpen, setIsCopyDialogOpen] = useState(false);
+  const [copyDetails, setCopyDetails] = useState({
+    startDate: new Date(event.start),
+    endDate: addMonths(new Date(event.start), 2),
+    startTime: format(new Date(event.start), 'HH:mm'),
+    duration: 30,
+    customDuration: '',
+    weekdays: [],
+    sessions: '',
+    frequency: 'does_not_repeat',
+    sellable: event.service || '',
+  });
 
   useEffect(() => {
     setIsSheetOpen(true);
+    setVisitDetails({...visitDetails, visitedTime: event.start.toTimeString().split(" ")[0], sellable: event.service})
   }, [event]);
 
   const handleClose = () => {
@@ -77,46 +94,77 @@ const AppointmentPopup = ({ event, onClose, onReschedule, onCancel, onDelete, on
   };
 
   const isEventCancelled = event.status_patient === 'X' || event.status_employee === 'X';
+  const isEventAttended = event.attended;
 
-  const TimeSelect = ({ value, onChange }) => {
-    const generateTimeOptions = () => {
-      const options = [];
-      for (let i = 0; i < 24; i++) {
-        for (let j = 0; j < 60; j += 30) {
-          const hour = i.toString().padStart(2, '0');
-          const minute = j.toString().padStart(2, '0');
-          const time = `${hour}:${minute}`;
-          options.push(<SelectItem key={time} value={time}>{time}</SelectItem>);
-        }
+  const handleCopyAppointments = () => {
+    const { startDate, startTime, duration, customDuration, weekdays, sessions, frequency, endDate, sellable } = copyDetails;
+    
+    // Parse the start time
+    const [hours, minutes] = startTime.split(':').map(Number);
+    
+    // Create a new Date object for the start time, using the date from startDate
+    const start = new Date(startDate);
+    start.setHours(hours, minutes, 0, 0);
+    
+    // Calculate the duration in minutes
+    const durationInMinutes = duration || parseInt(customDuration);
+    
+    // Calculate end time
+    const end = new Date(start.getTime() + durationInMinutes * 60000);
+  
+    // Format dates as ISO strings, but remove the 'Z' to keep them as local time
+    const formatLocalDate = (date) => date.toISOString().slice(0, -1);
+  
+    const weekdayMap = {
+      'Mon': 'MO', 'Tue': 'TU', 'Wed': 'WE', 'Thu': 'TH', 'Fri': 'FR', 'Sat': 'SA', 'Sun': 'SU'
+    };
+    const formattedWeekdays = weekdays.map(day => weekdayMap[day]).join(',');
+  
+    let recurrenceRule = null;
+    if (frequency === 'weekly') {
+      recurrenceRule = `RRULE:FREQ=WEEKLY;BYDAY=${formattedWeekdays}`;
+      if (endDate) {
+        recurrenceRule += `;UNTIL=${format(endDate, "yyyyMMdd'T'HHmmss'Z'")}`;
+      } else if (sessions) {
+        recurrenceRule += `;COUNT=${sessions}`;
       }
-      return options;
+    }
+  
+    const newAppointment = {
+      start: formatLocalDate(start),
+      end: formatLocalDate(end),
+      patient: event.patientId,
+      employee: event.doctorId,
+      sellable: sellable,
+      recurrence: recurrenceRule,
+      actor: "E",
     };
   
-    return (
-      <Select value={value} onValueChange={onChange}>
-        <SelectTrigger>
-          <SelectValue placeholder="Select time" />
-        </SelectTrigger>
-        <SelectContent>
-          {generateTimeOptions()}
-        </SelectContent>
-      </Select>
-    );
+    console.log("Appointment data being sent:", newAppointment); // For debugging
+  
+    onCopyRecurringAppointments(newAppointment);
+    setIsCopyDialogOpen(false);
+    handleClose();
   };
 
   return (
     <>
-      <Sheet className='' open={isSheetOpen} onOpenChange={setIsSheetOpen}>
+      <Sheet open={isSheetOpen} onOpenChange={setIsSheetOpen}>
         <SheetContent side="bottom" className={`w-[25%] left-[37%] items-center ${isEventCancelled ? "bottom-[50%]" : "bottom-[30%]" }`}>
           <SheetHeader>
             <SheetTitle>{event.title + " - " + event.doctor}</SheetTitle>
           </SheetHeader>
           <div className="py-4">
-            {!isEventCancelled && (
+            {!isEventCancelled && !isEventAttended && (
               <>
                 <Button className="w-full mb-2" onClick={handleMarkVisitClick}>
                   Mark Patient Visit
                 </Button>
+                {event.recurrence && (
+                  <Button className="w-full mb-2" onClick={() => setIsCopyDialogOpen(true)}>
+                    Copy Recurring Appointments
+                  </Button>
+                )}
                 <Button className="w-full mb-2" variant="outline" onClick={() => setIsCancelDialogOpen(true)}>
                   Cancel Appointment
                 </Button>
@@ -127,6 +175,9 @@ const AppointmentPopup = ({ event, onClose, onReschedule, onCancel, onDelete, on
                   Delete Appointment
                 </Button>
               </>
+            )}
+            {isEventAttended && (
+              <div className="text-green-600 font-bold mb-2">Visit Completed</div>
             )}
             <Button className="w-full mb-2" variant="outline" onClick={() => navigate(`/clinic/${clinic_id}/patients/${event.patientId}`)}>
               View Patient Details
@@ -142,49 +193,49 @@ const AppointmentPopup = ({ event, onClose, onReschedule, onCancel, onDelete, on
       </Sheet>
 
       <Dialog open={isCancelDialogOpen} onOpenChange={setIsCancelDialogOpen}>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>Cancel Appointment</DialogTitle>
-        </DialogHeader>
-        <div className="py-4">
-          <RadioGroup value={cancelScope} onValueChange={setCancelScope}>
-            <div className="flex items-center space-x-2">
-              <RadioGroupItem value="T" id="cancelSingle" />
-              <label htmlFor="cancelSingle">Cancel this appointment</label>
-            </div>
-            <div className="flex items-center space-x-2">
-              <RadioGroupItem value="F" id="cancelFuture" />
-              <label htmlFor="cancelFuture">Cancel this and future appointments</label>
-            </div>
-            <div className="flex items-center space-x-2">
-              <RadioGroupItem value="A" id="cancelAll" />
-              <label htmlFor="cancelAll">Cancel all appointments</label>
-            </div>
-            <div className="flex items-center space-x-2">
-              <RadioGroupItem value="D" id="cancelTillDate" />
-              <label htmlFor="cancelTillDate">Cancel till date</label>
-            </div>
-          </RadioGroup>
-          
-          {cancelScope === 'D' && (
-            <div className="mt-4">
-              <label htmlFor="tillDate">Cancel till:</label>
-              <DatePicker
-                id="tillDate"
-                selected={tillDate}
-                onChange={setTillDate}
-                minDate={new Date()}
-              />
-            </div>
-          )}
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Cancel Appointment</DialogTitle>
+          </DialogHeader>
+          <div className="py-4">
+            <RadioGroup value={cancelScope} onValueChange={setCancelScope}>
+              <div className="flex items-center space-x-2">
+                <RadioGroupItem value="T" id="cancelSingle" />
+                <label htmlFor="cancelSingle">Cancel this appointment</label>
+              </div>
+              <div className="flex items-center space-x-2">
+                <RadioGroupItem value="F" id="cancelFuture" />
+                <label htmlFor="cancelFuture">Cancel this and future appointments</label>
+              </div>
+              <div className="flex items-center space-x-2">
+                <RadioGroupItem value="A" id="cancelAll" />
+                <label htmlFor="cancelAll">Cancel all appointments</label>
+              </div>
+              <div className="flex items-center space-x-2">
+                <RadioGroupItem value="D" id="cancelTillDate" />
+                <label htmlFor="cancelTillDate">Cancel till date</label>
+              </div>
+            </RadioGroup>
+            
+            {cancelScope === 'D' && (
+              <div className="mt-4">
+                <label htmlFor="tillDate">Cancel till:</label>
+                <DatePicker
+                  id="tillDate"
+                  selected={tillDate}
+                  onChange={setTillDate}
+                  minDate={new Date()}
+                />
+              </div>
+            )}
 
-          <div className="flex justify-end space-x-2 mt-4">
-            <Button variant="outline" onClick={() => setIsCancelDialogOpen(false)}>Back</Button>
-            <Button onClick={handleCancelClick}>Cancel Appointment(s)</Button>
+            <div className="flex justify-end space-x-2 mt-4">
+              <Button variant="outline" onClick={() => setIsCancelDialogOpen(false)}>Back</Button>
+              <Button onClick={handleCancelClick}>Cancel Appointment(s)</Button>
+            </div>
           </div>
-        </div>
-      </DialogContent>
-    </Dialog>
+        </DialogContent>
+      </Dialog>
 
       <Dialog open={isRescheduleDialogOpen} onOpenChange={setIsRescheduleDialogOpen}>
         <DialogContent>
@@ -199,8 +250,6 @@ const AppointmentPopup = ({ event, onClose, onReschedule, onCancel, onDelete, on
           </div>
         </DialogContent>
       </Dialog>
-
-      {/* <Button onClick={() => setIsDeleteDialogOpen(true)}>Delete</Button> */}
 
       <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
         <DialogContent>
@@ -238,11 +287,6 @@ const AppointmentPopup = ({ event, onClose, onReschedule, onCancel, onDelete, on
             </div>
             <div className="mb-4 flex items-center gap-6">
               <Label>Visited Time</Label>
-              {/* <TimeSelect
-                id="time"
-                value={visitDetails.visitedTime}
-                onChange={(time) => setVisitDetails({ ...visitDetails, visitedTime: time })}
-              /> */}
               <ClockPicker
                 id="time"
                 value={visitDetails.visitedTime}
@@ -252,8 +296,8 @@ const AppointmentPopup = ({ event, onClose, onReschedule, onCancel, onDelete, on
             <div className="mb-4">
               <Label>Product / Service</Label>
               <Select
-                value={visitDetails.product}
-                onValueChange={(value) => setVisitDetails({ ...visitDetails, product: value })}
+                value={visitDetails.sellable}
+                onValueChange={(value) => setVisitDetails({ ...visitDetails, sellable: value })}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Select Product / Service" />
@@ -295,6 +339,142 @@ const AppointmentPopup = ({ event, onClose, onReschedule, onCancel, onDelete, on
               Session Completed
             </Button>
           </div>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={isCopyDialogOpen} onOpenChange={setIsCopyDialogOpen}>
+        <DialogContent className="sm:max-w-[425px] max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Copy Recurring Appointments</DialogTitle>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+          <div className="flex flex-col space-y-2">
+              <Label htmlFor="copyStartDate">Starts On</Label>
+              <DatePicker
+                id="copyStartDate"
+                selected={copyDetails.startDate}
+                onChange={(date) => setCopyDetails({...copyDetails, startDate: date})}
+                dateFormat="dd/MM/yyyy"
+              />
+            </div>
+
+            <div>
+              <Label htmlFor="copyStartTime">Start Time</Label>
+              <ClockPicker
+                id="copyStartTime"
+                value={copyDetails.startTime}
+                onChange={(time) => setCopyDetails({...copyDetails, startTime: time})}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label>Duration</Label>
+              <RadioGroup 
+                value={copyDetails.duration.toString()} 
+                onValueChange={(value) => setCopyDetails({...copyDetails, duration: parseInt(value), customDuration: ''})}
+              >
+                <div className="flex flex-wrap gap-2">
+                  {[30, 45, 60, 90].map((duration) => (
+                    <div key={duration} className="flex items-center space-x-2">
+                      <RadioGroupItem value={duration.toString()} id={`copyDuration-${duration}`} />
+                      <Label htmlFor={`copyDuration-${duration}`}>{duration} Mins</Label>
+                    </div>
+                  ))}
+                  <div className="flex items-center space-x-2">
+                    <RadioGroupItem value="0" id="copyDuration-custom" />
+                    <Label htmlFor="copyDuration-custom">Custom</Label>
+                  </div>
+                </div>
+              </RadioGroup>
+            </div>
+
+            {copyDetails.duration === 0 && (
+              <Input
+                type="number"
+                placeholder="Custom Duration in mins"
+                value={copyDetails.customDuration}
+                onChange={(e) => setCopyDetails({...copyDetails, customDuration: e.target.value})}
+              />
+            )}
+
+            <Select 
+              value={copyDetails.frequency} 
+              onValueChange={(value) => setCopyDetails({...copyDetails, frequency: value})}
+            >
+              <SelectTrigger className="w-full">
+                <SelectValue placeholder="Frequency" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="does_not_repeat">Does not repeat</SelectItem>
+                <SelectItem value="weekly">Weekly</SelectItem>
+              </SelectContent>
+            </Select>
+
+            {copyDetails.frequency === 'weekly' && (
+              <>
+                <div>
+                  <Label className="mb-2 block">Select Weekdays</Label>
+                  <div className="flex flex-wrap gap-2">
+                    {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map((day) => (
+                      <Button
+                        key={day}
+                        variant={copyDetails.weekdays.includes(day) ? "default" : "outline"}
+                        size="sm"
+                        onClick={() => {
+                          const updatedWeekdays = copyDetails.weekdays.includes(day)
+                            ? copyDetails.weekdays.filter(d => d !== day)
+                            : [...copyDetails.weekdays, day];
+                          setCopyDetails({...copyDetails, weekdays: updatedWeekdays});
+                        }}
+                      >
+                        {day}
+                      </Button>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label>Ends On (DD/MM/YYYY)</Label>
+                  <DatePicker
+                    id="copyEndDate"
+                    selected={copyDetails.endDate}
+                    onChange={(date) => setCopyDetails({...copyDetails, endDate: date})}
+                    dateFormat="dd/MM/yyyy"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="copySessions">OR</Label>
+                  <Input
+                    id="copySessions"
+                    type="number"
+                    placeholder="For next 'X' sessions"
+                    value={copyDetails.sessions}
+                    onChange={(e) => setCopyDetails({...copyDetails, sessions: e.target.value, endDate: null})}
+                  />
+                </div>
+              </>
+            )}
+
+            <Select 
+              value={copyDetails.sellable} 
+              onValueChange={(value) => setCopyDetails({...copyDetails, sellable: value})}
+            >
+              <SelectTrigger className="w-full">
+                <SelectValue placeholder="Product / Service" />
+              </SelectTrigger>
+              <SelectContent>
+                {sellables.map((sellable) => (
+                  <SelectItem key={sellable.id} value={sellable.id}>
+                    {sellable.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <Button onClick={handleCopyAppointments} className="w-full">
+            Copy Recurring Appointments
+          </Button>
         </DialogContent>
       </Dialog>
     </>
