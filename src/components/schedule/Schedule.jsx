@@ -1044,10 +1044,11 @@ export default function Schedule() {
     events.forEach(event => {
       if (event.status_patient === 'X' || event.status_employee === 'X') {
         cancelled++;
-      } else if (event.attended) {
-        visited++;
       } else {
         scheduled++;
+      }
+      if(event.attended === true){
+        visited++;
       }
     });
   
