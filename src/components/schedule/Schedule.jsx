@@ -1226,6 +1226,16 @@ export default function Schedule() {
     // else if (event.status_employee === 'C' || event.status_patient === 'C') {
     //   badgeColor = '#FFA500'; // Orange color for attended events
     // }
+
+    const getFirstName = (fullName) => {
+      return fullName && typeof fullName === 'string' ? fullName.split(" ")[0]  : '';
+    };
+
+    const title = event.title && event.title !== "" 
+      ? `${getFirstName(event.title)} - Dr. ` 
+      : "Untitled";
+
+    const doctorName = getFirstName(event.doctor);
   
     return (
       <div style={{ height: '100%', width: '100%', position: 'relative' }}>
@@ -1239,8 +1249,7 @@ export default function Schedule() {
           flexDirection: "row"
         }} />
         <div style={{ padding: '4px 2px'}}>
-            {event.title !== "" ? (event.title.split(" ")[0] + "  -  Dr. ") : (event.title)} 
-            {event.doctor.split(" ")[0]}
+          {title} {doctorName}
         </div>
       </div>
     );
