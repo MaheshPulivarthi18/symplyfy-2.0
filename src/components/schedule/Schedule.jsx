@@ -376,6 +376,65 @@ export default function Schedule() {
     }
   };
 
+  const fetchPatientBookings = async (patientId) => {
+    try {
+      let viewStart, viewEnd;
+  
+      if (view === 'day') {
+        viewStart = startOfDay(date);
+        viewEnd = endOfDay(date);
+      } else if (view === 'week') {
+        viewStart = startOfWeek(date);
+        viewEnd = endOfWeek(date);
+      } else if (view === 'month') {
+        viewStart = startOfMonth(date);
+        viewEnd = endOfMonth(date);
+      }
+
+      const timeFrom = formatDateForAPI(viewStart);
+      const timeTo = formatDateForAPI(viewEnd);
+  
+      const url = new URL(`${import.meta.env.VITE_BASE_URL}/api/emp/clinic/${clinic_id}/patient/${patientId}/booking/`);
+      url.searchParams.append('time_from', timeFrom);
+      url.searchParams.append('time_to', timeTo);
+  
+      const response = await authenticatedFetch(url.toString());
+  
+      if (!response.ok) {
+        throw new Error('Failed to fetch patient bookings');
+      }
+  
+      const data = await response.json();
+  
+      const formattedEvents = data.map(booking => ({
+        id: booking.id,
+        title: `${booking.patient.first_name} ${booking.patient.last_name}`,
+        start: new Date(booking.start),
+        end: new Date(booking.end),
+        patientId: booking.patient.id,
+        patientName: `${booking.patient.first_name} ${booking.patient.last_name}`,
+        doctorId: booking.employee.id,
+        doctorName: `${booking.employee.first_name} ${booking.employee.last_name || ""}`,
+        service: booking.sellable,
+        resourceId: booking.employee.id,
+        status_patient: booking.status_patient,
+        status_employee: booking.status_employee,
+        recurrence: booking.recurrence,
+        attended: booking.attended,
+      }));
+  
+      return formattedEvents;
+    } catch (error) {
+      console.error('Error fetching patient bookings:', error);
+      toast({
+        title: "Error",
+        description: "Failed to fetch patient bookings. Please try again.",
+        variant: "destructive",
+      });
+      return [];
+    }
+  };
+
   const fetchSellables = async () => {
     try {
       const data = await authenticatedFetch(`${import.meta.env.VITE_BASE_URL}/api/emp/clinic/${clinic_id}/sellable/`);
@@ -796,7 +855,7 @@ export default function Schedule() {
     }
   };
   
-  const handlePatientFilterChange = (patientId) => {
+  const handlePatientFilterChange = async (patientId) => {
     setSelectedPatientId(prev => {
       const newValue = prev === patientId ? '' : patientId;
       if (newValue) {
@@ -807,8 +866,14 @@ export default function Schedule() {
       }
       return newValue;
     });
+  
     if (patientId) {
       setView('month');
+      const patientBookings = await fetchPatientBookings(patientId);
+      setEvents(patientBookings);
+    } else {
+      // If no patient is selected, fetch all bookings
+      fetchBookings();
     }
   };
   
@@ -1059,7 +1124,7 @@ export default function Schedule() {
 
   useEffect(() => {
     updateAppointmentCounts(events);
-  }, [events, view]);
+  }, [events]);
 
   // const formattedFilteredEvents = filteredEvents.map(event => ({
   //   id: event.id,
