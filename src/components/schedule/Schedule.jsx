@@ -1024,7 +1024,7 @@ export default function Schedule() {
   
       const response = await authenticatedFetch(`${import.meta.env.VITE_BASE_URL}/api/emp/clinic/${clinic_id}/visit/?date_from=${dateFrom}&date_to=${dateTo}`);
       const data = await response.json()
-      setTotalVisited(data.length)
+      // setTotalVisited(data.length)
       console.log(data.length)
     } catch (error) {
       console.error('Failed to fetch visits:', error);
@@ -1044,11 +1044,11 @@ export default function Schedule() {
     events.forEach(event => {
       if (event.status_patient === 'X' || event.status_employee === 'X') {
         cancelled++;
+      } else if(event.attended === true){
+        visited++;
+        scheduled++;
       } else {
         scheduled++;
-      }
-      if(event.attended === true){
-        visited++;
       }
     });
   
