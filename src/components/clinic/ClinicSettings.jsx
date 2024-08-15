@@ -13,6 +13,7 @@ const ClinicSettings = () => {
     { name: 'Products/Services', path: `/clinic/${clinic_id}/sellable` },
     { name: 'Schedule Settings', path: `/clinic/${clinic_id}/schedulesettings` },
     { name: 'Working Hours', path: `/clinic/${clinic_id}/workinghours` },
+    { name: 'Clinic Settings', path: `/clinic/${clinic_id}/clinicinfo` },
   ];
 
   return (

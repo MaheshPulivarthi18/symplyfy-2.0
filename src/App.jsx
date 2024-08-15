@@ -24,6 +24,7 @@ const PatientSchedule = lazy(() => import('./components/patient/patientschedule/
 const PatientProfile = lazy(() => import('./components/patient/profile/PatientProfile'));
 const PatientList = lazy(() => import('./components/patient/Patients'));
 const ClinicSettings = lazy(() => import('./components/clinic/ClinicSettings'));
+const ClinicInformation = lazy(() => import('./components/clinic/ClinicInformation'));
 const Clinic = lazy(() => import('./components/clinic/Clinic'));
 const AddClinic = lazy(() => import('./components/clinic/AddClinic'));
 const Roles = lazy(() => import('./components/profile/roles/Roles'));
@@ -79,6 +80,12 @@ function App() {
               <ProtectedRoute>
                 <Navbar />
                 <WorkingHours />
+              </ProtectedRoute>
+            } />
+            <Route path="/clinic/:clinic_id/clinicinfo" element={
+              <ProtectedRoute>
+                <Navbar />
+                <ClinicInformation />
               </ProtectedRoute>
             } />
             <Route path="/add-clinic" element={
