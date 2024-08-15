@@ -1420,7 +1420,6 @@ export default function Schedule() {
             onView={(newView) => {
               setView(newView);
               setDateRange(newView)
-              fetchBookings();
             }}
             date={date}
             // onNavigate={setDate}
