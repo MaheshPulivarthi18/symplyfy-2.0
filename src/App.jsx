@@ -1,47 +1,51 @@
 // App.jsx
-import React from 'react';
+import React, { Suspense, lazy } from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { AuthProvider } from './contexts/AuthContext';
 import { Toaster } from "./components/ui/toaster";
 import Navbar from './components/navbar/NavBar';
 import ProtectedRoute from './components/auth/ProtectedRoute';
-import Home from './components/Home';
-import Dashboard from './components/dashboard/Dashboard';
-import Schedule from './components/schedule/Schedule';
-import SignUp from './components/auth/SignUp';
-import Login from './components/auth/Login';
-import ForgotPassword from './components/auth/ForgotPassword';
-import Employees from './components/profile/employees/Employees';
-import Profile from './components/profile/Profile';
 import './App.css';
 import './index.css';
-import EmployeeSettings from './components/profile/employees/EmployeeSetting';
-import NewPatient from './components/patient/profile/NewPatient';
-import PatientSchedule from './components/patient/patientschedule/PatienSchedule';
-import PatientProfile from './components/patient/profile/PatientProfile';
-import PatientList from './components/patient/Patients';
-import ClinicSettings from './components/clinic/ClinicSettings';
-import Clinic from './components/clinic/Clinic';
-import AddClinic from './components/clinic/AddClinic';
-import Roles from './components/profile/roles/Roles';
-import RoleSettings from './components/profile/roles/RoleSetting';
-import Product from './components/profile/product/Product';
-import UpdateProduct from './components/profile/product/UpdateProduct';
-import ScheduleSettings from './components/profile/schedulesettings/ScheduleSettings';
-import WorkingHours from './components/profile/schedulesettings/WorkingHours';
-import ResetPassword from './components/auth/ResetPassword';
+import { LoaderIcon } from "lucide-react"
+
+// Lazy load components
+const Home = lazy(() => import('./components/Home'));
+const Dashboard = lazy(() => import('./components/dashboard/Dashboard'));
+const Schedule = lazy(() => import('./components/schedule/Schedule'));
+const SignUp = lazy(() => import('./components/auth/SignUp'));
+const Login = lazy(() => import('./components/auth/Login'));
+const ForgotPassword = lazy(() => import('./components/auth/ForgotPassword'));
+const Employees = lazy(() => import('./components/profile/employees/Employees'));
+const Profile = lazy(() => import('./components/profile/Profile'));
+const EmployeeSettings = lazy(() => import('./components/profile/employees/EmployeeSetting'));
+const NewPatient = lazy(() => import('./components/patient/profile/NewPatient'));
+const PatientSchedule = lazy(() => import('./components/patient/patientschedule/PatienSchedule'));
+const PatientProfile = lazy(() => import('./components/patient/profile/PatientProfile'));
+const PatientList = lazy(() => import('./components/patient/Patients'));
+const ClinicSettings = lazy(() => import('./components/clinic/ClinicSettings'));
+const Clinic = lazy(() => import('./components/clinic/Clinic'));
+const AddClinic = lazy(() => import('./components/clinic/AddClinic'));
+const Roles = lazy(() => import('./components/profile/roles/Roles'));
+const RoleSettings = lazy(() => import('./components/profile/roles/RoleSetting'));
+const Product = lazy(() => import('./components/profile/product/Product'));
+const UpdateProduct = lazy(() => import('./components/profile/product/UpdateProduct'));
+const ScheduleSettings = lazy(() => import('./components/profile/schedulesettings/ScheduleSettings'));
+const WorkingHours = lazy(() => import('./components/profile/schedulesettings/WorkingHours'));
+const ResetPassword = lazy(() => import('./components/auth/ResetPassword'));
 
 function App() {
   return (
     <Router>
       <AuthProvider>
+        <Suspense fallback={<div><LoaderIcon className="animate-spin" /></div>}>
           <Routes>
             <Route path="/" element={<Home />} />
             <Route path='/signup' element={<SignUp />}/>
             <Route path='/login' element={<Login />}/>
             <Route path='/forgotpassword' element={<ForgotPassword />}/>
             <Route path="/reset-password" element={<ResetPassword />} />
-            <Route path="/clinic/:clinic_id"element={
+            <Route path="/clinic/:clinic_id" element={
               <ProtectedRoute>
                 <Navbar />
                 <Dashboard />
@@ -58,7 +62,7 @@ function App() {
                 <Navbar />
                 <Clinic />
               </ProtectedRoute>
-              } />
+            } />
             <Route path="/clinic/:clinic_id/settings" element={
               <ProtectedRoute>
                 <Navbar />
@@ -84,17 +88,17 @@ function App() {
               </ProtectedRoute>
             } />
             <Route path="/clinic/:clinic_id/roles" element={
-                <ProtectedRoute>
-                  <Navbar />
-                  <Roles />
-                </ProtectedRoute>
-              } />
+              <ProtectedRoute>
+                <Navbar />
+                <Roles />
+              </ProtectedRoute>
+            } />
             <Route path="/clinic/:clinic_id/roles/:role_id" element={
-                <ProtectedRoute>
-                  <Navbar />
-                  <RoleSettings />
-                </ProtectedRoute>
-              } />
+              <ProtectedRoute>
+                <Navbar />
+                <RoleSettings />
+              </ProtectedRoute>
+            } />
             <Route path="/clinic/:clinic_id/employees" element={
               <ProtectedRoute>
                 <Navbar />
@@ -106,25 +110,19 @@ function App() {
                 <Navbar />
                 <EmployeeSettings />
               </ProtectedRoute>
-              } />
+            } />
             <Route path="/clinic/:clinic_id/sellable" element={
               <ProtectedRoute>
                 <Navbar />
                 <Product />
               </ProtectedRoute>
-              } />
+            } />
             <Route path="/clinic/:clinic_id/sellable/:sellable_id" element={
               <ProtectedRoute>
                 <Navbar />
                 <UpdateProduct />
               </ProtectedRoute>
-              } />
-            <Route path="/clinic/:clinic_id/employees/:employee_id" element={
-              <ProtectedRoute>
-                <Navbar />
-                <EmployeeSettings />
-              </ProtectedRoute>
-              } />
+            } />
             <Route path="/clinic/:clinic_id/patients" element={
               <ProtectedRoute>
                 <Navbar />
@@ -136,19 +134,19 @@ function App() {
                 <Navbar />
                 <PatientProfile />
               </ProtectedRoute>
-              } />
+            } />
             <Route path="/clinic/:clinic_id/patients/:patient_id/schedule" element={
               <ProtectedRoute>
                 <Navbar />
                 <PatientSchedule />
               </ProtectedRoute>
-              } />
+            } />
             <Route path="/clinic/:clinic_id/patients/new" element={
               <ProtectedRoute>
                 <Navbar />
                 <NewPatient />
               </ProtectedRoute>
-              } />
+            } />
             <Route path="/clinic/:clinic_id/profile" element={
               <ProtectedRoute>
                 <Navbar />
@@ -156,6 +154,7 @@ function App() {
               </ProtectedRoute>
             } />
           </Routes>
+        </Suspense>
         <Toaster />
       </AuthProvider>
     </Router>

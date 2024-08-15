@@ -106,6 +106,7 @@ export default function Schedule() {
   const [totalCancelled, setTotalCancelled] = useState(0);
   const [dateRange, setDateRange] = useState('today');
   const [selectedFilters, setSelectedFilters] = useState([]);
+  const [isVisible, setIsVisible] = useState(false);
 
 
   const filteredTherapists = therapists.filter(therapist => 
@@ -142,6 +143,7 @@ export default function Schedule() {
     fetchPatients();
     fetchSettings();
     fetchSellables();
+    setIsVisible(true);
   }, [clinic_id]);
 
   // useEffect(() => {
@@ -1209,14 +1211,14 @@ export default function Schedule() {
     );
   };
 
-  if (loading) {
-    return (
-      <div className="w-full flex flex-col items-center justify-center">
-        <Progress value={progress} className="w-[60%]" />
-        <p className="mt-4 text-sm text-gray-500">Loading schedule... {Math.round(progress)}%</p>
-      </div>
-    );
-  }
+  // if (loading) {
+  //   return (
+  //     <div className="w-full flex flex-col items-center justify-center">
+  //       <Progress value={progress} className="w-[60%]" />
+  //       <p className="mt-4 text-sm text-gray-500">Loading schedule... {Math.round(progress)}%</p>
+  //     </div>
+  //   );
+  // }
 
   const CustomEvent = ({ event }) => {
     let badgeColor = 'transparent';
@@ -1256,7 +1258,8 @@ export default function Schedule() {
   };
 
   return (
-    <Card className="p-4 w-full max-w-[90vw] lg:h-[90vh] shadow-lg">
+    // className={`mx-auto flex flex-col gap-4 p-4 w-full h-full shadow-xl transition-all duration-500 ease-out ${isVisible ? 'opacity-100 scale-100' : 'opacity-0 scale-90'}`}
+    <Card className={`mx-auto p-4 w-full max-w-[90vw] lg:h-[90vh] shadow-lg transition-all duration-500 ease-out ${isVisible ? 'opacity-100 scale-100' : 'opacity-0 scale-90'}`}>
       <div className='flex flex-col-reverse lg:flex-row-reverse gap-8 lg:gap-8 w-full h-full relative'>
         <div className={`w-full flex flex-col h-full transition-all duration-300 ease-in-out ${isSidebarOpen ? 'lg:translate-x-0 lg:w-[17.75%]' : 'lg:translate-x-full relative lg:-right-40 lg:w-0 '} `}>
           <div className="mb-4 flex-shrink-0">
