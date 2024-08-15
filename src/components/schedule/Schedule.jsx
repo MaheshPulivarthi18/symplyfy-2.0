@@ -1006,7 +1006,7 @@ export default function Schedule() {
 
       if (view === 'day') {
         viewStart = addDays(startOfDay(date), 1);
-        viewEnd = addDays(endOfDay(date), 1);
+        viewEnd = addDays(endOfDay(date), 0);
       } else if (view === 'week') {
         viewStart = startOfWeek(date);
         viewEnd = endOfWeek(date);
