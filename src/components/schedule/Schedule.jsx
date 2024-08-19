@@ -617,7 +617,7 @@ export default function Schedule() {
   const handleDelete = async (eventToDelete, deleteScope) => {
     try {
       const url = `${import.meta.env.VITE_BASE_URL}/api/emp/clinic/${clinic_id}/schedule/booking/${eventToDelete.id}/delete/`;
-      const queryParams = deleteScope === '1' ? `?scope=${eventToDelete.recurrence}` : '';
+      const queryParams = deleteScope === '1' ? `?scope=recurrnece` : '';
   
       const response = await authenticatedFetch(`${url}${queryParams}`, {
         method: 'DELETE',
@@ -629,7 +629,7 @@ export default function Schedule() {
       setSelectedEvent(null);
       toast({
         title: "Success",
-        description: deleteScope === 'recurrence' ? "All recurring appointments deleted successfully." : "Appointment deleted successfully.",
+        description: deleteScope === '1' ? "All recurring appointments deleted successfully." : "Appointment deleted successfully.",
         variant: "default",
       });
     } catch (error) {

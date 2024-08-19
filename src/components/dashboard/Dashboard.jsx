@@ -16,13 +16,13 @@ import employee from "../../assets/employee.svg";
 import patient from "../../assets/patient.svg";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import DoctorVisitCounts from './DoctorVisitsCount';
-import { PlusCircle, Check, FileDownIcon } from "lucide-react"
+import { PlusCircle, Check, FileDownIcon } from "lucide-react";
 import ExcelJS from 'exceljs';
 import { DateRangePicker } from "@/components/ui/date-range-picker";
 import { addDays, isBefore, isAfter } from 'date-fns';
 import { useToast } from "@/components/ui/use-toast";
-import { Clock, XCircle, CheckCircle } from 'lucide-react';
-
+import { Clock, XCircle, CheckCircle, ExternalLink } from 'lucide-react';
+import { Badge } from "@/components/ui/badge";
 
 
 const Dashboard = () => {
@@ -54,6 +54,11 @@ const Dashboard = () => {
   const [visitsLoading, setVisitsLoading] = useState(false);
   const [upcomingAppointmentsLoading, setUpcomingAppointmentsLoading] = useState(true);
   const [receivedAppointmentsLoading, setReceivedAppointmentsLoading] = useState(true);
+  const [ledgerTransactions, setLedgerTransactions] = useState([]);
+  const [ledgerLoading, setLedgerLoading] = useState(true);
+  const [selectedInvoice, setSelectedInvoice] = useState(null);
+  const [invoiceLoading, setInvoiceLoading] = useState(false);
+
 
   useEffect(() => {
     let interval;
@@ -259,6 +264,53 @@ const Dashboard = () => {
     }
   };
 
+  const fetchLedgerTransactions = async () => {
+    setLedgerLoading(true);
+    try {
+      const { start, end } = getDateRange();
+      const response = await fetchWithTokenHandling(`${import.meta.env.VITE_BASE_URL}/api/emp/clinic/${clinic_id}/patient/all/ledger/?date_from=${format(start, 'yyyy-MM-dd')}&date_to=${format(end, 'yyyy-MM-dd')}`);
+      // Filter out payments and process invoices
+      const processedTransactions = response
+        .filter(transaction => transaction.transaction === 'i')
+        .map(transaction => ({
+          ...transaction,
+          amount_credit: isNaN(parseFloat(transaction.amount_credit)) ? 0 : parseFloat(transaction.amount_credit),
+          amount_debit: isNaN(parseFloat(transaction.amount_debit)) ? 0 : parseFloat(transaction.amount_debit),
+        }));
+      setLedgerTransactions(processedTransactions);
+    } catch (error) {
+      console.error('Failed to fetch ledger transactions:', error);
+      toast({
+        title: "Error",
+        description: "Failed to fetch ledger transactions. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setLedgerLoading(false);
+    }
+  };
+
+  const fetchInvoiceDetails = async (patientId, invoiceId) => {
+    setInvoiceLoading(true);
+    try {
+      const response = await fetchWithTokenHandling(`${import.meta.env.VITE_BASE_URL}/api/emp/clinic/${clinic_id}/patient/${patientId}/invoice/${invoiceId}/`);
+      setSelectedInvoice(response);
+    } catch (error) {
+      console.error('Failed to fetch invoice details:', error);
+      toast({
+        title: "Error",
+        description: "Failed to fetch invoice details. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setInvoiceLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchLedgerTransactions();
+  }, [dateRange, customDateRange]);
+
   useEffect(() => {
     const fetchPatients = async () => {
       try {
@@ -410,6 +462,140 @@ const Dashboard = () => {
           />
         </div>
       </>
+    );
+  };
+
+  const LedgerTable = ({ data }) => {
+    const columns = [
+      {
+        accessorKey: "date",
+        header: ({ column }) => (
+          <Button
+            variant="ghost"
+            onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+          >
+            Date
+            <ArrowUpDown className="ml-2 h-4 w-4" />
+          </Button>
+        ),
+        cell: ({ row }) => format(parseISO(row.getValue("date")), 'dd/MM/yyyy'),
+      },
+      {
+        accessorKey: "transaction",
+        header: "Transaction",
+        cell: ({ row }) => {
+          const patient = patients.find(p => p.id === row.original.patient);
+          const patientName = patient ? `${patient.first_name} ${patient.last_name}` : 'Unknown';
+          return (
+            <Button
+              variant="link"
+              onClick={() => fetchInvoiceDetails(row.original.patient, row.original.invoice)}
+            >
+              Invoice: {patientName}
+            </Button>
+          );
+        },
+      },
+      {
+        accessorKey: "amount_credit",
+        header: "Credit",
+        cell: ({ row }) => (
+          <Badge variant={row.getValue("amount_credit") > 0 ? "success" : "default"}>
+            {row.getValue("amount_credit").toFixed(2)}
+          </Badge>
+        ),
+      },
+      {
+        accessorKey: "amount_debit",
+        header: "Debit",
+        cell: ({ row }) => (
+          <Badge variant={row.getValue("amount_debit") > 0 ? "destructive" : "default"}>
+            {row.getValue("amount_debit").toFixed(2)}
+          </Badge>
+        ),
+      },
+    ];
+
+    return (
+      <>
+        <DataTable
+          columns={columns}
+          data={data}
+          searchableColumns={[
+            {
+              id: "transaction",
+              title: "Transaction",
+            },
+          ]}
+          rowsPerPage={5}
+        />
+        <InvoiceDialog invoice={selectedInvoice} loading={invoiceLoading} />
+      </>
+    );
+  };
+
+  const InvoiceDialog = ({ invoice, loading }) => {
+    if (!invoice && !loading) return null;
+    const handleViewInvoiceHtml = () => {
+      if (invoice && invoice.html) {
+        window.open(invoice.html, '_blank');
+      }
+    };
+
+    return (
+      <Dialog open={!!invoice || loading} onOpenChange={() => setSelectedInvoice(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Invoice Details</DialogTitle>
+          </DialogHeader>
+          {loading ? (
+            <div className="space-y-2">
+              <Skeleton className="h-4 w-full" />
+              <Skeleton className="h-4 w-full" />
+              <Skeleton className="h-4 w-full" />
+            </div>
+          ) : invoice ? (
+            <div className='space-y-4'>
+              <p><strong>Invoice Number:</strong> {invoice.number}</p>
+              <p><strong>Date:</strong> {format(new Date(invoice.date), 'EEEE dd MMMM yyyy')}</p>
+              <p><strong>Status:</strong> {invoice.status === 'd' ? 'Draft' : invoice.status === 'c' ? 'Confirmed' : 'Cancelled'}</p>
+              <p><strong>Gross Amount:</strong> {invoice.gross_amount}</p>
+              <p><strong>Final Amount:</strong> {invoice.final_amount}</p>
+              <div className="flex space-x-2">
+              <Button onClick={handleViewInvoiceHtml} disabled={!invoice.html}>
+                <ExternalLink className="mr-2 h-4 w-4" />
+                View Invoice
+              </Button>
+              {/* <Button onClick={handleDownloadInvoicePdf} disabled={!invoice.pdf}>
+                <FileDown className="mr-2 h-4 w-4" />
+                Download PDF
+              </Button> */}
+            </div>
+              <h3 className="mt-4 font-bold">Items:</h3>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Name</TableHead>
+                    <TableHead>Quantity</TableHead>
+                    <TableHead>Rate</TableHead>
+                    <TableHead>Net</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {invoice.items.map((item) => (
+                    <TableRow key={item.id}>
+                      <TableCell>{item.name}</TableCell>
+                      <TableCell>{item.quantity}</TableCell>
+                      <TableCell>{parseFloat(item.rate).toFixed(2)}</TableCell>
+                      <TableCell>{parseFloat(item.net).toFixed(2)}</TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          ) : null}
+        </DialogContent>
+      </Dialog>
     );
   };
 
@@ -575,7 +761,6 @@ const Dashboard = () => {
                   { key: 'visits', icon: <Calendar className="w-6 h-6 text-blue-500" />, label: 'Total Visits' },
                   { key: 'upcomingAppointments', icon: <Clock className="w-6 h-6 text-green-500" />, label: 'Upcoming Appointments' },
                   { key: 'canceledBookings', icon: <XCircle className="w-6 h-6 text-red-500" />, label: 'Canceled Bookings' },
-                  { key: 'receivedAppointments', icon: <CheckCircle className="w-6 h-6 text-purple-500" />, label: 'Received Appointments' },
                 ].map(({ key, icon, label }) => (
                   <div key={key} className="border rounded-md p-4 shadow-inner bg-white flex items-center justify-center">
                     <div className="mr-4">{icon}</div>
@@ -613,18 +798,43 @@ const Dashboard = () => {
                         ) : (
                           <div className="text-2xl font-bold">{summary[key]}</div>
                         )
-                      ) : key === 'receivedAppointments' ? (
-                        receivedAppointmentsLoading ? (
-                          <Skeleton className="h-8 w-16" />
-                        ) : (
-                          <div className="text-2xl font-bold">{summary[key]}</div>
-                        )
                       ) : (
                         <div className="text-2xl font-bold">{summary[key]}</div>
                       )}
                     </div>
                   </div>
                 ))}
+                <div key="accounts" className="border rounded-md p-4 shadow-inner bg-white flex items-center justify-center max-h-[80vh] overflow-scroll">
+                  <div className="mr-4"><FileDownIcon className="w-6 h-6 text-purple-500" /></div>
+                  <div className='flex flex-col items-center'>
+                    <div className="text-sm text-gray-600">Accounts</div>
+                    <Dialog>
+                      <DialogTrigger asChild>
+                        <div className="text-2xl font-bold cursor-pointer">
+                          {ledgerLoading ? (
+                            <Skeleton className="h-8 w-16" />
+                          ) : (
+                            ledgerTransactions.length
+                          )}
+                        </div>
+                      </DialogTrigger>
+                      <DialogContent className="max-w-5xl">
+                        <DialogHeader className="w-full flex justify-between">
+                          <DialogTitle>Accounts</DialogTitle>
+                        </DialogHeader>
+                        {ledgerLoading ? (
+                          <div className="space-y-2">
+                            <Skeleton className="h-4 w-full" />
+                            <Skeleton className="h-4 w-full" />
+                            <Skeleton className="h-4 w-full" />
+                          </div>
+                        ) : (
+                          <LedgerTable data={ledgerTransactions} />
+                        )}
+                      </DialogContent>
+                    </Dialog>
+                  </div>
+                </div>
               </div>
             </CardContent>
           </Card>
