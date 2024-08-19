@@ -269,14 +269,18 @@ const Dashboard = () => {
     try {
       const { start, end } = getDateRange();
       const response = await fetchWithTokenHandling(`${import.meta.env.VITE_BASE_URL}/api/emp/clinic/${clinic_id}/patient/all/ledger/?date_from=${format(start, 'yyyy-MM-dd')}&date_to=${format(end, 'yyyy-MM-dd')}`);
-      // Filter out payments and process invoices
-      const processedTransactions = response
-        .filter(transaction => transaction.transaction === 'i')
-        .map(transaction => ({
+      const processedTransactions = response.map(transaction => {
+        const patient = patients.find(p => p.id === transaction.patient);
+        const patientName = patient ? `${patient.first_name} ${patient.last_name}` : 'Unknown';
+        return {
           ...transaction,
           amount_credit: isNaN(parseFloat(transaction.amount_credit)) ? 0 : parseFloat(transaction.amount_credit),
           amount_debit: isNaN(parseFloat(transaction.amount_debit)) ? 0 : parseFloat(transaction.amount_debit),
-        }));
+          patientName,
+          transactionType: transaction.transaction === 'i' ? 'Invoice' : 'Payment',
+          searchableContent: `${transaction.transaction === 'i' ? 'Invoice' : 'Payment'}: ${patientName}`,
+        };
+      });
       setLedgerTransactions(processedTransactions);
     } catch (error) {
       console.error('Failed to fetch ledger transactions:', error);
@@ -289,6 +293,7 @@ const Dashboard = () => {
       setLedgerLoading(false);
     }
   };
+
 
   const fetchInvoiceDetails = async (patientId, invoiceId) => {
     setInvoiceLoading(true);
@@ -481,24 +486,26 @@ const Dashboard = () => {
         cell: ({ row }) => format(parseISO(row.getValue("date")), 'dd/MM/yyyy'),
       },
       {
-        accessorKey: "transaction",
+        accessorKey: "searchableContent",
         header: "Transaction",
         cell: ({ row }) => {
-          const patient = patients.find(p => p.id === row.original.patient);
-          const patientName = patient ? `${patient.first_name} ${patient.last_name}` : 'Unknown';
-          return (
-            <Button
-              variant="link"
-              onClick={() => fetchInvoiceDetails(row.original.patient, row.original.invoice)}
-            >
-              Invoice: {patientName}
-            </Button>
-          );
+          if (row.original.transactionType === 'Invoice') {
+            return (
+              <Button
+                variant="link"
+                onClick={() => fetchInvoiceDetails(row.original.patient, row.original.invoice)}
+              >
+                {row.getValue("searchableContent")}
+              </Button>
+            );
+          } else {
+            return <span>{row.getValue("searchableContent")}</span>;
+          }
         },
       },
       {
         accessorKey: "amount_credit",
-        header: "Credit",
+        header: "Amount Paid",
         cell: ({ row }) => (
           <Badge variant={row.getValue("amount_credit") > 0 ? "success" : "default"}>
             {row.getValue("amount_credit").toFixed(2)}
@@ -507,7 +514,7 @@ const Dashboard = () => {
       },
       {
         accessorKey: "amount_debit",
-        header: "Debit",
+        header: "Invoiced Amount",
         cell: ({ row }) => (
           <Badge variant={row.getValue("amount_debit") > 0 ? "destructive" : "default"}>
             {row.getValue("amount_debit").toFixed(2)}
@@ -518,21 +525,21 @@ const Dashboard = () => {
 
     return (
       <>
-        <DataTable
-          columns={columns}
-          data={data}
-          searchableColumns={[
-            {
-              id: "transaction",
-              title: "Transaction",
-            },
-          ]}
-          rowsPerPage={5}
-        />
-        <InvoiceDialog invoice={selectedInvoice} loading={invoiceLoading} />
-      </>
-    );
-  };
+      <DataTable
+        columns={columns}
+        data={data}
+        searchableColumns={[
+          {
+            id: "searchableContent",
+            title: "Transaction",
+          },
+        ]}
+        rowsPerPage={5}
+      />
+      <InvoiceDialog invoice={selectedInvoice} loading={invoiceLoading} />
+    </>
+  );
+};
 
   const InvoiceDialog = ({ invoice, loading }) => {
     if (!invoice && !loading) return null;
@@ -804,7 +811,7 @@ const Dashboard = () => {
                     </div>
                   </div>
                 ))}
-                <div key="accounts" className="border rounded-md p-4 shadow-inner bg-white flex items-center justify-center max-h-[80vh] overflow-scroll">
+                <div key="accounts" className="border rounded-md p-4 shadow-inner bg-white flex items-center justify-center">
                   <div className="mr-4"><FileDownIcon className="w-6 h-6 text-purple-500" /></div>
                   <div className='flex flex-col items-center'>
                     <div className="text-sm text-gray-600">Accounts</div>

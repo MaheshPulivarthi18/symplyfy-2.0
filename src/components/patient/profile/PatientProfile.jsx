@@ -1417,8 +1417,7 @@ const AppointmentsDataTable = ({ data }) => {
             <TabsTrigger className='px-12' value="goals">Goals</TabsTrigger>
             <TabsTrigger className='px-12' value="appointments">Appointments</TabsTrigger>
             <TabsTrigger className='px-12' value="visits">Visits</TabsTrigger>
-            <TabsTrigger className='px-12' value="payments">Payments</TabsTrigger>
-            <TabsTrigger value="invoices">Invoices</TabsTrigger>
+            <TabsTrigger className='px-12' value="transactions">Transactions</TabsTrigger>
             <TabsTrigger className='px-12' value="tasks">Tasks</TabsTrigger>
           </TabsList>
           <TabsContent value="notes" className="relative min-h-[300px] h-[90%] p-4 ">
@@ -1873,7 +1872,13 @@ const AppointmentsDataTable = ({ data }) => {
             />
           </TabsContent>
           
-          <TabsContent value="payments" className="relative min-h-[300px] h-[90%] overflow-scroll p-4 ">
+          <TabsContent value="transactions" className="relative min-h-[300px] h-[90%] overflow-scroll p-4">
+            <Tabs defaultValue="payments">
+              <TabsList>
+                <TabsTrigger value="payments">Payments</TabsTrigger>
+                <TabsTrigger value="invoices">Invoices</TabsTrigger>
+              </TabsList>
+              <TabsContent value="payments" className="relative min-h-[300px] h-[90%] overflow-scroll p-4 ">
             {payments.length === 0 ? (
               <p>No payments recorded for this patient.</p>
             ) : (
@@ -1958,49 +1963,51 @@ const AppointmentsDataTable = ({ data }) => {
                 </form>
               </DialogContent>
             </Dialog>
-          </TabsContent>
-          <TabsContent value="invoices" className="relative min-h-[300px] h-[90%] overflow-scroll p-4">
-            <div className="flex justify-end mb-4">
-              <Button onClick={handleAddNewInvoice} className="absolute bottom-0 right-0">
-                <PlusCircle className="h-4 w-4" />
-              </Button>
-            </div>
-            {invoices.length === 0 ? (
-              <p>No invoices recorded for this patient.</p>
-            ) : (
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead className='text-center'>Date</TableHead>
-                    <TableHead className='text-center'>Invoice Number</TableHead>
-                    <TableHead className='text-center'>Status</TableHead>
-                    <TableHead className='text-center'>Gross Amount</TableHead>
-                    <TableHead className='text-center'>Final Amount</TableHead>
-                    <TableHead className='text-center'>Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {invoices.map(invoice => (
-                    <TableRow key={invoice.id}>
-                      <TableCell>{format(new Date(invoice.date), 'EEEE dd MMMM yyyy')}</TableCell>
-                      <TableCell>{invoice.number}</TableCell>
-                      <TableCell>
-                        {invoice.status === 'd' ? 'Draft' : 
-                        invoice.status === 'c' ? 'Confirmed' : 
-                        invoice.status === 'x' ? 'Cancelled' : 'Unknown'}
-                      </TableCell>
-                      <TableCell>{invoice.gross_amount}</TableCell>
-                      <TableCell>{invoice.final_amount}</TableCell>
-                      <TableCell>
-                        <Button variant="outline" size="sm" onClick={() => handleViewInvoice(invoice.id)}>
-                          View Details
-                        </Button>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            )}
+              </TabsContent>
+              <TabsContent value="invoices" className="relative min-h-[300px] h-[90%] overflow-scroll p-4">
+                <div className="flex justify-end mb-4">
+                  <Button onClick={handleAddNewInvoice} className="absolute bottom-0 right-0">
+                    <PlusCircle className="h-4 w-4" />
+                  </Button>
+                </div>
+                {invoices.length === 0 ? (
+                  <p>No invoices recorded for this patient.</p>
+                ) : (
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead className='text-center'>Date</TableHead>
+                        <TableHead className='text-center'>Invoice Number</TableHead>
+                        <TableHead className='text-center'>Status</TableHead>
+                        <TableHead className='text-center'>Gross Amount</TableHead>
+                        <TableHead className='text-center'>Final Amount</TableHead>
+                        <TableHead className='text-center'>Actions</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {invoices.map(invoice => (
+                        <TableRow key={invoice.id}>
+                          <TableCell>{format(new Date(invoice.date), 'EEEE dd MMMM yyyy')}</TableCell>
+                          <TableCell>{invoice.number}</TableCell>
+                          <TableCell>
+                            {invoice.status === 'd' ? 'Draft' : 
+                            invoice.status === 'c' ? 'Confirmed' : 
+                            invoice.status === 'x' ? 'Cancelled' : 'Unknown'}
+                          </TableCell>
+                          <TableCell>{invoice.gross_amount}</TableCell>
+                          <TableCell>{invoice.final_amount}</TableCell>
+                          <TableCell>
+                            <Button variant="outline" size="sm" onClick={() => handleViewInvoice(invoice.id)}>
+                              View Details
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                )}
+              </TabsContent>
+            </Tabs>
           </TabsContent>
 
 
