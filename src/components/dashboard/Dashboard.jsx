@@ -250,6 +250,7 @@ const Dashboard = () => {
         canceledBookings: formattedAppointments.filter(app => app.status_patient === 'X' || app.status_employee === 'X').length,
         receivedAppointments: formattedAppointments.filter(app => app.status_patient === 'P' && app.status_employee === 'P').length,
       }));
+      console.log(formattedAppointments)
     } catch (error) {
       console.error('Failed to fetch appointments:', error);
       toast({
@@ -371,9 +372,23 @@ const Dashboard = () => {
     };
   
     fetchData();
+  }, [])
+
+  useEffect(() => {
+    const fetchData = async () => {
+      setLoading(true);
+      setVisitsLoading(true);
+      await Promise.all([fetchVisits(), fetchAppointments()]);
+      setProgress(100);
+      setLoading(false);
+      setVisitsLoading(false);
+      setIsVisible(true);
+    };
+  
+    fetchData();
   }, [dateRange, selectedDoctor, customDateRange]);
 
-  const VisitsDataTable = ({ data }) => {
+  const VisitsDataTable = ({ data, appointments }) => {
     const columns = [
       {
         accessorKey: "date",
@@ -399,6 +414,11 @@ const Dashboard = () => {
             <ArrowUpDown className="ml-2 h-4 w-4" />
           </Button>
         ),
+      },
+      {
+        accessorKey: "patientName",
+        header: "Patient",
+        cell: ({ row }) => row.getValue("patientName"),
       },
       {
         accessorKey: "doctor",
@@ -427,16 +447,22 @@ const Dashboard = () => {
       },
     ];
   
-    const processedData = data.map(visit => ({
-      ...visit,
-      doctor: employeeDetails[visit.employee] 
-        ? `${employeeDetails[visit.employee].first_name} ${employeeDetails[visit.employee].last_name}`
-        : 'Loading...',
-      service: sellableDetails[visit.sellable]
-        ? sellableDetails[visit.sellable].name
-        : 'N/A',
-    }));
-
+    const processedData = data.map(visit => {
+      const matchingAppointment = appointments.find(app => app.id === visit.booking);
+      const patientName = matchingAppointment ? matchingAppointment.patientName : 'N/A';
+      
+      return {
+        ...visit,
+        patientName: patientName,
+        doctor: employeeDetails[visit.employee] 
+          ? `${employeeDetails[visit.employee].first_name} ${employeeDetails[visit.employee].last_name}`
+          : 'Loading...',
+        service: sellableDetails[visit.sellable]
+          ? sellableDetails[visit.sellable].name
+          : 'N/A',
+      };
+    });
+  
     const doctorVisitCounts = processedData.reduce((acc, visit) => {
       const doctorName = visit.doctor;
       acc[doctorName] = (acc[doctorName] || 0) + 1;
@@ -461,6 +487,10 @@ const Dashboard = () => {
               {
                 id: "doctor",
                 title: "Doctor",
+              },
+              {
+                id: "patientName",
+                title: "Patient",
               },
             ]}
             rowsPerPage={7}
@@ -525,19 +555,27 @@ const Dashboard = () => {
 
     return (
       <>
-      <DataTable
-        columns={columns}
-        data={data}
-        searchableColumns={[
-          {
-            id: "searchableContent",
-            title: "Transaction",
-          },
-        ]}
-        rowsPerPage={5}
-      />
-      <InvoiceDialog invoice={selectedInvoice} loading={invoiceLoading} />
-    </>
+        <div className="space-y-4">
+
+          <div className="flex justify-end mb-4">
+            <Button onClick={() => exportLedgerTransactionsToExcel(ledgerTransactions, 'patient_ledger_transactions')}>
+              <FileDownIcon className="h-4 w-4 mr-2" /> Export as Excel
+            </Button>
+          </div>
+          <DataTable
+            columns={columns}
+            data={data}
+            searchableColumns={[
+              {
+                id: "searchableContent",
+                title: "Transaction",
+              },
+            ]}
+            rowsPerPage={5}
+          />
+          <InvoiceDialog invoice={selectedInvoice} loading={invoiceLoading} />
+        </div>
+      </>
   );
 };
 
@@ -606,57 +644,73 @@ const Dashboard = () => {
     );
   };
 
-  const exportToExcel = async (data, filename, headers) => {
-    const workbook = new ExcelJS.Workbook();
-    const worksheet = workbook.addWorksheet('Sheet1');
-  
-    // Add headers
-    worksheet.addRow(headers);
-  
-    // Add data
-    data.forEach(row => {
-      worksheet.addRow(headers.map(header => row[header]));
+// Generic export to Excel function
+const exportToExcel = async (data, filename, columns) => {
+  const workbook = new ExcelJS.Workbook();
+  const worksheet = workbook.addWorksheet('Sheet1');
+
+  // Add headers
+  worksheet.columns = columns.map(col => ({ header: col.header, key: col.key, width: 15 }));
+
+  // Add data
+  data.forEach(row => {
+    const rowData = {};
+    columns.forEach(col => {
+      if (col.format) {
+        rowData[col.key] = col.format(row[col.key]);
+      } else {
+        rowData[col.key] = row[col.key];
+      }
     });
-  
-    // Style the header row
-    worksheet.getRow(1).font = { bold: true };
-    worksheet.getRow(1).fill = {
-      type: 'pattern',
-      pattern: 'solid',
-      fgColor: { argb: 'FFD3D3D3' }
-    };
-  
-    // Auto-fit columns
-    worksheet.columns.forEach(column => {
-      column.width = Math.max(15, ...data.map(row => row[column.header] ? row[column.header].toString().length : 0));
-    });
-  
-    // Generate Excel file
-    const buffer = await workbook.xlsx.writeBuffer();
-    const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
-    const link = document.createElement('a');
-    link.href = URL.createObjectURL(blob);
-    link.download = `${filename}.xlsx`;
-    link.click();
-  };
-  
-  const exportVisitsToExcel = async () => {
-    const headers = ['Date', 'Time', 'Doctor', 'Service', 'Duration', 'Walk-in', 'Penalty'];
-    const processedData = visits.map(visit => ({
-      Date: format(parseISO(visit.date), 'EEEE dd MMMM yyyy'),
-      Time: visit.time,
-      Doctor: employeeDetails[visit.employee] 
-        ? `${employeeDetails[visit.employee].first_name} ${employeeDetails[visit.employee].last_name}`
-        : 'Loading...',
-      Service: sellableDetails[visit.sellable]
-        ? sellableDetails[visit.sellable].name
-        : 'Loading...',
-      Duration: `${visit.duration} minutes`,
-      'Walk-in': visit.walk_in ? "Yes" : "No",
-      Penalty: visit.penalty ? "Yes" : "No",
-    }));
-    await exportToExcel(processedData, 'patient_visits', headers);
-  };
+    worksheet.addRow(rowData);
+  });
+
+  // Generate Excel file
+  const buffer = await workbook.xlsx.writeBuffer();
+  const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+  const link = document.createElement('a');
+  link.href = URL.createObjectURL(blob);
+  link.download = `${filename}.xlsx`;
+  link.click();
+};
+
+// Export visits to Excel
+const exportVisitsToExcel = async () => {
+  const columns = [
+    { header: 'Date', key: 'date', format: (value) => format(parseISO(value), 'dd/MM/yyyy') },
+    { header: 'Time', key: 'time' },
+    { header: 'Doctor', key: 'doctor' },
+    { header: 'Service', key: 'service' },
+    { header: 'Duration', key: 'duration', format: (value) => `${value} minutes` },
+    { header: 'Walk-in', key: 'walk_in', format: (value) => value ? 'Yes' : 'No' },
+    { header: 'Penalty', key: 'penalty', format: (value) => value ? 'Yes' : 'No' },
+  ];
+
+  const processedData = visits.map(visit => ({
+    ...visit,
+    doctor: employeeDetails[visit.employee] 
+      ? `${employeeDetails[visit.employee].first_name} ${employeeDetails[visit.employee].last_name}`
+      : 'Unknown',
+    service: sellableDetails[visit.sellable]
+      ? sellableDetails[visit.sellable].name
+      : 'Unknown',
+  }));
+
+  await exportToExcel(processedData, 'clinic_visits', columns);
+};
+
+// Export ledger transactions to Excel
+const exportLedgerTransactionsToExcel = async () => {
+  const columns = [
+    { header: 'Date', key: 'date', format: (value) => format(parseISO(value), 'dd/MM/yyyy') },
+    { header: 'Transaction', key: 'transactionType' },
+    { header: 'Amount Paid', key: 'amount_credit', format: (value) => value.toFixed(2) },
+    { header: 'Invoiced Amount', key: 'amount_debit', format: (value) => value.toFixed(2) },
+    { header: 'Balance', key: 'balance', format: (value) => value },
+  ];
+
+  await exportToExcel(ledgerTransactions, 'clinic_ledger_transactions', columns);
+};
 
 
   return (
@@ -795,7 +849,7 @@ const Dashboard = () => {
                                 <Skeleton className="h-4 w-full" />
                               </div>
                             ) : (
-                              <VisitsDataTable data={visits} />
+                              <VisitsDataTable data={visits} appointments={appointments} />
                             )}
                           </DialogContent>
                         </Dialog>

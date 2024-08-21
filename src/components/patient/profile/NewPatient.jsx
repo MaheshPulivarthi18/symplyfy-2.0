@@ -12,29 +12,29 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { Form, FormControl, FormField, FormItem, FormLabel } from '@/components/ui/form';
 import { format } from 'date-fns';
+import { countryCodes } from '@/lib/countryCodes';
 
 const patientSchema = z.object({
   first_name: z.string().min(2, "First name is required"),
   last_name: z.string().optional(),
   email: z.string().email("Invalid email address").optional().or(z.literal('')),
-  mobile_alternate: z.string().regex(/^\d{10}$/, "Alternate mobile number must be 10 digits").optional().or(z.literal('')),
-  mobile: z.string()
-  .regex(/^\d{10}$/, "Mobile number must be 10 digits.")
-  .transform(val => `+91${val}`),
+  country_code: z.string().min(1, "Country code is required"),
+  mobile: z.string().regex(/^\d{1,14}$/, "Mobile number must be between 1 and 14 digits.").optional().or(z.literal('')),
+  country_code_alternate: z.string().optional(),
+  mobile_alternate: z.string().regex(/^\d{1,14}$/, "Alternate mobile number must be between 1 and 14 digits.").optional().or(z.literal('')),
   sex: z.enum(["m", "f", "o"]),
   dob: z.string()
-  .regex(/^\d{4}-\d{2}-\d{2}$/, "Date must be in YYYY-MM-DD format")
-  .refine((date) => {
-    if (!date) return true; // Allow empty string
-    const parsedDate = new Date(date);
-    return !isNaN(parsedDate.getTime()); // Check if it's a valid date
-  }, {
-    message: "Invalid date. Please enter a valid date in YYYY-MM-DD format."
-  })
-  .optional()
-  .or(z.literal('')),  
+    .regex(/^\d{4}-\d{2}-\d{2}$/, "Date must be in YYYY-MM-DD format")
+    .refine((date) => {
+      if (!date) return true; // Allow empty string
+      const parsedDate = new Date(date);
+      return !isNaN(parsedDate.getTime()); // Check if it's a valid date
+    }, {
+      message: "Invalid date. Please enter a valid date in YYYY-MM-DD format."
+    })
+    .optional()
+    .or(z.literal('')),  
   guardian_name: z.string().optional(),
-  // mobile_alternate: z.string().regex(/^\d{10}$/, "Alternate mobile number must be 10 digits").optional().transform(val => val ? `+91${val}` : undefined),
   therapist_primary: z.string().uuid("Invalid therapist ID"),
   priority: z.number().int().min(1).max(10),
 });
@@ -52,13 +52,15 @@ const NewPatient = () => {
       first_name: "",
       last_name: "",
       email: "",
+      country_code: "+91",
       mobile: "",
+      country_code_alternate: "+91",
+      mobile_alternate: "",
       sex: "m",
       dob: "",
       guardian_name: "",
-      mobile_alternate: "",
       therapist_primary: "",
-      priority: 5,
+      priority: 9,
     },
   });
 
@@ -85,6 +87,8 @@ const NewPatient = () => {
   const onSubmit = async (values) => {
     const submitData = {
       ...values,
+      mobile: values.mobile ?`${values.country_code}${values.mobile}` : null,
+      mobile_alternate: values.mobile_alternate ? `${values.country_code_alternate}${values.mobile_alternate}` : null,
       dob: values.dob || null,
       has_app_access: true,
       is_active: true,
@@ -128,9 +132,6 @@ const NewPatient = () => {
   return (
     <Card className="w-full max-w-4xl mx-auto mt-8">
       <CardContent className="pt-6">
-        {/* <Link to={`/clinic/${clinic_id}/patients`} className="text-blue-600 hover:underline mb-4 inline-block">
-          ← Patients
-        </Link> */}
         <h2 className="text-2xl font-bold mb-6 text-center">Add Patient</h2>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
@@ -230,30 +231,80 @@ const NewPatient = () => {
                     </FormItem>
                   )}
                 />
-                <FormField
-                  control={form.control}
-                  name="mobile"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Mobile number</FormLabel>
-                      <FormControl>
-                        <Input {...field} />
-                      </FormControl>
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="mobile_alternate"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Alternate mobile number (Optional)</FormLabel>
-                      <FormControl>
-                        <Input {...field} />
-                      </FormControl>
-                    </FormItem>
-                  )}
-                />
+                <div className="flex space-x-2">
+                  <FormField
+                    control={form.control}
+                    name="country_code"
+                    render={({ field }) => (
+                      <FormItem className="w-1/3">
+                        <FormLabel>Country</FormLabel>
+                        <Select onValueChange={field.onChange} defaultValue={field.value}>
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select code" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            {countryCodes.map((code) => (
+                              <SelectItem key={code.code} value={code.code}>
+                                {code.name} ({code.code})
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="mobile"
+                    render={({ field }) => (
+                      <FormItem className="w-2/3">
+                        <FormLabel>Mobile number</FormLabel>
+                        <FormControl>
+                          <Input {...field} />
+                        </FormControl>
+                      </FormItem>
+                    )}
+                  />
+                </div>
+                <div className="flex space-x-2">
+                  <FormField
+                    control={form.control}
+                    name="country_code_alternate"
+                    render={({ field }) => (
+                      <FormItem className="w-1/3">
+                        <FormLabel>Alt. Country</FormLabel>
+                        <Select onValueChange={field.onChange} defaultValue={field.value}>
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select code" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            {countryCodes.map((code) => (
+                              <SelectItem key={code.code} value={code.code}>
+                                {code.name} ({code.code})
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="mobile_alternate"
+                    render={({ field }) => (
+                      <FormItem className="w-2/3">
+                        <FormLabel>Alternate mobile number</FormLabel>
+                        <FormControl>
+                          <Input {...field} />
+                        </FormControl>
+                      </FormItem>
+                    )}
+                  />
+                </div>
               </div>
               <div className="space-y-6">
                 <h3 className="font-semibold">Doctor details</h3>

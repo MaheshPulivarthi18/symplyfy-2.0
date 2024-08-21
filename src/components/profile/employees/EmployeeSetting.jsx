@@ -1,4 +1,3 @@
-// EmployeeSettings.jsx
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -14,13 +13,14 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { Progress } from '@/components/ui/progress';
 import { useAuth } from '@/contexts/AuthContext';
-
+import { countryCodes } from '@/lib/countryCodes';
 
 const employeeSchema = z.object({
   first_name: z.string().min(2, "First name must be at least 2 characters."),
   last_name: z.string().min(2, "Last name must be at least 2 characters."),
   email: z.string().email("Invalid email address."),
-  mobile: z.string().regex(/^\+?91?\d{10}$/, "Mobile number must be 10 digits, optionally preceded by +91."),
+  country_code: z.string().min(1, "Country code is required"),
+  mobile: z.string().regex(/^\d{1,14}$/, "Mobile number must be between 1 and 14 digits."),
   role: z.string().uuid("Invalid role ID."),
   is_therapist: z.boolean(),
   has_app_access: z.boolean(),
@@ -45,6 +45,7 @@ const EmployeeSettings = () => {
       first_name: "",
       last_name: "",
       email: "",
+      country_code: "+91",
       mobile: "",
       role: "",
       is_therapist: false,
@@ -96,9 +97,11 @@ const EmployeeSettings = () => {
     try {
       const data = await fetchWithTokenHandling(`${import.meta.env.VITE_BASE_URL}/api/emp/clinic/${clinic_id}/employee/${employee_id}/`);
       setEmployee(data);
+      const { country_code, mobile } = extractCountryCodeAndMobile(data.mobile);
       form.reset({
         ...data,
-        mobile: data.mobile?.replace(/^\+91/, ''), // Remove +91 prefix if present
+        country_code: country_code,
+        mobile: mobile,
       });
       setLoading(false);
     } catch (err) {
@@ -110,6 +113,32 @@ const EmployeeSettings = () => {
         variant: "destructive",
       });
     }
+  };
+
+  const extractCountryCodeAndMobile = (fullMobile) => {
+    // Remove any non-digit characters except the leading '+'
+    const cleanedNumber = fullMobile.replace(/[^\d+]/g, '');
+    
+    // Check if the number starts with a '+'
+    if (cleanedNumber.startsWith('+')) {
+      // Find the country code
+      for (let i = 1; i <= 4; i++) {
+        const potentialCode = cleanedNumber.substring(0, i + 1);
+        if (countryCodes.some(code => code.code === potentialCode)) {
+          return {
+            country_code: potentialCode,
+            mobile: cleanedNumber.substring(i + 1)
+          };
+        }
+      }
+    }
+    
+    // If no valid country code found or number doesn't start with '+',
+    // assume it's a local number (India in this case)
+    return {
+      country_code: '+91',
+      mobile: cleanedNumber.startsWith('91') ? cleanedNumber.substring(2) : cleanedNumber
+    };
   };
 
   const fetchRoles = async () => {
@@ -129,7 +158,7 @@ const EmployeeSettings = () => {
     try {
       const formattedValues = {
         ...values,
-        mobile: values.mobile.startsWith('+91') ? values.mobile : `+91${values.mobile}`,
+        mobile: `${values.country_code}${values.mobile}`,
       };
       await fetchWithTokenHandling(`${import.meta.env.VITE_BASE_URL}/api/emp/clinic/${clinic_id}/employee/${employee_id}/`, {
         method: 'PATCH',
@@ -157,7 +186,7 @@ const EmployeeSettings = () => {
     return (
       <div className="w-full flex flex-col items-center justify-center">
         <Progress value={progress} className="w-[60%]" />
-        <p className="mt-4 text-sm text-gray-500">Loading employees... {Math.round(progress)}%</p>
+        <p className="mt-4 text-sm text-gray-500">Loading employee details... {Math.round(progress)}%</p>
       </div>
     );
   }
@@ -224,19 +253,45 @@ const EmployeeSettings = () => {
                 </FormItem>
               )}
             />
-            <FormField
-              control={form.control}
-              name="mobile"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Mobile</FormLabel>
-                  <FormControl>
-                    <Input {...field} disabled={!isEditing} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+            <div className="flex space-x-2">
+              <FormField
+                control={form.control}
+                name="country_code"
+                render={({ field }) => (
+                  <FormItem className="w-1/3">
+                    <FormLabel>Country Code</FormLabel>
+                    <Select onValueChange={field.onChange} defaultValue={field.value} disabled={!isEditing}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select code" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {countryCodes.map((code) => (
+                          <SelectItem key={code.code} value={code.code}>
+                            {code.name} ({code.code})
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="mobile"
+                render={({ field }) => (
+                  <FormItem className="w-2/3">
+                    <FormLabel>Mobile</FormLabel>
+                    <FormControl>
+                      <Input {...field} disabled={!isEditing} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
             <FormField
               control={form.control}
               name="role"

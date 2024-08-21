@@ -19,6 +19,8 @@ import { DatePicker } from '@/components/ui/datepicker';
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Badge } from "@/components/ui/badge";
 // import { Clock as Clock } from "@/components/ui/clock"
 import ClockPicker from "@/components/ui/clock"
 import { parseISO, format, addMinutes, addHours, addDays, startOfWeek, startOfMonth, startOfYear, endOfWeek, endOfMonth, endOfYear } from 'date-fns';
@@ -45,6 +47,7 @@ import { Filter } from "lucide-react";
 import { DateRangePicker } from "@/components/ui/date-range-picker";
 import TherapistCountsDialog from './TherapistCounts';
 import VisitCountsDialog from './VisitCountsDialog';
+import { countryCodes } from '@/lib/countryCodes';
 
 const PatientProfile = () => {
   const { clinic_id, patient_id } = useParams();
@@ -53,7 +56,12 @@ const PatientProfile = () => {
   const navigate = useNavigate();
   const [patient, setPatient] = useState(null);
   const [isEditing, setIsEditing] = useState(false);
-  const [formData, setFormData] = useState({});
+  
+  const [formData, setFormData] = useState({
+    // ... other form fields
+    country_code: '',
+    mobile: '',
+  });
   const [loading, setLoading] = useState(true);
   const [notes, setNotes] = useState([]);
   const [goals, setGoals] = useState([]);
@@ -121,6 +129,124 @@ const PatientProfile = () => {
   const [isTherapistCountsDialogOpen, setIsTherapistCountsDialogOpen] = useState(false);
   const [isGeneratingInvoice, setIsGeneratingInvoice] = useState(false);
   const [isConfirmingInvoice, setIsConfirmingInvoice] = useState(false);
+
+  const [ledgerTransactions, setLedgerTransactions] = useState([]);
+  const [ledgerLoading, setLedgerLoading] = useState(true);
+
+  const fetchLedgerTransactions = async () => {
+    setLedgerLoading(true);
+    try {
+      const response = await fetchWithTokenHandling(`${import.meta.env.VITE_BASE_URL}/api/emp/clinic/${clinic_id}/patient/${patient_id}/ledger/`);
+      const processedTransactions = response.map(transaction => ({
+        ...transaction,
+        amount_credit: isNaN(parseFloat(transaction.amount_credit)) ? 0 : parseFloat(transaction.amount_credit),
+        amount_debit: isNaN(parseFloat(transaction.amount_debit)) ? 0 : parseFloat(transaction.amount_debit),
+        balance: parseFloat(transaction.balance),
+        transactionType: transaction.transaction === 'i' ? 'Invoice' : 'Payment',
+      }));
+      setLedgerTransactions(processedTransactions);
+    } catch (error) {
+      console.error('Failed to fetch ledger transactions:', error);
+      toast({
+        title: "Error",
+        description: "Failed to fetch ledger transactions. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setLedgerLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchLedgerTransactions();
+  }, [clinic_id, patient_id]);
+
+  const LedgerTable = ({ data }) => {
+    const columns = [
+      {
+        accessorKey: "date",
+        header: ({ column }) => (
+          <Button
+            variant="ghost"
+            onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+          >
+            Date
+            <ArrowUpDown className="ml-2 h-4 w-4" />
+          </Button>
+        ),
+        cell: ({ row }) => format(parseISO(row.getValue("date")), 'dd/MM/yyyy'),
+      },
+      {
+        accessorKey: "transactionType",
+        header: "Transaction",
+        cell: ({ row }) => {
+          if (row.original.transactionType === 'Invoice') {
+            return (
+              <Button
+                variant="link"
+                onClick={() => handleViewInvoice(row.original.invoice)}
+              >
+                {row.getValue("transactionType")}
+              </Button>
+            );
+          } else {
+            return <span>{row.getValue("transactionType")}</span>;
+          }
+        },
+      },
+      {
+        accessorKey: "amount_credit",
+        header: "Amount Paid",
+        cell: ({ row }) => (
+          <Badge variant={row.getValue("amount_credit") > 0 ? "success" : "default"}>
+            {row.getValue("amount_credit").toFixed(2)}
+          </Badge>
+        ),
+      },
+      {
+        accessorKey: "amount_debit",
+        header: "Invoiced Amount",
+        cell: ({ row }) => (
+          <Badge variant={row.getValue("amount_debit") > 0 ? "destructive" : "default"}>
+            {row.getValue("amount_debit").toFixed(2)}
+          </Badge>
+        ),
+      },
+      {
+        accessorKey: "balance",
+        header: "Balance",
+        cell: ({ row }) => row.getValue("balance").toFixed(2),
+      },
+    ];
+  
+    return (
+      <>
+
+      <DataTable
+        columns={columns}
+        data={data}
+        searchableColumns={[
+          {
+            id: "transactionType",
+            title: "Transaction",
+          },
+        ]}
+        rowsPerPage={5}
+      />
+      <InvoiceDialog
+        isOpen={isInvoiceDialogOpen}
+        onClose={() => setIsInvoiceDialogOpen(false)}
+        onGenerate={handleGenerateInvoice}
+        invoiceItems={invoiceItems}
+        setInvoiceItems={setInvoiceItems}
+        finalAmount={finalAmount}
+        setFinalAmount={setFinalAmount}
+        sellables={sellables}
+        isLoading={isGeneratingInvoice}
+      />
+      </>
+    );
+  };
   
   // Visits DataTable
   const VisitsDataTable = ({ data }) => {
@@ -328,7 +454,15 @@ const AppointmentsDataTable = ({ data }) => {
     try {
       const data = await fetchWithTokenHandling(`${import.meta.env.VITE_BASE_URL}/api/emp/clinic/${clinic_id}/patient/${patient_id}/`);
       setPatient(data);
-      setFormData(data);
+      
+      // Extract country code and mobile number
+      const { country_code, mobile } = extractCountryCodeAndMobile(data.mobile);
+      
+      setFormData({
+        ...data,
+        country_code,
+        mobile,
+      });
     } catch (error) {
       toast({
         title: "Error",
@@ -337,6 +471,58 @@ const AppointmentsDataTable = ({ data }) => {
       });
     } finally {
       setLoading(false);
+    }
+  };
+
+  const extractCountryCodeAndMobile = (fullMobile) => {
+    // Remove any non-digit characters except the leading '+'
+    const cleanedNumber = fullMobile.replace(/[^\d+]/g, '');
+    
+    // Check if the number starts with a '+'
+    if (cleanedNumber.startsWith('+')) {
+      // Find the country code
+      for (let i = 1; i <= 4; i++) {
+        const potentialCode = cleanedNumber.substring(0, i + 1);
+        if (countryCodes.some(code => code.code === potentialCode)) {
+          return {
+            country_code: potentialCode,
+            mobile: cleanedNumber.substring(i + 1)
+          };
+        }
+      }
+    }
+    
+    // If no valid country code found or number doesn't start with '+',
+    // assume it's a local number (India in this case)
+    return {
+      country_code: '+91',
+      mobile: cleanedNumber.startsWith('91') ? cleanedNumber.substring(2) : cleanedNumber
+    };
+  };
+
+  const handleChange = (e) => {
+    setFormData({ ...formData, [e.target.name]: e.target.value });
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    try {
+      const updatedPatientData = {
+        ...formData,
+        mobile: `${formData.country_code}${formData.mobile}`,
+      };
+      const updatedPatient = await fetchWithTokenHandling(`${import.meta.env.VITE_BASE_URL}/api/emp/clinic/${clinic_id}/patient/${patient_id}/`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(updatedPatientData),
+      });
+      setPatient(updatedPatient);
+      setIsEditing(false);
+      toast({ title: "Success", description: "Patient information updated successfully" });
+    } catch (error) {
+      toast({ title: "Error", description: error.message, variant: "destructive" });
     }
   };
 
@@ -847,6 +1033,7 @@ const AppointmentsDataTable = ({ data }) => {
         },
         body: JSON.stringify(newPayment),
       });
+      await fetchLedgerTransactions();
       setPayments([...payments, response]);
       setNewPayment({
         amount_paid: '',
@@ -914,6 +1101,7 @@ const AppointmentsDataTable = ({ data }) => {
       
       toast({ title: "Success", description: "Invoice status updated successfully" });
       await fetchInvoices();
+      await fetchLedgerTransactions();
       setIsInvoiceStatusDialogOpen(false);
       setIsInvoiceDetailDialogOpen(false);
       setInvoiceItems([]);
@@ -948,122 +1136,96 @@ const AppointmentsDataTable = ({ data }) => {
     window.open(pdfUrl, '_blank');
   };
 
-  const exportToCSV = (data, filename, headers) => {
-    const csvContent = [
-      headers.join(','),
-      ...data.map(row => headers.map(header => row[header] || '').join(','))
-    ].join('\n');
-    
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    const link = document.createElement('a');
-    if (link.download !== undefined) {
-      const url = URL.createObjectURL(blob);
-      link.setAttribute('href', url);
-      link.setAttribute('download', filename);
-      link.style.visibility = 'hidden';
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-    }
-  };
+// Generic export to Excel function
+const exportToExcel = async (data, filename, columns) => {
+  const workbook = new ExcelJS.Workbook();
+  const worksheet = workbook.addWorksheet('Sheet1');
 
-  const exportVisitsToCSV = () => {
-    const headers = ['Date', 'Time', 'Doctor', 'Service', 'Duration', 'Walk-in', 'Penalty'];
-    const processedData = visits.map(visit => ({
-      Date: format(parseISO(visit.date), 'EEEE dd MMMM yyyy'),
-      Time: visit.time,
-      Doctor: employeeDetails[visit.employee] 
-        ? `${employeeDetails[visit.employee].first_name} ${employeeDetails[visit.employee].last_name}`
-        : 'Loading...',
-      Service: sellableDetails[visit.sellable]
-        ? sellableDetails[visit.sellable].name
-        : 'Loading...',
-      Duration: `${visit.duration} minutes`,
-      'Walk-in': visit.walk_in ? "Yes" : "No",
-      Penalty: visit.penalty ? "Yes" : "No",
-    }));
-    exportToCSV(processedData, 'patient_visits.csv', headers);
-  };
-  
-  const exportAppointmentsToCSV = () => {
-    const headers = ['Therapist', 'Date', 'Start Time', 'End Time', 'Service'];
-    const processedData = appointments.map(appointment => ({
-      Therapist: `${appointment.employee.first_name} ${appointment.employee.last_name}`,
-      Date: format(parseISO(appointment.start), 'EEEE dd MMMM yyyy'),
-      'Start Time': format(parseISO(appointment.start), 'HH:mm'),
-      'End Time': format(parseISO(appointment.end), 'HH:mm'),
-      Service: sellableDetails[appointment.sellable]
-        ? sellableDetails[appointment.sellable].name
-        : 'N/A',
-    }));
-    exportToCSV(processedData, 'patient_appointments.csv', headers);
-  };
+  // Add headers
+  worksheet.columns = columns.map(col => ({ header: col.header, key: col.key, width: 15 }));
 
-  const exportToExcel = async (data, filename, headers) => {
-    const workbook = new ExcelJS.Workbook();
-    const worksheet = workbook.addWorksheet('Sheet1');
-  
-    // Add headers
-    worksheet.addRow(headers);
-  
-    // Add data
-    data.forEach(row => {
-      worksheet.addRow(headers.map(header => row[header]));
+  // Add data
+  data.forEach(row => {
+    const rowData = {};
+    columns.forEach(col => {
+      if (col.format) {
+        rowData[col.key] = col.format(row[col.key]);
+      } else {
+        rowData[col.key] = row[col.key];
+      }
     });
-  
-    // Style the header row
-    worksheet.getRow(1).font = { bold: true };
-    worksheet.getRow(1).fill = {
-      type: 'pattern',
-      pattern: 'solid',
-      fgColor: { argb: 'FFD3D3D3' }
-    };
-  
-    // Auto-fit columns
-    worksheet.columns.forEach(column => {
-      column.width = Math.max(15, ...data.map(row => row[column.header] ? row[column.header].toString().length : 0));
-    });
-  
-    // Generate Excel file
-    const buffer = await workbook.xlsx.writeBuffer();
-    const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
-    const link = document.createElement('a');
-    link.href = URL.createObjectURL(blob);
-    link.download = `${filename}.xlsx`;
-    link.click();
-  };
-  
-  const exportVisitsToExcel = async () => {
-    const headers = ['Date', 'Time', 'Doctor', 'Service', 'Duration', 'Walk-in', 'Penalty'];
-    const processedData = visits.map(visit => ({
-      Date: format(parseISO(visit.date), 'EEEE dd MMMM yyyy'),
-      Time: visit.time,
-      Doctor: employeeDetails[visit.employee] 
-        ? `${employeeDetails[visit.employee].first_name} ${employeeDetails[visit.employee].last_name}`
-        : 'Loading...',
-      Service: sellableDetails[visit.sellable]
-        ? sellableDetails[visit.sellable].name
-        : 'Loading...',
-      Duration: `${visit.duration} minutes`,
-      'Walk-in': visit.walk_in ? "Yes" : "No",
-      Penalty: visit.penalty ? "Yes" : "No",
-    }));
-    await exportToExcel(processedData, 'patient_visits', headers);
-  };
-  
-  const exportAppointmentsToExcel = async () => {
-    const headers = ['Therapist', 'Date', 'Start Time', 'End Time', 'Service'];
-    const processedData = appointments.map(appointment => ({
-      Therapist: `${appointment.employee.first_name} ${appointment.employee.last_name}`,
-      Date: format(parseISO(appointment.start), 'EEEE dd MMMM yyyy'),
-      'Start Time': format(parseISO(appointment.start), 'HH:mm'),
-      'End Time': format(parseISO(appointment.end), 'HH:mm'),
-      Service: sellableDetails[appointment.sellable]
-        ? sellableDetails[appointment.sellable].name
-        : 'N/A',
-    }));
-    await exportToExcel(processedData, 'patient_appointments', headers);
-  };
+    worksheet.addRow(rowData);
+  });
+
+  // Generate Excel file
+  const buffer = await workbook.xlsx.writeBuffer();
+  const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+  const link = document.createElement('a');
+  link.href = URL.createObjectURL(blob);
+  link.download = `${filename}.xlsx`;
+  link.click();
+};
+
+// Export visits to Excel
+const exportVisitsToExcel = async () => {
+  const columns = [
+    { header: 'Date', key: 'date', format: (value) => format(parseISO(value), 'dd/MM/yyyy') },
+    { header: 'Time', key: 'time' },
+    { header: 'Doctor', key: 'doctor' },
+    { header: 'Service', key: 'service' },
+    { header: 'Duration', key: 'duration', format: (value) => `${value} minutes` },
+    { header: 'Walk-in', key: 'walk_in', format: (value) => value ? 'Yes' : 'No' },
+    { header: 'Penalty', key: 'penalty', format: (value) => value ? 'Yes' : 'No' },
+  ];
+
+  const processedData = visits.map(visit => ({
+    ...visit,
+    doctor: employeeDetails[visit.employee] 
+      ? `${employeeDetails[visit.employee].first_name} ${employeeDetails[visit.employee].last_name}`
+      : 'Unknown',
+    service: sellableDetails[visit.sellable]
+      ? sellableDetails[visit.sellable].name
+      : 'Unknown',
+  }));
+
+  await exportToExcel(processedData, 'patient_visits', columns);
+};
+
+// Export appointments to Excel
+const exportAppointmentsToExcel = async () => {
+  const columns = [
+    { header: 'Therapist', key: 'therapist' },
+    { header: 'Date', key: 'date', format: (value) => format(parseISO(value), 'dd/MM/yyyy') },
+    { header: 'Start Time', key: 'startTime', format: (value) => format(parseISO(value), 'HH:mm') },
+    { header: 'End Time', key: 'endTime', format: (value) => format(parseISO(value), 'HH:mm') },
+    { header: 'Service', key: 'service' },
+  ];
+
+  const processedData = appointments.map(appointment => ({
+    therapist: `${appointment.employee.first_name} ${appointment.employee.last_name}`,
+    date: appointment.start,
+    startTime: appointment.start,
+    endTime: appointment.end,
+    service: sellableDetails[appointment.sellable]
+      ? sellableDetails[appointment.sellable].name
+      : 'Unknown',
+  }));
+
+  await exportToExcel(processedData, 'patient_appointments', columns);
+};
+
+// Export ledger transactions to Excel
+const exportLedgerTransactionsToExcel = async () => {
+  const columns = [
+    { header: 'Date', key: 'date', format: (value) => format(parseISO(value), 'dd/MM/yyyy') },
+    { header: 'Transaction', key: 'transactionType' },
+    { header: 'Amount Paid', key: 'amount_credit', format: (value) => value.toFixed(2) },
+    { header: 'Invoiced Amount', key: 'amount_debit', format: (value) => value.toFixed(2) },
+    { header: 'Balance', key: 'balance', format: (value) => value.toFixed(2) },
+  ];
+
+  await exportToExcel(ledgerTransactions, 'patient_ledger_transactions', columns);
+};
 
   useEffect(() => {
     fetchPatientData();
@@ -1091,27 +1253,27 @@ const AppointmentsDataTable = ({ data }) => {
     fetchSellables();
   }, [clinic_id, patient_id]);
 
-  const handleChange = (e) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
-  };
+  // const handleChange = (e) => {
+  //   setFormData({ ...formData, [e.target.name]: e.target.value });
+  // };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    try {
-      const updatedPatient = await fetchWithTokenHandling(`${import.meta.env.VITE_BASE_URL}/api/emp/clinic/${clinic_id}/patient/${patient_id}/`, {
-        method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(formData),
-      });
-      setPatient(updatedPatient);
-      setIsEditing(false);
-      toast({ title: "Success", description: "Patient information updated successfully" });
-    } catch (error) {
-      toast({ title: "Error", description: error.message, variant: "destructive" });
-    }
-  };
+  // const handleSubmit = async (e) => {
+  //   e.preventDefault();
+  //   try {
+  //     const updatedPatient = await fetchWithTokenHandling(`${import.meta.env.VITE_BASE_URL}/api/emp/clinic/${clinic_id}/patient/${patient_id}/`, {
+  //       method: 'PATCH',
+  //       headers: {
+  //         'Content-Type': 'application/json',
+  //       },
+  //       body: JSON.stringify(formData),
+  //     });
+  //     setPatient(updatedPatient);
+  //     setIsEditing(false);
+  //     toast({ title: "Success", description: "Patient information updated successfully" });
+  //   } catch (error) {
+  //     toast({ title: "Error", description: error.message, variant: "destructive" });
+  //   }
+  // };
 
   const [isInvoiceDialogOpen, setIsInvoiceDialogOpen] = useState(false);
   const [isInvoiceStatusDialogOpen, setIsInvoiceStatusDialogOpen] = useState(false);
@@ -1273,15 +1435,38 @@ const AppointmentsDataTable = ({ data }) => {
                     disabled={!isEditing}
                   />
                 </div>
-                <div>
-                  <Label htmlFor="mobile">Last Name</Label>
-                  <Input
-                    id="mobile"
-                    name="mobile"
-                    value={formData.mobile}
-                    onChange={handleChange}
-                    disabled={!isEditing}
-                  />
+                <div className='flex gap-4'>
+                  <div>
+                    <Label htmlFor="country_code">Country Code</Label>
+                    <Select
+                      id="country_code"
+                      name="country_code"
+                      value={formData.country_code}
+                      onValueChange={(value) => setFormData({ ...formData, country_code: value })}
+                      disabled={!isEditing}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select country code" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {countryCodes.map((code) => (
+                          <SelectItem key={code.code} value={code.code}>
+                            {code.name} ({code.code})
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <Label htmlFor="mobile">Mobile Number</Label>
+                    <Input
+                      id="mobile"
+                      name="mobile"
+                      value={formData.mobile}
+                      onChange={handleChange}
+                      disabled={!isEditing}
+                    />
+                  </div>
                 </div>
                 <div>
                   <Label htmlFor="dob">Date of Birth</Label>
@@ -1876,93 +2061,87 @@ const AppointmentsDataTable = ({ data }) => {
             <Tabs defaultValue="payments">
               <TabsList>
                 <TabsTrigger value="payments">Payments</TabsTrigger>
-                <TabsTrigger value="invoices">Invoices</TabsTrigger>
+                <TabsTrigger value="invoices">Drafted/Cancelled Invoices</TabsTrigger>
+                <TabsTrigger value="transactions">Transactions</TabsTrigger>
               </TabsList>
               <TabsContent value="payments" className="relative min-h-[300px] h-[90%] overflow-scroll p-4 ">
-            {payments.length === 0 ? (
-              <p>No payments recorded for this patient.</p>
-            ) : (
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead className='text-center'>Date</TableHead>
-                    <TableHead className='text-center'>Amount Paid</TableHead>
-                    <TableHead className='text-center'>Amount Refunded</TableHead>
-                    <TableHead className='text-center'>Channel</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {payments.map(payment => (
-                    <TableRow key={payment.id}>
-                      <TableCell>{format(new Date(payment.date), 'EEEE dd MMMM yyyy')}</TableCell>
-                      <TableCell>{payment.amount_paid}</TableCell>
-                      <TableCell>{payment.amount_refunded}</TableCell>
-                      <TableCell>{paymentChannels.find(ch => ch.id === payment.channel)?.name || 'Unknown'}</TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            )}
-            <Dialog open={isPaymentDialogOpen} onOpenChange={setIsPaymentDialogOpen}>
-              <DialogTrigger asChild>
-                <Button className="absolute bottom-0 right-0">
-                  <PlusCircle className="h-4 w-4" />
-                </Button>
-              </DialogTrigger>
-              <DialogContent>
-                <DialogHeader>
-                  <DialogTitle>Add New Payment</DialogTitle>
-                </DialogHeader>
-                <form onSubmit={handleAddPayment}>
-                  <div className="space-y-4">
-                    <div>
-                      <Label htmlFor="amount_paid">Amount Paid</Label>
-                      <Input
-                        id="amount_paid"
-                        type="number"
-                        value={newPayment.amount_paid}
-                        onChange={(e) => setNewPayment({...newPayment, amount_paid: e.target.value})}
-                        required
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="date">Payment Date</Label>
-                      <DatePicker
-                        id="date"
-                        selected={newPayment.date}
-                        onChange={(date) => setNewPayment({...newPayment, date: date.toISOString().split('T')[0]})}
-                        required
-                      />
-                      {/* 
-                      <DatePicker
-                        id="date"
-                        selected={newVisit.date ? new Date(newVisit.date) : null}
-                        dateFormat="dd/MM/yyyy"
-                        onChange={(date) => setNewVisit({...newVisit, date: date.toISOString().split('T')[0]})}
-                       /> */}
-                    </div>
-                    <div>
-                      <Label htmlFor="channel">Payment Channel</Label>
-                      <Select onValueChange={(value) => setNewPayment({...newPayment, channel: value})}>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select payment channel" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {paymentChannels.map(channel => (
-                            <SelectItem key={channel.id} value={channel.id}>
-                              {channel.name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  </div>
-                  <DialogFooter>
-                    <Button type="submit" className="mt-4">Add Payment</Button>
-                  </DialogFooter>
-                </form>
-              </DialogContent>
-            </Dialog>
+                {payments.length === 0 ? (
+                  <p>No payments recorded for this patient.</p>
+                ) : (
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead className='text-center'>Date</TableHead>
+                        <TableHead className='text-center'>Amount Paid</TableHead>
+                        <TableHead className='text-center'>Amount Refunded</TableHead>
+                        <TableHead className='text-center'>Channel</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {payments.map(payment => (
+                        <TableRow key={payment.id}>
+                          <TableCell>{format(new Date(payment.date), 'EEEE dd MMMM yyyy')}</TableCell>
+                          <TableCell>{payment.amount_paid}</TableCell>
+                          <TableCell>{payment.amount_refunded}</TableCell>
+                          <TableCell>{paymentChannels.find(ch => ch.id === payment.channel)?.name || 'Unknown'}</TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                )}
+                <Dialog open={isPaymentDialogOpen} onOpenChange={setIsPaymentDialogOpen}>
+                  <DialogTrigger asChild>
+                    <Button className="absolute bottom-0 right-0">
+                      <PlusCircle className="h-4 w-4" />
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent>
+                    <DialogHeader>
+                      <DialogTitle>Add New Payment</DialogTitle>
+                    </DialogHeader>
+                    <form onSubmit={handleAddPayment}>
+                      <div className="space-y-4">
+                        <div>
+                          <Label htmlFor="amount_paid">Amount Paid</Label>
+                          <Input
+                            id="amount_paid"
+                            type="number"
+                            value={newPayment.amount_paid}
+                            onChange={(e) => setNewPayment({...newPayment, amount_paid: e.target.value})}
+                            required
+                          />
+                        </div>
+                        <div>
+                          <Label htmlFor="date">Payment Date</Label>
+                          <DatePicker
+                            id="date"
+                            selected={newPayment.date}
+                            onChange={(date) => setNewPayment({...newPayment, date: date.toISOString().split('T')[0]})}
+                            required
+                          />
+                        </div>
+                        <div>
+                          <Label htmlFor="channel">Payment Channel</Label>
+                          <Select onValueChange={(value) => setNewPayment({...newPayment, channel: value})}>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select payment channel" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {paymentChannels.map(channel => (
+                                <SelectItem key={channel.id} value={channel.id}>
+                                  {channel.name}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      </div>
+                      <DialogFooter>
+                        <Button type="submit" className="mt-4">Add Payment</Button>
+                      </DialogFooter>
+                    </form>
+                  </DialogContent>
+                </Dialog>
               </TabsContent>
               <TabsContent value="invoices" className="relative min-h-[300px] h-[90%] overflow-scroll p-4">
                 <div className="flex justify-end mb-4">
@@ -1970,8 +2149,8 @@ const AppointmentsDataTable = ({ data }) => {
                     <PlusCircle className="h-4 w-4" />
                   </Button>
                 </div>
-                {invoices.length === 0 ? (
-                  <p>No invoices recorded for this patient.</p>
+                {invoices.filter(invoice => invoice.status !== 'c').length === 0 ? (
+                  <p>No draft or cancelled invoices for this patient.</p>
                 ) : (
                   <Table>
                     <TableHeader>
@@ -1985,26 +2164,45 @@ const AppointmentsDataTable = ({ data }) => {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {invoices.map(invoice => (
-                        <TableRow key={invoice.id}>
-                          <TableCell>{format(new Date(invoice.date), 'EEEE dd MMMM yyyy')}</TableCell>
-                          <TableCell>{invoice.number}</TableCell>
-                          <TableCell>
-                            {invoice.status === 'd' ? 'Draft' : 
-                            invoice.status === 'c' ? 'Confirmed' : 
-                            invoice.status === 'x' ? 'Cancelled' : 'Unknown'}
-                          </TableCell>
-                          <TableCell>{invoice.gross_amount}</TableCell>
-                          <TableCell>{invoice.final_amount}</TableCell>
-                          <TableCell>
-                            <Button variant="outline" size="sm" onClick={() => handleViewInvoice(invoice.id)}>
-                              View Details
-                            </Button>
-                          </TableCell>
-                        </TableRow>
-                      ))}
+                      {invoices
+                        .filter(invoice => invoice.status !== 'c')
+                        .map(invoice => (
+                          <TableRow key={invoice.id}>
+                            <TableCell>{format(new Date(invoice.date), 'EEEE dd MMMM yyyy')}</TableCell>
+                            <TableCell>{invoice.number}</TableCell>
+                            <TableCell>
+                              {invoice.status === 'd' ? 'Draft' : 
+                              invoice.status === 'x' ? 'Cancelled' : 'Unknown'}
+                            </TableCell>
+                            <TableCell>{invoice.gross_amount}</TableCell>
+                            <TableCell>{invoice.final_amount}</TableCell>
+                            <TableCell>
+                              <Button variant="outline" size="sm" onClick={() => handleViewInvoice(invoice.id)}>
+                                View Details
+                              </Button>
+                            </TableCell>
+                          </TableRow>
+                        ))}
                     </TableBody>
                   </Table>
+                )}
+              </TabsContent>
+              <TabsContent value="transactions" className="relative min-h-[300px] h-[90%] overflow-scroll p-4">
+                <div className="flex justify-end mb-4">
+                  <Button onClick={() => exportLedgerTransactionsToExcel(ledgerTransactions, 'patient_ledger_transactions')}>
+                    <FileDownIcon className="h-4 w-4 mr-2" /> Export as Excel
+                  </Button>
+                </div>
+                {ledgerLoading ? (
+                  <div className="space-y-2">
+                    <Skeleton className="h-4 w-full" />
+                    <Skeleton className="h-4 w-full" />
+                    <Skeleton className="h-4 w-full" />
+                  </div>
+                ) : ledgerTransactions.length === 0 ? (
+                  <p>No transactions recorded for this patient.</p>
+                ) : (
+                  <LedgerTable data={ledgerTransactions} />
                 )}
               </TabsContent>
             </Tabs>
@@ -2286,7 +2484,7 @@ const AppointmentsDataTable = ({ data }) => {
               </DialogContent>
         </Dialog>
       </div>
-      <InvoiceDialog
+      {/* <InvoiceDialog
         isOpen={isInvoiceDialogOpen}
         onClose={() => setIsInvoiceDialogOpen(false)}
         onGenerate={handleGenerateInvoice}
@@ -2296,7 +2494,7 @@ const AppointmentsDataTable = ({ data }) => {
         setFinalAmount={setFinalAmount}
         sellables={sellables}
         isLoading={isGeneratingInvoice}
-      />
+      /> */}
 
       <InvoiceStatusDialog 
         isOpen={isInvoiceStatusDialogOpen}

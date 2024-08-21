@@ -1,7 +1,7 @@
 // signup.jsx
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useForm } from 'react-hook-form';
+import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { useToast } from "@/components/ui/use-toast"
@@ -17,13 +17,16 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import logo from "../../assets/logo_ai 2.svg"
+import { countryCodes } from '@/lib/countryCodes';
 
 const signupSchema = z.object({
   first_name: z.string().min(2, "First name must be at least 2 characters.").max(50),
   lastName: z.string().min(2, "Last name must be at least 2 characters.").max(50),
   email: z.string().email("Please enter a valid email address."),
-  mobile: z.string().regex(/^\+?91?\d{10}$/, "Mobile number must be 10 digits, optionally preceded by +91."),
+  countryCode: z.string().min(1, "Country code is required"),
+  mobile: z.string().regex(/^\d{1,14}$/, "Mobile number must be between 1 and 14 digits."),
   password: z.string().min(8, "Password must be at least 8 characters.")
     .regex(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/, 
       "Password must contain at least one uppercase letter, one lowercase letter, one number, and one special character."),
@@ -46,6 +49,7 @@ const SignUp = () => {
       first_name: "",
       lastName: "",
       email: "",
+      countryCode: "",
       mobile: "",
       password: "",
       reEnterPassword: "",
@@ -81,7 +85,10 @@ const SignUp = () => {
         }
         
         console.log(oldValues)
-        await register(oldValues, verificationCode);
+        // Combine country code and mobile number before sending
+        const fullMobileNumber = `${oldValues.countryCode}${oldValues.mobile}`;
+        const registrationData = { ...oldValues, mobile: fullMobileNumber };
+        await register(registrationData, verificationCode);
 
         toast({
           title: "Success",
@@ -152,6 +159,30 @@ const SignUp = () => {
                       <FormControl>
                         <Input type="email" placeholder="Email" {...field} />
                       </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="countryCode"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Country Code</FormLabel>
+                      <Select onValueChange={field.onChange} defaultValue={field.value}>
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select country code" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {countryCodes.map((code) => (
+                            <SelectItem key={code.code} value={code.code}>
+                              {code.name} ({code.code})
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
                       <FormMessage />
                     </FormItem>
                   )}
