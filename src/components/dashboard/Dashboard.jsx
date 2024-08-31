@@ -23,6 +23,7 @@ import { addDays, isBefore, isAfter } from 'date-fns';
 import { useToast } from "@/components/ui/use-toast";
 import { Clock, XCircle, CheckCircle, ExternalLink } from 'lucide-react';
 import { Badge } from "@/components/ui/badge";
+import ExcelToApiUploader from '../ExcelUpload';
 
 
 const Dashboard = () => {
@@ -680,21 +681,27 @@ const exportVisitsToExcel = async () => {
     { header: 'Date', key: 'date', format: (value) => format(parseISO(value), 'dd/MM/yyyy') },
     { header: 'Time', key: 'time' },
     { header: 'Doctor', key: 'doctor' },
+    { header: 'Patient', key: 'patient' },
     { header: 'Service', key: 'service' },
     { header: 'Duration', key: 'duration', format: (value) => `${value} minutes` },
     { header: 'Walk-in', key: 'walk_in', format: (value) => value ? 'Yes' : 'No' },
     { header: 'Penalty', key: 'penalty', format: (value) => value ? 'Yes' : 'No' },
   ];
 
-  const processedData = visits.map(visit => ({
+  const processedData = visits.map(visit => {
+    const matchingAppointment = appointments.find(app => app.id === visit.booking)
+    const matchingVisits = visits.find(app => app.id === visit.id)
+    console.log(matchingVisits)
+    return {
     ...visit,
+    patient: matchingAppointment ? matchingAppointment.patientName : 'N/A',
     doctor: employeeDetails[visit.employee] 
-      ? `${employeeDetails[visit.employee].first_name} ${employeeDetails[visit.employee].last_name}`
-      : 'Unknown',
+    ? `${employeeDetails[visit.employee].first_name} ${employeeDetails[visit.employee].last_name}`
+    : 'Unknown',
     service: sellableDetails[visit.sellable]
-      ? sellableDetails[visit.sellable].name
-      : 'Unknown',
-  }));
+    ? sellableDetails[visit.sellable].name
+    : 'Unknown',
+  }});
 
   await exportToExcel(processedData, 'clinic_visits', columns);
 };
@@ -715,6 +722,7 @@ const exportLedgerTransactionsToExcel = async () => {
 
   return (
     <Card className={`mx-auto flex flex-col gap-4 p-4 w-full h-full shadow-xl transition-all duration-500 ease-out ${isVisible ? 'opacity-100 scale-100' : 'opacity-0 scale-90'}`}>  
+      {/* <ExcelToApiUploader /> */}
       <section className="flex h-1/2 gap-4">
           <Card className="flex-1 shadow-inner bg-gray-50">
             <CardHeader>
