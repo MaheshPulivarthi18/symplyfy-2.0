@@ -103,6 +103,7 @@ const PatientProfile = () => {
     date: new Date(), // Initialize with current date
     time: '',
     comment: '',
+    weekdays: [],
     employee: '',
     sellable: '',
     sellable_reduce_balance: false,
@@ -889,11 +890,17 @@ const AppointmentsDataTable = ({ data }) => {
       console.log("Start Date Time:", startDateTime);
       console.log("End Date Time:", endDateTime);
       
+      const weekdayMap = {
+        'Mon': 'MO', 'Tue': 'TU', 'Wed': 'WE', 'Thu': 'TH', 'Fri': 'FR', 'Sat': 'SA', 'Sun': 'SU'
+      };
+      const formattedWeekdays = newAppointment.weekdays.map(day => weekdayMap[day]).join(',');
+
       let recurrenceRule = null;
       if (newAppointment.frequency === 'weekly') {
         recurrenceRule = `RRULE:FREQ=WEEKLY;BYDAY=${formattedWeekdays}`;
         if (newAppointment.endsOn) {
-          const endDate = addMinutes(parseISO(newAppointment.endsOn), -indianTimeZoneOffset);
+          const endDate = parseISO(newAppointment.endsOn);
+          // console.log(endDate)
           recurrenceRule += `;UNTIL=${format(endDate, "yyyyMMdd'T'HHmmss'Z'")}`;
         } else if (newAppointment.sessions) {
           recurrenceRule += `;COUNT=${newAppointment.sessions}`;
@@ -912,8 +919,15 @@ const AppointmentsDataTable = ({ data }) => {
       console.log("Booking Data:", bookingData);
   
       const response = await createBooking(bookingData);
-      console.log(response)
-      setAppointments([...appointments, response]);
+    
+      // Format the new appointment data
+      const formattedAppointment = {
+        ...response,
+        employee: therapists.find(t => t.id === response.employee) || { id: response.employee, first_name: '', last_name: '' },
+        sellable: sellables.find(s => s.id === response.sellable) || { id: response.sellable, name: '' }
+      };
+
+      setAppointments(prevAppointments => [...prevAppointments, formattedAppointment]);
       setNewAppointment({
         date: '',
         time: '',
@@ -927,6 +941,9 @@ const AppointmentsDataTable = ({ data }) => {
       });
       setIsAppointmentDialogOpen(false);
       toast({ title: "Success", description: "Appointment booked successfully" });
+      
+      // Trigger a re-fetch of appointments
+      fetchAppointments();
     } catch (error) {
       console.log(error.message, "ERROR MESSAGE AT HANDLEADDAPPOINTMENT");
       console.log("Error stack:", error.stack);
@@ -939,22 +956,21 @@ const AppointmentsDataTable = ({ data }) => {
     try {
       console.log('Original newVisit date:', newVisit.date);
   
-      // Add one day to the selected date
-      const adjustedDate = format(addDays(new Date(newVisit.date), 1), "yyyy-MM-dd");
-  
-      const [hours, minutes] = newVisit.time.split(':').map(Number);
-      const localStartDateTime = new Date(adjustedDate);
-      localStartDateTime.setHours(hours, minutes, 0, 0);
-  
-      const durationInMinutes = newVisit.duration;
-  
-      const localEndDateTime = new Date(localStartDateTime.getTime() + durationInMinutes * 60000);
-  
-      // Format dates as ISO strings, but remove the 'Z' to keep them as local time
-      const formatLocalDate = (date) => date.toISOString().split('T')[0];
+      // Ensure we're working with a Date object
+      const selectedDate = new Date(newVisit.date);
       
+      // Convert the date to UTC
+      const utcDate = new Date(Date.UTC(
+        selectedDate.getFullYear(),
+        selectedDate.getMonth(),
+        selectedDate.getDate()
+      ));
+      
+      // Format the UTC date to YYYY-MM-DD
+      const formattedDate = utcDate.toISOString().split('T')[0];
+  
       const visitData = {
-        date: adjustedDate,
+        date: formattedDate,
         time: newVisit.time,
         comment: newVisit.comment,
         employee: newVisit.employee,
@@ -974,8 +990,15 @@ const AppointmentsDataTable = ({ data }) => {
         },
         body: JSON.stringify(visitData),
       });
-
-      setVisits(prevVisits => [...prevVisits, response]);
+  
+      // Format the response to match the expected structure
+      const formattedResponse = {
+        ...response,
+        employee: response.employee,
+        sellable: response.sellable
+      };
+  
+      setVisits(prevVisits => [...prevVisits, formattedResponse]);
       
       // Fetch details for the new visit
       if (response.employee) fetchEmployeeDetails(response.employee);
@@ -994,6 +1017,9 @@ const AppointmentsDataTable = ({ data }) => {
       });
       setIsVisitDialogOpen(false);
       toast({ title: "Success", description: "Visit added successfully" });
+  
+      // Refresh the visits data
+      fetchVisits();
     } catch (error) {
       toast({ title: "Error", description: error.message, variant: "destructive" });
     }
@@ -1980,9 +2006,12 @@ const exportLedgerTransactionsToExcel = async () => {
                             {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map((day) => (
                               <Button
                                 key={day}
+                                type="button"
                                 variant={newAppointment.weekdays.includes(day) ? "default" : "outline"}
                                 size="sm"
-                                onClick={() => {
+                                onClick={(e) => {
+                                  e.preventDefault();
+                                  e.stopPropagation();
                                   const updatedWeekdays = newAppointment.weekdays.includes(day)
                                     ? newAppointment.weekdays.filter(d => d !== day)
                                     : [...newAppointment.weekdays, day];
