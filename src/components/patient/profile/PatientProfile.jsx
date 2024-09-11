@@ -1,5 +1,5 @@
 // PatientProfile.jsx
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -27,7 +27,7 @@ import { parseISO, format, addMinutes, addHours, addDays, startOfWeek, startOfMo
 import { CalendarIcon, Clock } from "lucide-react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { date } from 'zod';
-import { MoreVertical, FileText, Phone, Mail, Edit, FileDown } from "lucide-react"
+import { MoreVertical, FileText, Phone, Mail, Edit, FileDown, Trash2Icon } from "lucide-react"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -48,6 +48,7 @@ import { DateRangePicker } from "@/components/ui/date-range-picker";
 import TherapistCountsDialog from './TherapistCounts';
 import VisitCountsDialog from './VisitCountsDialog';
 import { countryCodes } from '@/lib/countryCodes';
+import axios from 'axios';
 
 const PatientProfile = () => {
   const { clinic_id, patient_id } = useParams();
@@ -103,7 +104,6 @@ const PatientProfile = () => {
     date: new Date(), // Initialize with current date
     time: '',
     comment: '',
-    weekdays: [],
     employee: '',
     sellable: '',
     sellable_reduce_balance: false,
@@ -133,6 +133,21 @@ const PatientProfile = () => {
 
   const [ledgerTransactions, setLedgerTransactions] = useState([]);
   const [ledgerLoading, setLedgerLoading] = useState(true);
+
+  const [selectedFile, setSelectedFile] = useState(null);
+  const [isFileUploadDialogOpen, setIsFileUploadDialogOpen] = useState(false);
+  const [uploadingNoteId, setUploadingNoteId] = useState(null);
+  const [fileDetails, setFileDetails] = useState(null)
+
+  const [imageViewerUrl, setImageViewerUrl] = useState(null);
+
+  const openImageViewer = (url) => {
+    setImageViewerUrl(url);
+  };
+
+  const closeImageViewer = () => {
+    setImageViewerUrl(null);
+  };
 
   const fetchLedgerTransactions = async () => {
     setLedgerLoading(true);
@@ -436,6 +451,9 @@ const AppointmentsDataTable = ({ data }) => {
   const fetchWithTokenHandling = async (url, options = {}) => {
     try {
       const response = await authenticatedFetch(url, options);
+      if (response.status === 204) {
+        return response;
+      }
       if (!response.ok) {
         const errorData = await response.json();
         throw new Error(errorData.detail || 'An error occurred');
@@ -527,15 +545,15 @@ const AppointmentsDataTable = ({ data }) => {
     }
   };
 
-  const fetchNotes = async () => {
-    try {
-      const data = await fetchWithTokenHandling(`${import.meta.env.VITE_BASE_URL}/api/emp/clinic/${clinic_id}/patient/${patient_id}/note/`);
-      setNotes(data);
-    } catch (error) {
-      console.error("Failed to fetch notes:", error);
-      setNotes([]);
-    }
-  };
+  // const fetchNotes = async () => {
+  //   try {
+  //     const data = await fetchWithTokenHandling(`${import.meta.env.VITE_BASE_URL}/api/emp/clinic/${clinic_id}/patient/${patient_id}/note/`);
+  //     setNotes(data);
+  //   } catch (error) {
+  //     console.error("Failed to fetch notes:", error);
+  //     setNotes([]);
+  //   }
+  // };
 
   const fetchGoals = async () => {
     try {
@@ -547,9 +565,26 @@ const AppointmentsDataTable = ({ data }) => {
     }
   };
 
+  const fetchFileDetails = async (noteId, fileId) => {
+    try {
+      const data = await fetchWithTokenHandling(`${import.meta.env.VITE_BASE_URL}/api/emp/clinic/${clinic_id}/patient/${patient_id}/note/${noteId}/file/${fileId}`);
+      setFileDetails(prevDetails => ({
+        ...prevDetails,
+        [fileId]: data
+      }));
+    } catch (error) {
+      console.error("Failed to fetch employee details:", error);
+    }
+  };
+
   const fetchNoteDetails = async (noteId) => {
     try {
+      setFileDetails(null);
       const data = await fetchWithTokenHandling(`${import.meta.env.VITE_BASE_URL}/api/emp/clinic/${clinic_id}/patient/${patient_id}/note/${noteId}/`);
+      const fileData = await fetchWithTokenHandling(`${import.meta.env.VITE_BASE_URL}/api/emp/clinic/${clinic_id}/patient/${patient_id}/note/${noteId}/file`);
+      const fileIds = new Set(fileData.map(file => file.id).filter(Boolean));
+      const fetchFiles = Array.from(fileIds).map(fileId => fetchFileDetails(noteId, fileId));
+      await Promise.all([...fetchFiles]);
       setSelectedNote(data);
     } catch (error) {
       toast({
@@ -650,8 +685,117 @@ const AppointmentsDataTable = ({ data }) => {
     }
   };
 
+  const handleFileChange = (event) => {
+    const file = event.target.files[0];
+    // setSelectedFile(file);
+    if (file && file.type.startsWith('image/')) {
+      setSelectedFile(file);
+    } else {
+      toast({ title: "Error", description: "Please select a valid image file.", variant: "destructive" });
+      event.target.value = null; // Reset the input
+    }
+  };
+
+  const uploadFile = useCallback(async (noteId) => {
+    if (!selectedFile) {
+      toast({ title: "Error", description: "Please select a file to upload.", variant: "destructive" });
+      return false;
+    }
+  
+    try {
+      console.log("Requesting presigned URL...");
+      const presignedUrlResponse = await fetchWithTokenHandling(
+        `${import.meta.env.VITE_BASE_URL}/api/emp/clinic/${clinic_id}/patient/${patient_id}/note/${noteId}/file/`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name: selectedFile.name }),
+        }
+      );
+  
+      const { id: fileId, file: presignedUrl } = presignedUrlResponse;
+      console.log("Presigned URL received:", presignedUrl);
+  
+      console.log("Uploading file...");
+      const formData = new FormData();
+      formData.append('file', selectedFile);
+      console.log(selectedFile)
+  
+      await axios.put(presignedUrl, selectedFile, {
+        headers: {
+          'Content-Type': "multipart/form-data",
+          'Content-Length': selectedFile.size,
+          "x-amz-acl": "public-read" 
+        },
+      });
+  
+      console.log("File uploaded successfully. Marking as completed...");
+      await fetchWithTokenHandling(
+        `${import.meta.env.VITE_BASE_URL}/api/emp/clinic/${clinic_id}/patient/${patient_id}/note/${noteId}/file/${fileId}/`,
+        {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ completed: true }),
+        }
+      );
+  
+      console.log("File upload process completed successfully.");
+      toast({ title: "Success", description: "File uploaded successfully" });
+      setSelectedFile(null);
+      return true;
+    } catch (error) {
+      console.error("Error in uploadFile:", error);
+      if (error.message.includes('CORS')) {
+        toast({ 
+          title: "Error", 
+          description: "Unable to upload file due to a CORS error. Please contact the system administrator.", 
+          variant: "destructive" 
+        });
+      } else {
+        toast({ title: "Error", description: `File upload failed: ${error.message}`, variant: "destructive" });
+      }
+      return false;
+    }
+  }, [selectedFile, clinic_id, patient_id, fetchWithTokenHandling, authenticatedFetch, toast]);
+
+  const handleDownloadFile = (file) => {
+    const link = document.createElement('a');
+    link.href = file.file;
+    link.download = file.name;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+  
+  const handleDeleteFile = async (file) => {
+    if (window.confirm(`Are you sure you want to delete ${file.name}?`)) {
+      try {
+        const response = await fetchWithTokenHandling(`${import.meta.env.VITE_BASE_URL}/api/emp/clinic/${clinic_id}/patient/${patient_id}/note/${selectedNote.id}/file/${file.id}/`, {
+          method: 'DELETE',
+        });
+        
+        if (response.ok) {  // Check if status is in the range 200-299
+          toast({ title: "Success", description: "File deleted successfully" });
+          // Remove the file from fileDetails
+          setFileDetails(prevDetails => {
+            const newDetails = { ...prevDetails };
+            delete newDetails[file.id];
+            return newDetails;
+          });
+          // Refresh the note details
+          fetchNoteDetails(selectedNote.id);
+        } else {
+          throw new Error(`Server responded with status: ${response.status}`);
+        }
+      } catch (error) {
+        toast({ title: "Error", description: `Failed to delete file: ${error.message}`, variant: "destructive" });
+      }
+    }
+  };
+
   const addNote = async () => {
     try {
+      console.log("Adding new note...");
       const response = await fetchWithTokenHandling(`${import.meta.env.VITE_BASE_URL}/api/emp/clinic/${clinic_id}/patient/${patient_id}/note/`, {
         method: 'POST',
         headers: {
@@ -659,14 +803,79 @@ const AppointmentsDataTable = ({ data }) => {
         },
         body: JSON.stringify(newNote),
       });
-      setNotes([...notes, response]);
+      console.log("Note added successfully:", response);
+
+      let updatedNote = response;
+
+      if (selectedFile) {
+        console.log("Uploading file for the new note...");
+        const uploadSuccess = await uploadFile(response.id);
+        if (uploadSuccess) {
+          console.log("File uploaded successfully. Fetching updated note details...");
+          const updatedNoteResponse = await fetchWithTokenHandling(`${import.meta.env.VITE_BASE_URL}/api/emp/clinic/${clinic_id}/patient/${patient_id}/note/${response.id}/`);
+          updatedNote = updatedNoteResponse;
+        }
+      }
+
+      setNotes(prevNotes => [...prevNotes, updatedNote]);
       setNewNote({ description: '', visible_to_patient: false });
       toast({ title: "Success", description: "Note added successfully" });
-      setIsNoteDialogOpen(false); // Close the dialog
+      setIsNoteDialogOpen(false);
+
+      console.log("Fetching all notes...");
+      await fetchNotes();
     } catch (error) {
-      toast({ title: "Error", description: error.message, variant: "destructive" });
+      console.error("Error in addNote:", error);
+      toast({ title: "Error", description: `Failed to add note: ${error.message}`, variant: "destructive" });
     }
   };
+
+  const fetchNotes = async () => {
+    try {
+      console.log("Fetching notes...");
+      const data = await fetchWithTokenHandling(`${import.meta.env.VITE_BASE_URL}/api/emp/clinic/${clinic_id}/patient/${patient_id}/note/`);
+      console.log("Notes fetched successfully:", data);
+      setNotes(data);
+    } catch (error) {
+      console.error("Failed to fetch notes:", error);
+      toast({ title: "Error", description: `Failed to fetch notes: ${error.message}`, variant: "destructive" });
+      setNotes([]);
+    }
+  };
+
+  // Modify the notes rendering to include file information
+  const renderNotes = () => {
+    return (
+      <div>
+        {Object.values(fileDetails).map(file => (
+          <div key={file.id} className="p-2 bg-gray-100 rounded mb-2">
+            <div className="flex justify-between items-center mb-2">
+              <p>{file.name}</p>
+              <div>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  title="Download"
+                >
+                  <a href={file.file} target="_blank" rel="noopener noreferrer"> <FileDownIcon className="h-4 w-4" /> </a>
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => handleDeleteFile(file)}
+                  title="Delete"
+                >
+                  <Trash2Icon className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
+            <img src={file.file} alt={file.name} className="max-w-full max-h-[80vh] object-contain" />
+          </div>
+        ))}
+      </div>
+    );
+  };
+  
 
   const addGoal = async () => {
     try {
@@ -1475,8 +1684,8 @@ const exportLedgerTransactionsToExcel = async () => {
                         <SelectValue placeholder="Select country code" />
                       </SelectTrigger>
                       <SelectContent>
-                        {countryCodes.map((code) => (
-                          <SelectItem key={code.code} value={code.code}>
+                        {countryCodes.map((code, index) => (
+                          <SelectItem key={`${code.code}-${index}`} value={code.code}>
                             {code.name} ({code.code})
                           </SelectItem>
                         ))}
@@ -1637,20 +1846,26 @@ const exportLedgerTransactionsToExcel = async () => {
             ) : (
               notes.map(note => (
                 <Dialog 
-                    key={note.id} 
-                    open={openNoteDialogs[note.id]} 
-                    onOpenChange={(open) => setOpenNoteDialogs(prev => ({ ...prev, [note.id]: open }))}
-                  >
+                  key={note.id} 
+                  open={openNoteDialogs[note.id]} 
+                  onOpenChange={(open) => setOpenNoteDialogs(prev => ({ ...prev, [note.id]: open }))}
+                >
                   <DialogTrigger asChild>
                     <div 
-                        className="p-2 bg-gray-100 rounded mb-2 cursor-pointer" 
-                        onClick={() => {
-                          fetchNoteDetails(note.id);
-                          setOpenNoteDialogs(prev => ({ ...prev, [note.id]: true }));
-                        }}
-                      >
+                      className="p-2 bg-gray-100 rounded mb-2 cursor-pointer" 
+                      onClick={() => {
+                        fetchNoteDetails(note.id);
+                        setOpenNoteDialogs(prev => ({ ...prev, [note.id]: true }));
+                      }}
+                    >
                       <p>{note.description}</p>
                       <small>{new Date(note.created_on).toLocaleString()}</small>
+                      {note.files && note.files.map(file => (
+                        <div key={file.id} className="flex items-center mt-2">
+                          <FileIcon className="h-4 w-4 mr-2" />
+                          <a href={file.file} target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline">{file.name}</a>
+                        </div>
+                      ))}
                     </div>
                   </DialogTrigger>
                   <DialogContent>
@@ -1671,10 +1886,25 @@ const exportLedgerTransactionsToExcel = async () => {
                           />
                           <Label htmlFor="visible-to-patient">Visible to patient</Label>
                         </div>
-                        <Button onClick={() => updateNote(selectedNote.id, {
-                          description: selectedNote.description,
-                          visible_to_patient: selectedNote.visible_to_patient
-                        })}>Update Note</Button>
+                        {fileDetails !== null ? (
+                          <div>
+                            <h3>Attached Images:</h3>
+                            {renderNotes()}
+                          </div>
+                        ) : <></>}
+                        <Input 
+                          type="file"
+                          onChange={handleFileChange} 
+                        />
+                        <Button onClick={() => {
+                          updateNote(selectedNote.id, {
+                            description: selectedNote.description,
+                            visible_to_patient: selectedNote.visible_to_patient
+                          });
+                          if (selectedFile) {
+                            uploadFile(selectedNote.id);
+                          }
+                        }}>Update Note</Button>
                       </>
                     )}
                   </DialogContent>
@@ -1703,6 +1933,10 @@ const exportLedgerTransactionsToExcel = async () => {
                   />
                   <Label htmlFor="visible-to-patient">Visible to patient</Label>
                 </div>
+                <Input 
+                  type="file" 
+                  onChange={handleFileChange} 
+                />
                 <Button onClick={addNote}>Save Note</Button>
               </DialogContent>
             </Dialog>
