@@ -1935,7 +1935,8 @@ const exportLedgerTransactionsToExcel = async () => {
                   <Label htmlFor="visible-to-patient">Visible to patient</Label>
                 </div>
                 <Input 
-                  type="file" 
+                  type="file"
+                  accept="image/*"
                   onChange={handleFileChange} 
                 />
                 <Button onClick={addNote}>Save Note</Button>
