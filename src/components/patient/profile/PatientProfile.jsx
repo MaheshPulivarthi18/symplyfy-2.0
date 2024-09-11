@@ -1894,6 +1894,7 @@ const exportLedgerTransactionsToExcel = async () => {
                         ) : <></>}
                         <Input 
                           type="file"
+                          accept="image/*"
                           onChange={handleFileChange} 
                         />
                         <Button onClick={() => {

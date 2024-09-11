@@ -211,6 +211,7 @@ const ClinicInformation = () => {
         <div className='flex gap-6'>
           <Input 
             type="file"
+            accept="image/*"
             onChange={handleFileChange} 
           />
           <Button onClick={() => {
