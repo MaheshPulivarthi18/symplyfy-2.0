@@ -617,7 +617,7 @@ export default function Schedule() {
   const handleDelete = async (eventToDelete, deleteScope) => {
     try {
       const url = `${import.meta.env.VITE_BASE_URL}/api/emp/clinic/${clinic_id}/schedule/booking/${eventToDelete.id}/delete/`;
-      const queryParams = deleteScope === '1' ? `?scope=recurrnece` : '';
+      const queryParams = deleteScope === '1' ? `?scope=recurrence` : '';
   
       const response = await authenticatedFetch(`${url}${queryParams}`, {
         method: 'DELETE',
