@@ -59,6 +59,7 @@ const Dashboard = () => {
   const [ledgerLoading, setLedgerLoading] = useState(true);
   const [selectedInvoice, setSelectedInvoice] = useState(null);
   const [invoiceLoading, setInvoiceLoading] = useState(false);
+  const [rawLedgerTransactions, setRawLedgerTransactions] = useState([]);
 
 
   useEffect(() => {
@@ -125,7 +126,7 @@ const Dashboard = () => {
           end: customDateRange.to ? new Date(customDateRange.to.setHours(23, 59, 59, 999)) : new Date(now.setHours(23, 59, 59, 999)) 
         };
       default:
-        return { start: new Date(now.setHours(0, 0, 0, 0)), end: new Date(now.setHours(23, 59, 59, 999)) };
+        return { start: todayStart, end: todayEnd };
     }
   };
 
@@ -190,33 +191,26 @@ const Dashboard = () => {
       setUpcomingAppointmentsLoading(true);
       setReceivedAppointmentsLoading(true);
       setLoading(true);
-      const { start, end } = getDateRange();
       
-      if (!start || !end) {
-        throw new Error('Invalid date range');
-      }
-  
-      // Function to format date to YYYY-MM-DDTHH:mm:ss
-      const formatDateForAPI = (date) => {
-        return date.getFullYear() +
-          '-' + String(date.getMonth() + 1).padStart(2, '0') +
-          '-' + String(date.getDate()).padStart(2, '0') +
-          'T' + String(date.getHours()).padStart(2, '0') +
-          ':' + String(date.getMinutes()).padStart(2, '0') +
-          ':' + String(date.getSeconds()).padStart(2, '0');
-      };
-  
+      const today = new Date();
+      const start = startOfDay(today);
+      const end = endOfDay(today);
+
+      // Function to format date for API
+      const formatDateForAPI = (date) => format(date, "yyyy-MM-dd'T'HH:mm:ss");
+
       const response = await authenticatedFetch(
         `${import.meta.env.VITE_BASE_URL}/api/emp/clinic/${clinic_id}/schedule/booking/?time_from=${formatDateForAPI(start)}&time_to=${formatDateForAPI(end)}`
       );
       if (!response.ok) throw new Error('Failed to fetch bookings');
       const data = await response.json();
-  
+
       // Use a Map to store unique bookings by ID
       const bookingsMap = new Map(data.map(booking => [booking.id, booking]));
-  
+
+      // Fetch patient bookings
       for (const patient of patients) {
-        const patResponse = await authenticatedFetch(`${import.meta.env.VITE_BASE_URL}/api/emp/clinic/${clinic_id}/patient/${patient.id}/booking/?time_from=${start.toISOString().replace(/\.\d{3}Z$/, '')}&time_to=${end.toISOString().replace(/\.\d{3}Z$/, '')}`);
+        const patResponse = await authenticatedFetch(`${import.meta.env.VITE_BASE_URL}/api/emp/clinic/${clinic_id}/patient/${patient.id}/booking/?time_from=${formatDateForAPI(start)}&time_to=${formatDateForAPI(end)}`);
         if (!patResponse.ok) throw new Error('Failed to fetch patient bookings');
         const patientBookings = await patResponse.json();
         patientBookings.forEach(booking => {
@@ -225,10 +219,10 @@ const Dashboard = () => {
           }
         });
       }
-  
+
       // Convert Map back to array
       const finalData = Array.from(bookingsMap.values());
-  
+
       const formattedAppointments = finalData.map(booking => ({
         id: booking.id,
         patientName: `${booking.patient.first_name} ${booking.patient.last_name}`,
@@ -242,16 +236,18 @@ const Dashboard = () => {
         status_employee: booking.status_employee,
         recurrence: booking.recurrence
       }));
-  
+
       setAppointments(formattedAppointments);
       updateFilteredAppointments(formattedAppointments, selectedDoctor);
       setSummary(prevSummary => ({
         ...prevSummary,
-        upcomingAppointments: formattedAppointments.filter(app => (app.status_patient !== 'X' || app.status_employee !== 'X') && (app.status_employee !== 'X' || app.status_employee !== 'X')).length,
+        upcomingAppointments: formattedAppointments.filter(app => 
+          (app.status_patient !== 'X' && app.status_employee !== 'X') && 
+          new Date(app.start) > new Date()
+        ).length,
         canceledBookings: formattedAppointments.filter(app => app.status_patient === 'X' || app.status_employee === 'X').length,
         receivedAppointments: formattedAppointments.filter(app => app.status_patient === 'P' && app.status_employee === 'P').length,
       }));
-      console.log(formattedAppointments)
     } catch (error) {
       console.error('Failed to fetch appointments:', error);
       toast({
@@ -271,19 +267,7 @@ const Dashboard = () => {
     try {
       const { start, end } = getDateRange();
       const response = await fetchWithTokenHandling(`${import.meta.env.VITE_BASE_URL}/api/emp/clinic/${clinic_id}/patient/all/ledger/?date_from=${format(start, 'yyyy-MM-dd')}&date_to=${format(end, 'yyyy-MM-dd')}`);
-      const processedTransactions = response.map(transaction => {
-        const patient = patients.find(p => p.id === transaction.patient);
-        const patientName = patient ? `${patient.first_name} ${patient.last_name}` : 'Unknown';
-        return {
-          ...transaction,
-          amount_credit: isNaN(parseFloat(transaction.amount_credit)) ? 0 : parseFloat(transaction.amount_credit),
-          amount_debit: isNaN(parseFloat(transaction.amount_debit)) ? 0 : parseFloat(transaction.amount_debit),
-          patientName,
-          transactionType: transaction.transaction === 'i' ? 'Invoice' : 'Payment',
-          searchableContent: `${transaction.transaction === 'i' ? 'Invoice' : 'Payment'}: ${patientName}`,
-        };
-      });
-      setLedgerTransactions(processedTransactions);
+      setRawLedgerTransactions(response);
     } catch (error) {
       console.error('Failed to fetch ledger transactions:', error);
       toast({
@@ -291,10 +275,33 @@ const Dashboard = () => {
         description: "Failed to fetch ledger transactions. Please try again.",
         variant: "destructive",
       });
+
     } finally {
       setLedgerLoading(false);
     }
   };
+
+  const processLedgerTransactions = () => {
+    const processedTransactions = rawLedgerTransactions.map(transaction => {
+      const patient = patients.find(p => p.id === transaction.patient);
+      const patientName = patient ? `${patient.first_name} ${patient.last_name}` : 'Unknown';
+      return {
+        ...transaction,
+        amount_credit: isNaN(parseFloat(transaction.amount_credit)) ? 0 : parseFloat(transaction.amount_credit),
+        amount_debit: isNaN(parseFloat(transaction.amount_debit)) ? 0 : parseFloat(transaction.amount_debit),
+        patientName,
+        transactionType: transaction.transaction === 'i' ? 'Invoice' : 'Payment',
+        searchableContent: `${transaction.transaction === 'i' ? 'Invoice' : 'Payment'}: ${patientName}`,
+      };
+    });
+    setLedgerTransactions(processedTransactions);
+  };
+
+  useEffect(() => {
+    if (patients.length > 0 && rawLedgerTransactions.length > 0) {
+      processLedgerTransactions();
+    }
+  }, [patients, rawLedgerTransactions]);
 
 
   const fetchInvoiceDetails = async (patientId, invoiceId) => {
@@ -373,7 +380,7 @@ const Dashboard = () => {
     };
   
     fetchData();
-  }, [])
+  }, [patients])
 
   useEffect(() => {
     const fetchData = async () => {
