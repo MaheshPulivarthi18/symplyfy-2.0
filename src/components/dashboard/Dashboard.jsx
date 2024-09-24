@@ -209,16 +209,16 @@ const Dashboard = () => {
       const bookingsMap = new Map(data.map(booking => [booking.id, booking]));
 
       // Fetch patient bookings
-      for (const patient of patients) {
-        const patResponse = await authenticatedFetch(`${import.meta.env.VITE_BASE_URL}/api/emp/clinic/${clinic_id}/patient/${patient.id}/booking/?time_from=${formatDateForAPI(start)}&time_to=${formatDateForAPI(end)}`);
-        if (!patResponse.ok) throw new Error('Failed to fetch patient bookings');
-        const patientBookings = await patResponse.json();
-        patientBookings.forEach(booking => {
-          if (!bookingsMap.has(booking.id)) {
-            bookingsMap.set(booking.id, booking);
-          }
-        });
-      }
+      // for (const patient of patients) {
+      //   const patResponse = await authenticatedFetch(`${import.meta.env.VITE_BASE_URL}/api/emp/clinic/${clinic_id}/patient/${patient.id}/booking/?time_from=${formatDateForAPI(start)}&time_to=${formatDateForAPI(end)}`);
+      //   if (!patResponse.ok) throw new Error('Failed to fetch patient bookings');
+      //   const patientBookings = await patResponse.json();
+      //   patientBookings.forEach(booking => {
+      //     if (!bookingsMap.has(booking.id)) {
+      //       bookingsMap.set(booking.id, booking);
+      //     }
+      //   });
+      // }
 
       // Convert Map back to array
       const finalData = Array.from(bookingsMap.values());
@@ -368,19 +368,19 @@ const Dashboard = () => {
     setLoading(false);
   };
 
-  useEffect(() => {
-    const fetchData = async () => {
-      setLoading(true);
-      setVisitsLoading(true);
-      await Promise.all([fetchVisits(), fetchAppointments()]);
-      setProgress(100);
-      setLoading(false);
-      setVisitsLoading(false);
-      setIsVisible(true);
-    };
+  // useEffect(() => {
+  //   const fetchData = async () => {
+  //     setLoading(true);
+  //     setVisitsLoading(true);
+  //     await Promise.all([fetchVisits(), fetchAppointments()]);
+  //     setProgress(100);
+  //     setLoading(false);
+  //     setVisitsLoading(false);
+  //     setIsVisible(true);
+  //   };
   
-    fetchData();
-  }, [patients])
+  //   fetchData();
+  // }, [patients])
 
   useEffect(() => {
     const fetchData = async () => {
@@ -456,8 +456,7 @@ const Dashboard = () => {
     ];
   
     const processedData = data.map(visit => {
-      const matchingAppointment = appointments.find(app => app.id === visit.booking);
-      const patientName = matchingAppointment ? matchingAppointment.patientName : 'N/A';
+      const patientName = visit.patient.first_name + " " + visit.patient.last_name;
       
       return {
         ...visit,
