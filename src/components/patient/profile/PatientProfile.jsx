@@ -717,8 +717,8 @@ const AppointmentsDataTable = ({ data }) => {
       console.log("Presigned URL received:", presignedUrl);
   
       console.log("Uploading file...");
-      const formData = new FormData();
-      formData.append('file', selectedFile);
+      // const formData = new FormData();
+      // formData.append('file', selectedFile);
       console.log(selectedFile)
   
       await axios.put(presignedUrl, selectedFile, {
@@ -1334,7 +1334,7 @@ const AppointmentsDataTable = ({ data }) => {
         body: JSON.stringify({ status }),
       });
       
-      toast({ title: "Success", description: "Invoice status updated successfully" });
+      toast({ title: "Success", description: `Invoice ${status === 'c' ? 'confirmed' : 'cancelled'} successfully` });
       await fetchInvoices();
       await fetchLedgerTransactions();
       setIsInvoiceStatusDialogOpen(false);

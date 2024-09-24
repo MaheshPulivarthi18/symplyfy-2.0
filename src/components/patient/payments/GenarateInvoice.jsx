@@ -191,6 +191,7 @@ const InvoiceDetailsDialog = ({ invoice, isOpen, onClose, onUpdateStatus, isLoad
       window.open(invoice.html, '_blank');
     }
   };
+  console.log(invoice)
 
   const handleDownloadInvoicePdf = () => {
     if (invoice && invoice.pdf) {
@@ -217,6 +218,34 @@ const InvoiceDetailsDialog = ({ invoice, isOpen, onClose, onUpdateStatus, isLoad
                 <ExternalLink className="mr-2 h-4 w-4" />
                 View Invoice
               </Button>
+              {invoice.status === 'c' && (
+                <div className="flex space-x-2">
+                  <Button variant="destructive" onClick={() => onUpdateStatus('x')} disabled={isLoading}>
+                    {isLoading ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Cancelling...
+                      </>
+                    ) : (
+                      'Cancel Invoice'
+                    )}
+                  </Button>
+                </div>
+              )}
+              {invoice.status === 'x' && (
+                <div className="flex space-x-2">
+                  <Button onClick={() => onUpdateStatus('c')} disabled={isLoading}>
+                    {isLoading ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Confirming...
+                      </>
+                    ) : (
+                      'Confirm Invoice'
+                    )}
+                  </Button>
+                </div>
+              )}
               {/* <Button onClick={handleDownloadInvoicePdf} disabled={!invoice.pdf}>
                 <FileDown className="mr-2 h-4 w-4" />
                 Download PDF
