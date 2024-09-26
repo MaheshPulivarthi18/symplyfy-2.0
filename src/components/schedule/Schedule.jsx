@@ -153,9 +153,24 @@ export default function Schedule() {
   // }, [patients]);
 
   useEffect(() => {
-    fetchBookings();
-    fetchVisits()
+    const fetchAllEvents = async () => {
+      setLoading(true);
+      try {
+        const [bookings, visits] = await Promise.all([fetchBookings(), fetchVisits()]);
+        const allEvents = [...bookings, ...visits];
+        setEvents(allEvents);
+        updateAppointmentCounts(allEvents);
+        console.log(events)
+      } catch (error) {
+        console.error('Error fetching events:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchAllEvents();
   }, [date, view, clinic_id, selectedDoctorId, dateRange]);
+  
+  
 
   useEffect(() => {
     fetchWorkingHours();
@@ -236,63 +251,6 @@ export default function Schedule() {
     }
   };
 
-
-  // const fetchBookings = async () => {
-  //   try {
-  //     // Fetch main bookings
-  //     const response = await authenticatedFetch(`${import.meta.env.VITE_BASE_URL}/api/emp/clinic/${clinic_id}/schedule/booking/`);
-  //     if (!response.ok) throw new Error('Failed to fetch bookings');
-  //     const data = await response.json();
-  
-  //     // Use a Map to store unique bookings by ID
-  //     const bookingsMap = new Map(data.map(booking => [booking.id, booking]));
-  
-  //     // Fetch patient bookings and add only if not already present
-  //     for (const patient of patients) {
-  //       const patResponse = await authenticatedFetch(`${import.meta.env.VITE_BASE_URL}/api/emp/clinic/${clinic_id}/patient/${patient.id}/booking/`);
-  //       if (!patResponse.ok) throw new Error('Failed to fetch patient bookings');
-  //       const patientBookings = await patResponse.json();
-  //       patientBookings.forEach(booking => {
-  //         if (!bookingsMap.has(booking.id)) {
-  //           bookingsMap.set(booking.id, booking);
-  //         }
-  //       });
-  //     }
-  
-  //     // Convert Map back to array
-  //     const finalData = Array.from(bookingsMap.values());
-  
-  //     // console.log("Final bookings data:", finalData);
-  
-  //     // Format the combined data
-  //     const formattedEvents = finalData.map(booking => ({
-  //       id: booking.id,
-  //       title: `${booking.patient.first_name} ${booking.patient.last_name}`,
-  //       start: new Date(booking.start),
-  //       end: new Date(booking.end),
-  //       patientId: booking.patient.id,
-  //       patientName: `${booking.patient.first_name} ${booking.patient.last_name}`,
-  //       doctorId: booking.employee.id,
-  //       doctorName: `${booking.employee.first_name} ${booking.employee.last_name === null ? "" : booking.employee.last_name}`,
-  //       service: booking.sellable,
-  //       resourceId: booking.employee.id,
-  //       status_patient: booking.status_patient,
-  //       status_employee: booking.status_employee,
-  //       recurrence: booking.recurrence
-  //     }));
-  
-  //     setEvents(formattedEvents);
-  //   } catch (error) {
-  //     toast({
-  //       title: "Error",
-  //       description: "Failed to fetch bookings. Please try again.",
-  //       variant: "destructive",
-  //     });
-  //   } finally {
-  //     setLoading(false);
-  //   }
-  // };
-  
   const formatDateForAPI = (date) => {
     return date.toISOString()
       .replace(/\.\d{3}Z$/, '')
@@ -355,12 +313,14 @@ export default function Schedule() {
         status_employee: booking.status_employee,
         recurrence: booking.recurrence,
         attended: booking.attended,
-      }));
+        eventType: 'booking', // Add eventType for consistency
+      }));      
       
       setEvents(formattedEvents);
       updateAppointmentCounts(formattedEvents);
       setEvents(formattedEvents);
       console.log(formattedEvents)
+      return formattedEvents
     } catch (error) {
       console.error('Error fetching bookings:', error);
       toast({
@@ -371,6 +331,7 @@ export default function Schedule() {
       if (error.message.includes('Authentication failed')) {
         // Handle authentication error (e.g., redirect to login page)
       }
+      return []
     } finally {
       setLoading(false);
     }
@@ -1022,30 +983,20 @@ export default function Schedule() {
   const filteredEvents = events.filter(event => {
     const doctorMatch = !selectedDoctorId || event.resourceId === selectedDoctorId;
     const patientMatch = !selectedPatientId || event.patientId === selectedPatientId;
-    
+  
     const isCancelled = event.status_patient === 'X' || event.status_employee === 'X';
+    const isVisit = event.eventType === 'visit';
   
-    // Only filter out cancelled events if showCancelled is false
-    const statusMatch = showCancelled ? true : !isCancelled;
+    // Include visits and non-cancelled events, or cancelled events if showCancelled is true
+    const includeEvent = isVisit || !isCancelled || (isCancelled && showCancelled);
   
-    return (doctorMatch && patientMatch && statusMatch);
-  });
+    return doctorMatch && patientMatch && includeEvent;
+  });  
 
   const formattedFilteredEvents = filteredEvents.map(event => ({
-    id: event.id,
-    title: event.title,
+    ...event,
     start: new Date(event.start),
     end: new Date(event.end),
-    resourceId: event.doctorId,
-    status_patient: event.status_patient,
-    status_employee: event.status_employee,
-    attended: event.attended,
-    doctor: event.doctorName,
-    patient: event.patientName,
-    patientId: event.patientId,
-    doctorId: event.doctorId,
-    service: event.sellable,
-    recurrence: event.recurrence
   }));
 
   const getDateRange = () => {
@@ -1066,12 +1017,11 @@ export default function Schedule() {
 
   const fetchVisits = async () => {
     try {
-      // const { start, end } = getDateRange();
       let viewStart, viewEnd;
-
+  
       if (view === 'day') {
-        viewStart = addDays(startOfDay(date), 1);
-        viewEnd = addDays(endOfDay(date), 0);
+        viewStart = startOfDay(date);
+        viewEnd = endOfDay(date);
       } else if (view === 'week') {
         viewStart = startOfWeek(date);
         viewEnd = endOfWeek(date);
@@ -1079,18 +1029,39 @@ export default function Schedule() {
         viewStart = startOfMonth(date);
         viewEnd = endOfMonth(date);
       }
-
-      const dateFrom = viewStart.toISOString().split("T")[0]
-      const dateTo = viewEnd.toISOString().split("T")[0]
   
-      // if (!start || !end) {
-      //   throw new Error('Invalid date range');
-      // }
+      const dateFrom = viewStart.toISOString().split("T")[0];
+      const dateTo = viewEnd.toISOString().split("T")[0];
   
-      const response = await authenticatedFetch(`${import.meta.env.VITE_BASE_URL}/api/emp/clinic/${clinic_id}/visit/?date_from=${dateFrom}&date_to=${dateTo}`);
-      const data = await response.json()
-      // setTotalVisited(data.length)
-      console.log(data.length)
+      const response = await authenticatedFetch(
+        `${import.meta.env.VITE_BASE_URL}/api/emp/clinic/${clinic_id}/visit/?date_from=${dateFrom}&date_to=${dateTo}`
+      );
+      const data = await response.json();
+  
+      const formattedVisits = data.map(visit => {
+        const startDateTime = new Date(`${visit.date}T${visit.time}`);
+        const durationInMinutes = visit.sellable.duration || 30;
+        const endDateTime = new Date(startDateTime.getTime() + durationInMinutes * 60000);
+        const therapist = therapists.find(t => t.id === visit.employee);
+      
+        return {
+          id: `visit-${visit.id}`,
+          title: `Visit: ${visit.patient.first_name} ${visit.patient.last_name}`,
+          start: startDateTime,
+          end: endDateTime,
+          patientId: visit.patient.id,
+          patientName: `${visit.patient.first_name} ${visit.patient.last_name}`,
+          doctorId: visit.employee,
+          doctorName: therapist ? `${therapist.first_name} ${therapist.last_name || ""}` : " ",
+          service: visit.sellable,
+          resourceId: visit.employee,
+          eventType: 'visit',
+          attended: true,
+        };
+      });
+      
+  
+      return formattedVisits;
     } catch (error) {
       console.error('Failed to fetch visits:', error);
       toast({
@@ -1098,8 +1069,10 @@ export default function Schedule() {
         description: "Failed to fetch visits. Please try again.",
         variant: "destructive",
       });
+      return [];
     }
   };
+  
 
   const updateAppointmentCounts = (events) => {
     let scheduled = 0;
@@ -1107,9 +1080,11 @@ export default function Schedule() {
     let cancelled = 0;
   
     events.forEach(event => {
-      if (event.status_patient === 'X' || event.status_employee === 'X') {
+      if (event.eventType === 'visit') {
+        visited++;
+      } else if (event.status_patient === 'X' || event.status_employee === 'X') {
         cancelled++;
-      } else if(event.attended === true){
+      } else if (event.attended === true) {
         visited++;
         scheduled++;
       } else {
@@ -1291,33 +1266,41 @@ export default function Schedule() {
 
   const CustomEvent = ({ event }) => {
     let badgeColor = 'transparent';
-    if (event.attended) {
-      badgeColor = '#116530'; // Green color for confirmed events
-    } 
-    // else if (event.status_employee === 'C' || event.status_patient === 'C') {
-    //   badgeColor = '#FFA500'; // Orange color for attended events
-    // }
-
+  
+    // Determine badge color based on event type
+    if (event.eventType === 'visit') {
+      badgeColor = '#90EE90'; // Light green for visits
+    } else if (event.attended) {
+      badgeColor = '#116530'; // Dark green for attended bookings
+    }
+  
     const getFirstName = (fullName) => {
-      return fullName && typeof fullName === 'string' ? fullName.split(" ")[0]  : '';
+      return fullName && typeof fullName === 'string' ? fullName.split(" ")[0] : '';
     };
-
-    const title = event.title && event.title !== "" 
-      ? `${getFirstName(event.title)} - Dr. ` 
-      : "Untitled";
-
-    const doctorName = getFirstName(event.doctor);
+  
+    let title, doctorName;
+  
+    if (event.eventType === 'visit') {
+      // For visits
+      title = `Visit: ${getFirstName(event.patientName)}`;
+      doctorName = getFirstName(event.doctorName);
+    } else {
+      // For bookings
+      title = event.title && event.title !== ""
+        ? `${getFirstName(event.title)} - Dr. `
+        : "Untitled";
+      doctorName = getFirstName(event.doctorName);
+    }
   
     return (
       <div style={{ height: '100%', width: '100%', position: 'relative' }}>
-        <div style={{ 
-          height: '14px', 
-          width: '8%', 
-          backgroundColor: badgeColor, 
-          position: 'absolute', 
-          top: 0, 
+        <div style={{
+          height: '14px',
+          width: '8%',
+          backgroundColor: badgeColor,
+          position: 'absolute',
+          top: 0,
           right: 0,
-          flexDirection: "row"
         }} />
         <div style={{ padding: '4px 2px'}}>
           {title} {doctorName}
@@ -1325,6 +1308,7 @@ export default function Schedule() {
       </div>
     );
   };
+  
 
   return (
     // className={`mx-auto flex flex-col gap-4 p-4 w-full h-full shadow-xl transition-all duration-500 ease-out ${isVisible ? 'opacity-100 scale-100' : 'opacity-0 scale-90'}`}
@@ -1511,7 +1495,7 @@ export default function Schedule() {
             onNavigate={handleNavigate}
             eventPropGetter={(event) => {
               let style = {
-                backgroundColor: '#7EC8E3',  // Lighter blue color
+                backgroundColor: event.eventType === 'visit' ? '#90EE90' : '#7EC8E3',
                 color: 'black',
                 height: '100%',
               };

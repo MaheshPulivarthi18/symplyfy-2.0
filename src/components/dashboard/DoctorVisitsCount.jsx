@@ -15,7 +15,7 @@ const DoctorVisitCounts = ({ data }) => {
       <DialogTrigger asChild>
         <Button variant="">View Doctor Visit Counts</Button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-[425px]">
+      <DialogContent className="max-w-5xl w-full max-h-[100vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Doctor Visit Counts</DialogTitle>
         </DialogHeader>

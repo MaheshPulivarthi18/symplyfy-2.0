@@ -364,8 +364,7 @@ const Dashboard = () => {
         new Date(app.start) > now &&
         new Date(app.start) <= endOfToday
       )
-      .sort((a, b) => new Date(a.start) - new Date(b.start))
-      .slice(0, 3);
+      .sort((a, b) => new Date(a.start) - new Date(b.start));
     setFilteredAppointments(filtered);
   };
 
@@ -378,20 +377,6 @@ const Dashboard = () => {
     await fetchAppointments();
     setLoading(false);
   };
-
-  // useEffect(() => {
-  //   const fetchData = async () => {
-  //     setLoading(true);
-  //     setVisitsLoading(true);
-  //     await Promise.all([fetchVisits(), fetchAppointments()]);
-  //     setProgress(100);
-  //     setLoading(false);
-  //     setVisitsLoading(false);
-  //     setIsVisible(true);
-  //   };
-  
-  //   fetchData();
-  // }, [patients])
 
   useEffect(() => {
     const fetchData = async () => {
@@ -607,7 +592,7 @@ const Dashboard = () => {
 
     return (
       <Dialog open={!!invoice || loading} onOpenChange={() => setSelectedInvoice(null)}>
-        <DialogContent>
+        <DialogContent className="max-w-5xl w-full max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Invoice Details</DialogTitle>
           </DialogHeader>
@@ -736,6 +721,22 @@ const exportLedgerTransactionsToExcel = async () => {
   await exportToExcel(ledgerTransactions, 'clinic_ledger_transactions', columns);
 };
 
+  // Map dateRange values to display names
+  const dateRangeOptions = {
+    'today': 'Today',
+    'yesterday': 'Yesterday',
+    'thisWeek': 'This Week',
+    'thisMonth': 'This Month',
+    'thisYear': 'This Year',
+    'custom': 'Custom Range',
+  };
+  const dateRangeDisplay = dateRangeOptions[dateRange];
+
+  // Calculate total appointments today for the selected doctor
+  const totalAppointmentsTodayForDoctor = appointments.filter(app => 
+    (!selectedDoctor || app.doctorId === selectedDoctor) &&
+    new Date(app.start).toDateString() === new Date().toDateString()
+  ).length;
 
   return (
     <Card className={`mx-auto flex flex-col gap-4 p-4 w-full h-full shadow-xl transition-all duration-500 ease-out ${isVisible ? 'opacity-100 scale-100' : 'opacity-0 scale-90'}`}>  
@@ -744,9 +745,7 @@ const exportLedgerTransactionsToExcel = async () => {
           <Card className="flex-1 shadow-inner bg-gray-50">
             <CardHeader>
               <CardTitle className="text-lg font-semibold flex items-center gap-2">
-                Today's Appointments ({appointments.filter(app => 
-                  new Date(app.start).toDateString() === new Date().toDateString()
-                ).length}) 
+                Today's Appointments ({totalAppointmentsTodayForDoctor}) 
                 <RefreshCw size={18} onClick={refreshAppointments} className="cursor-pointer" />
               </CardTitle>
               <Select 
@@ -776,15 +775,17 @@ const exportLedgerTransactionsToExcel = async () => {
               ) : filteredAppointments.length === 0 ? (
                 "No upcoming appointments for selected date range"
               ) : (
-                <ul className='flex flex-col gap-4'>
-                  {filteredAppointments.map(appointment => (
-                    <li key={appointment.id}>
-                      <Button className="w-full text-left justify-start">
-                        {format(appointment.start, 'EEEE dd MMM HH:mm')} - {appointment.doctorName} - {appointment.patientName}
-                      </Button>
-                    </li>
-                  ))}
-                </ul>
+                <div className='overflow-y-auto' style={{ maxHeight: '165px' }}>
+                  <ul className='flex flex-col gap-4'>
+                    {filteredAppointments.map(appointment => (
+                      <li key={appointment.id}>
+                        <Button className="w-full text-left justify-start">
+                          {format(appointment.start, 'EEEE dd MMM HH:mm')} - {appointment.doctorName} - {appointment.patientName}
+                        </Button>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
               )}
             </CardContent>
           </Card>
@@ -799,7 +800,7 @@ const exportLedgerTransactionsToExcel = async () => {
               </Button>
                 <Popover>
                   <PopoverTrigger asChild>
-                    <Button variant="outline"><Filter className="mr-2 h-4 w-4" /> Filter</Button>
+                    <Button variant="outline">{dateRangeDisplay} <Filter className="ml-2 h-4 w-4" /></Button>
                   </PopoverTrigger>
                   <PopoverContent className="">
                     <Select value={dateRange}
@@ -863,7 +864,7 @@ const exportLedgerTransactionsToExcel = async () => {
                               )}
                             </div>
                           </DialogTrigger>
-                          <DialogContent className="max-w-5xl">
+                          <DialogContent className="max-w-5xl w-full max-h-[100vh] overflow-y-auto">
                             <DialogHeader className="w-full flex justify-between">
                               <DialogTitle>Visits</DialogTitle>
                             </DialogHeader>
@@ -904,7 +905,7 @@ const exportLedgerTransactionsToExcel = async () => {
                           )}
                         </div>
                       </DialogTrigger>
-                      <DialogContent className="max-w-5xl">
+                      <DialogContent className="max-w-5xl w-full max-h-[100vh] overflow-y-auto">
                         <DialogHeader className="w-full flex justify-between">
                           <DialogTitle>Accounts</DialogTitle>
                         </DialogHeader>

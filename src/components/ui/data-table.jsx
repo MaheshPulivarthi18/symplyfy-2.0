@@ -89,7 +89,7 @@ export function DataTable({
                       <div
                         {...{
                           className: header.column.getCanSort()
-                            ? 'cursor-pointer select-none flex items-center'
+                            ? 'cursor-pointer select-none flex items-center justify-center'
                             : '',
                           onClick: header.column.getToggleSortingHandler(),
                         }}

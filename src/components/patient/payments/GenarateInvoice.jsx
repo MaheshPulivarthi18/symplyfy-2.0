@@ -51,7 +51,7 @@ const InvoiceDialog = ({ isOpen, onClose, onGenerate, invoiceItems, setInvoiceIt
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[600px]">
+      <DialogContent className="max-w-5xl w-full max-h-[100vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Generate Invoice</DialogTitle>
         </DialogHeader>
@@ -201,7 +201,7 @@ const InvoiceDetailsDialog = ({ invoice, isOpen, onClose, onUpdateStatus, isLoad
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[700px]">
+      <DialogContent className="max-w-5xl w-full max-h-[100vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Invoice Details</DialogTitle>
         </DialogHeader>

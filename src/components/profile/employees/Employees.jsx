@@ -354,7 +354,7 @@ const Employees = () => {
           <DialogTrigger asChild>
             <Button>Add Employee</Button>
           </DialogTrigger>
-          <DialogContent>
+          <DialogContent className="max-w-2xl w-full max-h-[100vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>Add New Employee</DialogTitle>
             </DialogHeader>

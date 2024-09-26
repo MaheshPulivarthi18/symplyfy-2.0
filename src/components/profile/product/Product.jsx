@@ -224,7 +224,7 @@ const Product = () => {
               <DialogTrigger asChild>
                 <Button onClick={() => setIsDialogOpen(true)}>Add Your First Sellable</Button>
               </DialogTrigger>
-              <DialogContent>
+              <DialogContent className="max-w-2xl w-full max-h-[100vh] overflow-y-auto">
                 <DialogHeader>
                   <DialogTitle>Add New Sellable</DialogTitle>
                 </DialogHeader>

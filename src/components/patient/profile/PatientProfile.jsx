@@ -152,26 +152,99 @@ const PatientProfile = () => {
   const fetchLedgerTransactions = async () => {
     setLedgerLoading(true);
     try {
-      const response = await fetchWithTokenHandling(`${import.meta.env.VITE_BASE_URL}/api/emp/clinic/${clinic_id}/patient/${patient_id}/ledger/`);
-      const processedTransactions = response.map(transaction => ({
-        ...transaction,
-        amount_credit: isNaN(parseFloat(transaction.amount_credit)) ? 0 : parseFloat(transaction.amount_credit),
-        amount_debit: isNaN(parseFloat(transaction.amount_debit)) ? 0 : parseFloat(transaction.amount_debit),
-        balance: parseFloat(transaction.balance),
-        transactionType: transaction.transaction === 'i' ? 'Invoice' : 'Payment',
-      }));
+      const response = await fetchWithTokenHandling(
+        `${import.meta.env.VITE_BASE_URL}/api/emp/clinic/${clinic_id}/patient/${patient_id}/ledger/`
+      );
+  
+      // Sort the ledger entries by date
+      response.sort((a, b) => new Date(a.date) - new Date(b.date));
+  
+      // Initialize variables
+      const invoiceMap = {};
+      const processedTransactions = [];
+      let currentBalance = 0;
+  
+      // First pass: Group entries by invoice ID
+      response.forEach((transaction) => {
+        if (transaction.invoice) {
+          if (!invoiceMap[transaction.invoice]) {
+            invoiceMap[transaction.invoice] = [];
+          }
+          invoiceMap[transaction.invoice].push(transaction);
+        } else {
+          // For payments and other transactions, process directly
+          const amountCredit = parseFloat(transaction.amount_credit) || 0;
+          const amountDebit = parseFloat(transaction.amount_debit) || 0;
+          currentBalance += amountCredit - amountDebit;
+          processedTransactions.push({
+            ...transaction,
+            amount_credit: amountCredit,
+            amount_debit: amountDebit,
+            balance: currentBalance,
+            transactionType:
+              transaction.transaction === 'p' ? 'Payment' : 'Unknown',
+          });
+        }
+      });
+  
+      // Second pass: Process invoice entries
+      Object.values(invoiceMap).forEach((entries) => {
+        const invoiceEntry = entries.find((t) => t.transaction === 'i');
+        const cancellationEntry = entries.find((t) => t.transaction === 'c');
+  
+        if (invoiceEntry && cancellationEntry) {
+          // Invoice was canceled
+          const amountDebit = parseFloat(invoiceEntry.amount_debit) || 0;
+          const amountCredit = parseFloat(cancellationEntry.amount_credit) || 0;
+  
+          // Net effect is zero, so balance remains the same
+          processedTransactions.push({
+            date: cancellationEntry.date,
+            transactionType: 'Canceled Invoice',
+            amount_debit: amountDebit,
+            amount_credit: amountCredit,
+            balance: currentBalance,
+            invoice: invoiceEntry.invoice,
+          });
+        } else if (invoiceEntry) {
+          // Invoice is active
+          const amountDebit = parseFloat(invoiceEntry.amount_debit) || 0;
+          currentBalance -= amountDebit;
+          processedTransactions.push({
+            ...invoiceEntry,
+            amount_debit: amountDebit,
+            amount_credit: 0,
+            balance: currentBalance,
+            transactionType: 'Invoice',
+          });
+        }
+      });
+  
+      // Sort processed transactions by date again (in case of any changes)
+      processedTransactions.sort((a, b) => new Date(a.date) - new Date(b.date));
+  
+      // Update balances cumulatively
+      currentBalance = 0;
+      processedTransactions.forEach((transaction) => {
+        const amountCredit = parseFloat(transaction.amount_credit) || 0;
+        const amountDebit = parseFloat(transaction.amount_debit) || 0;
+        currentBalance += amountCredit - amountDebit;
+        transaction.balance = currentBalance;
+      });
+  
       setLedgerTransactions(processedTransactions);
     } catch (error) {
       console.error('Failed to fetch ledger transactions:', error);
       toast({
-        title: "Error",
-        description: "Failed to fetch ledger transactions. Please try again.",
-        variant: "destructive",
+        title: 'Error',
+        description: 'Failed to fetch ledger transactions. Please try again.',
+        variant: 'destructive',
       });
     } finally {
       setLedgerLoading(false);
     }
   };
+  
 
   useEffect(() => {
     fetchLedgerTransactions();
@@ -180,89 +253,94 @@ const PatientProfile = () => {
   const LedgerTable = ({ data }) => {
     const columns = [
       {
-        accessorKey: "date",
+        accessorKey: 'date',
         header: ({ column }) => (
           <Button
             variant="ghost"
-            onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+            onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
           >
             Date
             <ArrowUpDown className="ml-2 h-4 w-4" />
           </Button>
         ),
-        cell: ({ row }) => format(parseISO(row.getValue("date")), 'dd/MM/yyyy'),
+        cell: ({ row }) => format(parseISO(row.getValue('date')), 'dd/MM/yyyy'),
       },
       {
-        accessorKey: "transactionType",
-        header: "Transaction",
+        accessorKey: 'transactionType',
+        header: 'Transaction',
         cell: ({ row }) => {
-          if (row.original.transactionType === 'Invoice') {
+          const transactionType = row.getValue('transactionType');
+          if (
+            transactionType === 'Invoice' ||
+            transactionType === 'Canceled Invoice'
+          ) {
             return (
-              <Button
-                variant="link"
-                onClick={() => handleViewInvoice(row.original.invoice)}
-              >
-                {row.getValue("transactionType")}
-              </Button>
+              <div className="flex items-center">
+                <Button
+                  variant="link"
+                  onClick={() => handleViewInvoice(row.original.invoice)}
+                >
+                  {transactionType}
+                </Button>
+                {transactionType === 'Canceled Invoice' && (
+                  <Badge variant="destructive" className="ml-2">
+                    Canceled
+                  </Badge>
+                )}
+              </div>
             );
           } else {
-            return <span>{row.getValue("transactionType")}</span>;
+            return (
+            <div className="flex items-center">
+              <span className='px-4'>{transactionType}</span>
+            </div>)
           }
         },
       },
       {
-        accessorKey: "amount_credit",
-        header: "Amount Paid",
+        accessorKey: 'amount_credit',
+        header: 'Amount Paid',
         cell: ({ row }) => (
-          <Badge variant={row.getValue("amount_credit") > 0 ? "success" : "default"}>
-            {row.getValue("amount_credit").toFixed(2)}
+          <Badge
+            variant={row.getValue('amount_credit') > 0 ? 'success' : 'default'}
+          >
+            {row.getValue('amount_credit').toFixed(2)}
           </Badge>
         ),
       },
       {
-        accessorKey: "amount_debit",
-        header: "Invoiced Amount",
+        accessorKey: 'amount_debit',
+        header: 'Invoiced Amount',
         cell: ({ row }) => (
-          <Badge variant={row.getValue("amount_debit") > 0 ? "destructive" : "default"}>
-            {row.getValue("amount_debit").toFixed(2)}
+          <Badge
+            variant={row.getValue('amount_debit') > 0 ? 'destructive' : 'default'}
+          >
+            {row.getValue('amount_debit').toFixed(2)}
           </Badge>
         ),
       },
       {
-        accessorKey: "balance",
-        header: "Balance",
-        cell: ({ row }) => row.getValue("balance").toFixed(2),
+        accessorKey: 'balance',
+        header: 'Balance',
+        cell: ({ row }) => row.getValue('balance').toFixed(2),
       },
     ];
   
     return (
-      <>
-
       <DataTable
         columns={columns}
         data={data}
         searchableColumns={[
           {
-            id: "transactionType",
-            title: "Transaction",
+            id: 'transactionType',
+            title: 'Transaction',
           },
         ]}
         rowsPerPage={5}
       />
-      <InvoiceDialog
-        isOpen={isInvoiceDialogOpen}
-        onClose={() => setIsInvoiceDialogOpen(false)}
-        onGenerate={handleGenerateInvoice}
-        invoiceItems={invoiceItems}
-        setInvoiceItems={setInvoiceItems}
-        finalAmount={finalAmount}
-        setFinalAmount={setFinalAmount}
-        sellables={sellables}
-        isLoading={isGeneratingInvoice}
-      />
-      </>
     );
   };
+  
   
   // Visits DataTable
   const VisitsDataTable = ({ data }) => {
@@ -1538,19 +1616,32 @@ const exportLedgerTransactionsToExcel = async () => {
   const handleItemChange = (index, field, value) => {
     const updatedItems = [...invoiceItems];
     updatedItems[index][field] = value;
-    
+  
     const item = updatedItems[index];
-    item.gross = item.quantity * item.rate;
-    item.net = item.gross - item.discount;
+  
+    const quantity = parseFloat(item.quantity) || 0;
+    const rate = parseFloat(item.rate) || 0;
+    const discount = parseFloat(item.discount) || 0;
+  
+    item.gross = quantity * rate;
+    item.net = item.gross - discount;
   
     setInvoiceItems(updatedItems);
     calculateFinalAmount(updatedItems);
   };
   
+
+  const handleRemoveInvoiceItem = (index) => {
+    const updatedItems = [...invoiceItems];
+    updatedItems.splice(index, 1);
+    setInvoiceItems(updatedItems);
+    calculateFinalAmount(updatedItems);
+  };  
+  
   const calculateFinalAmount = (items) => {
     const total = items.reduce((sum, item) => sum + item.net, 0);
     setFinalAmount(total);
-  };
+  };  
 
   const handleAddNewInvoice = () => {
     setInvoiceItems([]);
@@ -1733,7 +1824,7 @@ const exportLedgerTransactionsToExcel = async () => {
         </CardContent>
       </Card>
       <Dialog open={isInvoiceDialogOpen} onOpenChange={setIsInvoiceDialogOpen}>
-        <DialogContent className="sm:max-w-[600px]">
+        <DialogContent className="max-w-2xl w-full max-h-[100vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Generate Invoice</DialogTitle>
           </DialogHeader>
@@ -1770,12 +1861,13 @@ const exportLedgerTransactionsToExcel = async () => {
                     <th>Gross</th>
                     <th>Discount</th>
                     <th>Net</th>
+                    <th>Actions</th>
                   </tr>
                 </thead>
                 <tbody>
                   {invoiceItems.length === 0 ? (
                     <tr>
-                      <td colSpan="6" className="text-center">No items added</td>
+                      <td colSpan="7" className="text-center">No items added</td>
                     </tr>
                   ) : (
                     invoiceItems.map((item, index) => (
@@ -1792,8 +1884,9 @@ const exportLedgerTransactionsToExcel = async () => {
                         <td>
                           <Input
                             type="number"
+                            step="any"
                             value={item.rate}
-                            onChange={(e) => handleItemChange(index, 'rate', parseFloat(e.target.value))}
+                            onChange={(e) => handleItemChange(index, 'rate', e.target.value)}
                             className="w-24"
                           />
                         </td>
@@ -1807,6 +1900,11 @@ const exportLedgerTransactionsToExcel = async () => {
                           />
                         </td>
                         <td>{item.net}</td>
+                        <td>
+                          <Button variant="ghost" size="sm" onClick={() => handleRemoveInvoiceItem(index)}>
+                            <Trash2Icon className="h-4 w-4" />
+                          </Button>
+                        </td>
                       </tr>
                     ))
                   )}
@@ -1868,7 +1966,7 @@ const exportLedgerTransactionsToExcel = async () => {
                       ))}
                     </div>
                   </DialogTrigger>
-                  <DialogContent>
+                  <DialogContent className="max-w-2xl w-full max-h-[100vh] overflow-y-auto">
                     <DialogHeader>
                       <DialogTitle>Note Details</DialogTitle>
                     </DialogHeader>
@@ -1917,7 +2015,7 @@ const exportLedgerTransactionsToExcel = async () => {
                 <Button className="absolute bottom-0 right-0">
                 <PlusCircle className="h-4 w-4" /></Button>
               </DialogTrigger>
-              <DialogContent>
+              <DialogContent className="max-w-2xl w-full max-h-[100vh] overflow-y-auto">
                 <DialogHeader>
                   <DialogTitle>Add New Note</DialogTitle>
                 </DialogHeader>
@@ -1966,7 +2064,7 @@ const exportLedgerTransactionsToExcel = async () => {
                         <small>Complete by: {goal.complete_by}</small>
                       </div>
                     </DialogTrigger>
-                    <DialogContent>
+                    <DialogContent className="max-w-2xl w-full max-h-[100vh] overflow-y-auto">
                       <DialogHeader>
                         <DialogTitle>Goal Details</DialogTitle>
                       </DialogHeader>
@@ -2012,7 +2110,7 @@ const exportLedgerTransactionsToExcel = async () => {
                 <Button className="absolute bottom-0 right-0">
                 <PlusCircle className="h-4 w-4" /></Button>
               </DialogTrigger>
-              <DialogContent>
+              <DialogContent className="max-w-2xl w-full max-h-[100vh] overflow-y-auto">
                 <DialogHeader>
                   <DialogTitle>Add New Goal</DialogTitle>
                 </DialogHeader>
@@ -2061,7 +2159,7 @@ const exportLedgerTransactionsToExcel = async () => {
               <DialogTrigger asChild>
                 <Button className="absolute bottom-0 right-0"><PlusCircle className="h-4 w-4" /></Button>
               </DialogTrigger>
-              <DialogContent>
+              <DialogContent className="max-w-2xl w-full max-h-[100vh] overflow-y-auto">
                 <DialogHeader>
                   <DialogTitle>Add New Task</DialogTitle>
                 </DialogHeader>
@@ -2360,7 +2458,7 @@ const exportLedgerTransactionsToExcel = async () => {
                       <PlusCircle className="h-4 w-4" />
                     </Button>
                   </DialogTrigger>
-                  <DialogContent>
+                  <DialogContent className="max-w-2xl w-full max-h-[100vh] overflow-y-auto">
                     <DialogHeader>
                       <DialogTitle>Add New Payment</DialogTitle>
                     </DialogHeader>
@@ -2532,7 +2630,7 @@ const exportLedgerTransactionsToExcel = async () => {
                   <PlusCircle className="h-4 w-4" />
                 </Button>
               </DialogTrigger>
-              <DialogContent>
+              <DialogContent className="max-w-2xl w-full max-h-[100vh] overflow-y-auto">
                 {console.log("Dialog rendering with date:", newVisit.date)}
                 <DialogHeader>
                   <DialogTitle>Add New Visit</DialogTitle>
@@ -2644,7 +2742,7 @@ const exportLedgerTransactionsToExcel = async () => {
           </TabsContent>
         </Tabs>
         <Dialog open={isVisitDialogOpen} onOpenChange={setIsVisitDialogOpen}>
-              <DialogContent>
+              <DialogContent className="max-w-2xl w-full max-h-[100vh] overflow-y-auto">
                 <DialogHeader>
                   <DialogTitle>Add New Visit</DialogTitle>
                 </DialogHeader>

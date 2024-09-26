@@ -12,7 +12,7 @@ const TherapistCountsDialog = ({ isOpen, onClose, appointments }) => {
   
     return (
       <Dialog open={isOpen} onOpenChange={onClose}>
-        <DialogContent>
+        <DialogContent className="max-w-2xl w-full max-h-[100vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Therapist Appointment Counts</DialogTitle>
           </DialogHeader>
