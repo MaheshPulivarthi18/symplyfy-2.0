@@ -108,9 +108,6 @@ const AppointmentPopup = ({
 
   const isEventCancelled = event.status_patient === 'X' || event.status_employee === 'X';
   const isEventAttended = event.attended;
-  let rrule = event.recurrence.rrule.split("\n")[1];
-  let recurrenceRule = rrule.split("UNTIL")[0]
-  console.log(recurrenceRule)
 
   const handleCopyAppointments = () => {
     const {

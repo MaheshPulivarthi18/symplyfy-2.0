@@ -156,11 +156,21 @@ export default function Schedule() {
     const fetchAllEvents = async () => {
       setLoading(true);
       try {
-        const [bookings, visits] = await Promise.all([fetchBookings(), fetchVisits()]);
-        const allEvents = [...bookings, ...visits];
+        const [bookings, visitsData] = await Promise.all([fetchBookings(), fetchVisits()]);
+        const { formattedVisits, attendedBookingIds } = visitsData;
+  
+        // Update bookings to mark attended ones
+        const updatedBookings = bookings.map(booking => {
+          if (attendedBookingIds.has(booking.id)) {
+            return { ...booking, attended: true };
+          } else {
+            return booking;
+          }
+        });
+  
+        const allEvents = [...updatedBookings, ...formattedVisits];
         setEvents(allEvents);
         updateAppointmentCounts(allEvents);
-        console.log(events)
       } catch (error) {
         console.error('Error fetching events:', error);
       } finally {
@@ -168,7 +178,7 @@ export default function Schedule() {
       }
     };
     fetchAllEvents();
-  }, [date, view, clinic_id, selectedDoctorId, dateRange]);
+  }, [date, view, clinic_id, selectedDoctorId, dateRange]); 
   
   
 
@@ -1038,30 +1048,41 @@ export default function Schedule() {
       );
       const data = await response.json();
   
-      const formattedVisits = data.map(visit => {
-        const startDateTime = new Date(`${visit.date}T${visit.time}`);
-        const durationInMinutes = visit.sellable.duration || 30;
-        const endDateTime = new Date(startDateTime.getTime() + durationInMinutes * 60000);
-        const therapist = therapists.find(t => t.id === visit.employee);
-      
-        return {
-          id: `visit-${visit.id}`,
-          title: `Visit: ${visit.patient.first_name} ${visit.patient.last_name}`,
-          start: startDateTime,
-          end: endDateTime,
-          patientId: visit.patient.id,
-          patientName: `${visit.patient.first_name} ${visit.patient.last_name}`,
-          doctorId: visit.employee,
-          doctorName: therapist ? `${therapist.first_name} ${therapist.last_name || ""}` : " ",
-          service: visit.sellable,
-          resourceId: visit.employee,
-          eventType: 'visit',
-          attended: true,
-        };
-      });
-      
+      // Create a set to track bookings that have been attended
+      const attendedBookingIds = new Set();
+
+      const formattedVisits = []
   
-      return formattedVisits;
+      // Process visits
+      data.forEach(visit => {
+        if (visit.booking === null) {
+          // Unscheduled visit - include in calendar
+          const startDateTime = new Date(`${visit.date}T${visit.time}`);
+          const durationInMinutes = visit.duration || 30;
+          const endDateTime = new Date(startDateTime.getTime() + durationInMinutes * 60000);
+          const therapist = therapists.find(t => t.id === visit.employee);
+  
+          formattedVisits.push({
+            id: `visit-${visit.id}`,
+            title: `Visit: ${visit.patient.first_name} ${visit.patient.last_name}`,
+            start: startDateTime,
+            end: endDateTime,
+            patientId: visit.patient.id,
+            patientName: `${visit.patient.first_name} ${visit.patient.last_name}`,
+            doctorId: visit.employee,
+            doctorName: therapist ? `${therapist.first_name} ${therapist.last_name || ""}` : " ",
+            service: visit.sellable,
+            resourceId: visit.employee,
+            eventType: 'visit',
+            attended: true,
+          });
+        } else {
+          // Scheduled visit - mark the booking as attended
+          attendedBookingIds.add(visit.booking);
+        }
+      });
+  
+      return { formattedVisits, attendedBookingIds };
     } catch (error) {
       console.error('Failed to fetch visits:', error);
       toast({
@@ -1069,9 +1090,10 @@ export default function Schedule() {
         description: "Failed to fetch visits. Please try again.",
         variant: "destructive",
       });
-      return [];
+      return { formattedVisits: [], attendedBookingIds: new Set() };
     }
   };
+  
   
 
   const updateAppointmentCounts = (events) => {
@@ -1094,8 +1116,8 @@ export default function Schedule() {
   
     setTotalScheduled(scheduled);
     setTotalCancelled(cancelled);
-    setTotalVisited(visited)
-  };
+    setTotalVisited(visited);
+  };  
 
   useEffect(() => {
     updateAppointmentCounts(events);
@@ -1267,9 +1289,8 @@ export default function Schedule() {
   const CustomEvent = ({ event }) => {
     let badgeColor = 'transparent';
   
-    // Determine badge color based on event type
     if (event.eventType === 'visit') {
-      badgeColor = '#90EE90'; // Light green for visits
+      badgeColor = '#90EE90'; // Light green for unscheduled visits
     } else if (event.attended) {
       badgeColor = '#116530'; // Dark green for attended bookings
     }
@@ -1281,11 +1302,9 @@ export default function Schedule() {
     let title, doctorName;
   
     if (event.eventType === 'visit') {
-      // For visits
       title = `Visit: ${getFirstName(event.patientName)}`;
       doctorName = getFirstName(event.doctorName);
     } else {
-      // For bookings
       title = event.title && event.title !== ""
         ? `${getFirstName(event.title)} - Dr. `
         : "Untitled";
@@ -1307,7 +1326,7 @@ export default function Schedule() {
         </div>
       </div>
     );
-  };
+  };  
   
 
   return (
