@@ -881,7 +881,7 @@ export default function Schedule() {
     setShowCancelled(!showCancelled);
     if (!showCancelled) {
       setSelectedFilters(prev => [...prev, { type: 'cancelled', name: 'Show Cancelled' }]);
-      setView('month');
+      setView('day');
       setSelectedDoctorId('');
       setSelectedPatientId('');
     } else {

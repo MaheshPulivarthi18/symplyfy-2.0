@@ -169,8 +169,8 @@ const Dashboard = () => {
       setVisits(response);
       setSummary(prevSummary => ({ ...prevSummary, visits: response.length }));
       
-      const uniqueEmployeeIds = [...new Set(response.map(visit => visit.employee))];
-      await Promise.all(uniqueEmployeeIds.map(fetchEmployeeDetails));
+      // const uniqueEmployeeIds = [...new Set(response.map(visit => visit.employee))];
+      // await Promise.all(uniqueEmployeeIds.map(fetchEmployeeDetails));
       
       const uniqueSellableIds = [...new Set(response.map(visit => visit.sellable))];
       await Promise.all(uniqueSellableIds.map(fetchSellableDetails));
@@ -193,20 +193,31 @@ const Dashboard = () => {
       setLoading(true);
       
       const today = new Date();
-      const start = startOfDay(today);
-      const end = endOfDay(today);
+      const { start, end } = getDateRange();
 
       // Function to format date for API
-      const formatDateForAPI = (date) => format(date, "yyyy-MM-dd'T'HH:mm:ss");
+      const formatDateForAPI = (date) => {
+        return date.toISOString()
+          .replace(/\.\d{3}Z$/, '')
+      };;
 
-      const response = await authenticatedFetch(
-        `${import.meta.env.VITE_BASE_URL}/api/emp/clinic/${clinic_id}/schedule/booking/?time_from=${formatDateForAPI(start)}&time_to=${formatDateForAPI(end)}`
-      );
+      const timeFrom = formatDateForAPI(start);
+      const timeTo = formatDateForAPI(end);
+
+      const url = new URL(`${import.meta.env.VITE_BASE_URL}/api/emp/clinic/${clinic_id}/schedule/booking/`);
+      url.searchParams.append('time_from', timeFrom);
+      url.searchParams.append('time_to', timeTo);
+      url.searchParams.append('employee_uuid', 'all');
+  
+      const response = await authenticatedFetch(url.toString());
       if (!response.ok) throw new Error('Failed to fetch bookings');
       const data = await response.json();
 
       // Use a Map to store unique bookings by ID
       const bookingsMap = new Map(data.map(booking => [booking.id, booking]));
+
+      const uniqueEmployeeIds = [...new Set(data.map(app => app.employee.id))];
+      await Promise.all(uniqueEmployeeIds.map(fetchEmployeeDetails));
 
       // Fetch patient bookings
       // for (const patient of patients) {
@@ -835,7 +846,7 @@ const exportLedgerTransactionsToExcel = async () => {
                 {[
                   { key: 'visits', icon: <Calendar className="w-6 h-6 text-blue-500" />, label: 'Total Visits' },
                   { key: 'upcomingAppointments', icon: <Clock className="w-6 h-6 text-green-500" />, label: 'Upcoming Appointments' },
-                  { key: 'canceledBookings', icon: <XCircle className="w-6 h-6 text-red-500" />, label: 'Canceled Bookings' },
+                  { key: 'canceledBookings', icon: <XCircle className="w-6 h-6 text-red-500" />, label: 'Cancelled Bookings' },
                 ].map(({ key, icon, label }) => (
                   <div key={key} className="border rounded-md p-4 shadow-inner bg-white flex items-center justify-center">
                     <div className="mr-4">{icon}</div>
