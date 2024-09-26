@@ -232,20 +232,6 @@ const InvoiceDetailsDialog = ({ invoice, isOpen, onClose, onUpdateStatus, isLoad
                   </Button>
                 </div>
               )}
-              {invoice.status === 'x' && (
-                <div className="flex space-x-2">
-                  <Button onClick={() => onUpdateStatus('c')} disabled={isLoading}>
-                    {isLoading ? (
-                      <>
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        Confirming...
-                      </>
-                    ) : (
-                      'Confirm Invoice'
-                    )}
-                  </Button>
-                </div>
-              )}
               {/* <Button onClick={handleDownloadInvoicePdf} disabled={!invoice.pdf}>
                 <FileDown className="mr-2 h-4 w-4" />
                 Download PDF

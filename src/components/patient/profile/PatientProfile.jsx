@@ -156,81 +156,144 @@ const PatientProfile = () => {
         `${import.meta.env.VITE_BASE_URL}/api/emp/clinic/${clinic_id}/patient/${patient_id}/ledger/`
       );
   
-      // Sort the ledger entries by date
-      response.sort((a, b) => new Date(a.date) - new Date(b.date));
-  
-      // Initialize variables
-      const invoiceMap = {};
+      // Process transactions to parse amounts and combine entries where needed
+      const transactionMap = {};
       const processedTransactions = [];
-      let currentBalance = 0;
+      const invoiceIds = new Set();
   
-      // First pass: Group entries by invoice ID
-      response.forEach((transaction) => {
+      response.forEach((transaction, index) => {
+        const transactionKey = transaction.invoice || transaction.payment || `unknown-${index}`;
+  
         if (transaction.invoice) {
-          if (!invoiceMap[transaction.invoice]) {
-            invoiceMap[transaction.invoice] = [];
+          invoiceIds.add(transaction.invoice);
+  
+          if (!transactionMap[transaction.invoice]) {
+            transactionMap[transaction.invoice] = [];
           }
-          invoiceMap[transaction.invoice].push(transaction);
+          transactionMap[transaction.invoice].push({ transaction, index });
         } else {
           // For payments and other transactions, process directly
-          const amountCredit = parseFloat(transaction.amount_credit) || 0;
-          const amountDebit = parseFloat(transaction.amount_debit) || 0;
-          currentBalance += amountCredit - amountDebit;
           processedTransactions.push({
             ...transaction,
-            amount_credit: amountCredit,
-            amount_debit: amountDebit,
-            balance: currentBalance,
+            amount_credit: parseFloat(transaction.amount_credit) || 0,
+            amount_debit: parseFloat(transaction.amount_debit) || 0,
+            balance: parseFloat(transaction.balance) || 0,
             transactionType:
               transaction.transaction === 'p' ? 'Payment' : 'Unknown',
+            index,
           });
         }
       });
   
-      // Second pass: Process invoice entries
-      Object.values(invoiceMap).forEach((entries) => {
-        const invoiceEntry = entries.find((t) => t.transaction === 'i');
-        const cancellationEntry = entries.find((t) => t.transaction === 'c');
+      // Fetch invoice details to get invoice numbers
+      const invoiceIdArray = Array.from(invoiceIds);
+      const invoiceDetailsMap = {};
   
-        if (invoiceEntry && cancellationEntry) {
-          // Invoice was canceled
-          const amountDebit = parseFloat(invoiceEntry.amount_debit) || 0;
-          const amountCredit = parseFloat(cancellationEntry.amount_credit) || 0;
+      // Fetch invoice details in parallel
+      await Promise.all(
+        invoiceIdArray.map(async (invoiceId) => {
+          try {
+            const invoiceDetail = await fetchWithTokenHandling(
+              `${import.meta.env.VITE_BASE_URL}/api/emp/clinic/${clinic_id}/patient/${patient_id}/invoice/${invoiceId}/`
+            );
+            invoiceDetailsMap[invoiceId] = invoiceDetail.number;
+          } catch (error) {
+            console.error(`Failed to fetch invoice ${invoiceId}:`, error);
+            invoiceDetailsMap[invoiceId] = 'Unknown';
+          }
+        })
+      );
   
-          // Net effect is zero, so balance remains the same
+      // Now process invoice entries
+      Object.values(transactionMap).forEach((entries) => {
+        if (entries.length === 1) {
+          const { transaction, index } = entries[0];
+          // Single transaction, either invoice or cancellation without matching pair
+          let transactionType = '';
+          if (transaction.transaction === 'i') {
+            transactionType = 'Invoice';
+          } else if (transaction.transaction === 'c') {
+            transactionType = 'Cancellation';
+          } else {
+            transactionType = 'Unknown';
+          }
+  
           processedTransactions.push({
-            date: cancellationEntry.date,
-            transactionType: 'Canceled Invoice',
-            amount_debit: amountDebit,
-            amount_credit: amountCredit,
-            balance: currentBalance,
-            invoice: invoiceEntry.invoice,
+            ...transaction,
+            amount_credit: parseFloat(transaction.amount_credit) || 0,
+            amount_debit: parseFloat(transaction.amount_debit) || 0,
+            balance: parseFloat(transaction.balance) || 0,
+            transactionType,
+            invoiceNumber: invoiceDetailsMap[transaction.invoice] || 'Unknown',
+            index,
           });
-        } else if (invoiceEntry) {
-          // Invoice is active
-          const amountDebit = parseFloat(invoiceEntry.amount_debit) || 0;
-          currentBalance -= amountDebit;
-          processedTransactions.push({
-            ...invoiceEntry,
-            amount_debit: amountDebit,
-            amount_credit: 0,
-            balance: currentBalance,
-            transactionType: 'Invoice',
+        } else if (entries.length === 2) {
+          // Possible invoice and its cancellation
+          const invoiceEntry = entries.find(e => e.transaction.transaction === 'i');
+          const cancellationEntry = entries.find(e => e.transaction.transaction === 'c');
+  
+          if (invoiceEntry && cancellationEntry) {
+            // Combine them into one entry
+            processedTransactions.push({
+              date: cancellationEntry.transaction.date,
+              transactionType: 'Cancellation',
+              amount_debit: parseFloat(invoiceEntry.transaction.amount_debit) || 0,
+              amount_credit: parseFloat(cancellationEntry.transaction.amount_credit) || 0,
+              balance: parseFloat(cancellationEntry.transaction.balance) || 0,
+              invoice: invoiceEntry.transaction.invoice,
+              invoiceNumber: invoiceDetailsMap[invoiceEntry.transaction.invoice] || 'Unknown',
+              index: cancellationEntry.index, // Use index of cancellation for ordering
+            });
+          } else {
+            // Should not happen, but process individually if it does
+            entries.forEach(({ transaction, index }) => {
+              let transactionType = '';
+              if (transaction.transaction === 'i') {
+                transactionType = 'Invoice';
+              } else if (transaction.transaction === 'c') {
+                transactionType = 'Cancellation';
+              } else {
+                transactionType = 'Unknown';
+              }
+  
+              processedTransactions.push({
+                ...transaction,
+                amount_credit: parseFloat(transaction.amount_credit) || 0,
+                amount_debit: parseFloat(transaction.amount_debit) || 0,
+                balance: parseFloat(transaction.balance) || 0,
+                transactionType,
+                invoiceNumber: invoiceDetailsMap[transaction.invoice] || 'Unknown',
+                index,
+              });
+            });
+          }
+        } else {
+          // More than 2 entries with same invoice ID, process individually
+          entries.forEach(({ transaction, index }) => {
+            let transactionType = '';
+            if (transaction.transaction === 'i') {
+              transactionType = 'Invoice';
+            } else if (transaction.transaction === 'c') {
+              transactionType = 'Cancellation';
+            } else {
+              transactionType = 'Unknown';
+            }
+  
+            processedTransactions.push({
+              ...transaction,
+              amount_credit: parseFloat(transaction.amount_credit) || 0,
+              amount_debit: parseFloat(transaction.amount_debit) || 0,
+              balance: parseFloat(transaction.balance) || 0,
+              transactionType,
+              invoiceNumber: invoiceDetailsMap[transaction.invoice] || 'Unknown',
+              index,
+            });
           });
         }
       });
   
-      // Sort processed transactions by date again (in case of any changes)
-      processedTransactions.sort((a, b) => new Date(a.date) - new Date(b.date));
-  
-      // Update balances cumulatively
-      currentBalance = 0;
-      processedTransactions.forEach((transaction) => {
-        const amountCredit = parseFloat(transaction.amount_credit) || 0;
-        const amountDebit = parseFloat(transaction.amount_debit) || 0;
-        currentBalance += amountCredit - amountDebit;
-        transaction.balance = currentBalance;
-      });
+      // Now sort the processed transactions based on the original order
+      processedTransactions.sort((a, b) => a.index - b.index);
   
       setLedgerTransactions(processedTransactions);
     } catch (error) {
@@ -270,9 +333,10 @@ const PatientProfile = () => {
         header: 'Transaction',
         cell: ({ row }) => {
           const transactionType = row.getValue('transactionType');
+          const invoiceNumber = row.original.invoiceNumber;
           if (
             transactionType === 'Invoice' ||
-            transactionType === 'Canceled Invoice'
+            transactionType === 'Cancellation'
           ) {
             return (
               <div className="flex items-center">
@@ -280,9 +344,9 @@ const PatientProfile = () => {
                   variant="link"
                   onClick={() => handleViewInvoice(row.original.invoice)}
                 >
-                  {transactionType}
+                  {`${transactionType} ${invoiceNumber}`}
                 </Button>
-                {transactionType === 'Canceled Invoice' && (
+                {transactionType === 'Cancellation' && (
                   <Badge variant="destructive" className="ml-2">
                     Canceled
                   </Badge>
@@ -291,9 +355,10 @@ const PatientProfile = () => {
             );
           } else {
             return (
-            <div className="flex items-center">
-              <span className='px-4'>{transactionType}</span>
-            </div>)
+              <div className="flex items-center">
+                <span className="px-4">{transactionType}</span>
+              </div>
+            );
           }
         },
       },
@@ -1428,9 +1493,8 @@ const AppointmentsDataTable = ({ data }) => {
 
   const handleViewInvoice = async (invoiceId) => {
     try {
-      const response = await authenticatedFetch(`${import.meta.env.VITE_BASE_URL}/api/emp/clinic/${clinic_id}/patient/${patient_id}/invoice/${invoiceId}/`);
-      const invoiceData = await response.json();
-      setSelectedInvoice(invoiceData);
+      const response = await fetchWithTokenHandling(`${import.meta.env.VITE_BASE_URL}/api/emp/clinic/${clinic_id}/patient/${patient_id}/invoice/${invoiceId}/`);
+      setSelectedInvoice(response);
       setIsInvoiceDetailDialogOpen(true);
     } catch (error) {
       toast({
