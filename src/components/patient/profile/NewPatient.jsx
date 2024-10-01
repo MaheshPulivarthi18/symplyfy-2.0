@@ -19,7 +19,7 @@ const patientSchema = z.object({
   last_name: z.string().optional(),
   email: z.string().email("Invalid email address").optional().or(z.literal('')),
   country_code: z.string().min(1, "Country code is required"),
-  mobile: z.string().regex(/^\d{1,14}$/, "Mobile number must be between 1 and 14 digits.").optional().or(z.literal('')),
+  mobile: z.string().regex(/^\d{1,14}$/, "Mobile number must be between 1 and 14 digits."),
   country_code_alternate: z.string().optional(),
   mobile_alternate: z.string().regex(/^\d{1,14}$/, "Alternate mobile number must be between 1 and 14 digits.").optional().or(z.literal('')),
   sex: z.enum(["m", "f", "o"]),
@@ -35,7 +35,7 @@ const patientSchema = z.object({
     .optional()
     .or(z.literal('')),  
   guardian_name: z.string().optional(),
-  therapist_primary: z.string().uuid("Invalid therapist ID"),
+  therapist_primary: z.string().uuid("Invalid therapist ID").optional().or(z.literal('')),
   priority: z.number().int().min(1).max(10),
 });
 

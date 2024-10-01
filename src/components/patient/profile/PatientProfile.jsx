@@ -1319,8 +1319,15 @@ const AppointmentsDataTable = ({ data }) => {
       ));
       
       // Format the UTC date to YYYY-MM-DD
-      const formattedDate = utcDate.toISOString().split('T')[0];
-  
+      let formattedDate
+      const currentMonth = new Date().getMonth()
+      const selectedMonth = selectedDate.getMonth()
+      if(currentMonth === selectedMonth){
+        formattedDate = utcDate.toISOString().split('T')[0];
+      } else {
+        formattedDate = addDays(utcDate, 1).toISOString().split('T')[0];
+      }
+      
       const visitData = {
         date: formattedDate,
         time: newVisit.time,
@@ -1404,27 +1411,76 @@ const AppointmentsDataTable = ({ data }) => {
   const handleAddPayment = async (e) => {
     e.preventDefault();
     try {
+      console.log('Original newPayment date:', newPayment.date);
+  
+      // Ensure we're working with a Date object for the payment date
+      const selectedDate = new Date(newPayment.date);
+  
+      // Convert the date to UTC (to avoid timezone issues)
+      const utcDate = new Date(Date.UTC(
+        selectedDate.getFullYear(),
+        selectedDate.getMonth(),
+        selectedDate.getDate()
+      ));
+  
+      // Format the UTC date to YYYY-MM-DD
+      let formattedDate
+      const currentMonth = new Date().getMonth()
+      const selectedMonth = selectedDate.getMonth()
+      if(currentMonth === selectedMonth){
+        formattedDate = utcDate.toISOString().split('T')[0];
+      } else {
+        formattedDate = addDays(utcDate, 1).toISOString().split('T')[0];
+      }
+  
+      // Prepare the payment data with the corrected date format
+      const paymentData = {
+        amount_paid: newPayment.amount_paid,
+        amount_refunded: newPayment.amount_refunded || '0',
+        date: formattedDate, // Corrected UTC date
+        channel: newPayment.channel
+      };
+  
+      console.log("Final payment data to be sent:", paymentData);
+  
       const response = await fetchWithTokenHandling(`${import.meta.env.VITE_BASE_URL}/api/emp/clinic/${clinic_id}/patient/${patient_id}/payment/`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(newPayment),
+        body: JSON.stringify(paymentData),
       });
-      await fetchLedgerTransactions();
-      setPayments([...payments, response]);
+  
+      // Format the response as needed
+      const formattedResponse = {
+        ...response
+      };
+  
+      // Update payments state with the new payment
+      setPayments(prevPayments => [...prevPayments, formattedResponse]);
+  
+      // Reset the payment form with the corrected date
+      let localDate = new Date();
+      localDate.setHours(0, 0, 0, 0); // Set to midnight
+      localDate.setDate(localDate.getDate() + 1); // Add one day
+  
       setNewPayment({
         amount_paid: '',
         amount_refunded: '0',
-        date: new Date().toISOString().split('T')[0],
+        date: localDate.toISOString().split('T')[0], // Set default date to tomorrow
         channel: ''
       });
+  
       setIsPaymentDialogOpen(false);
       toast({ title: "Success", description: "Payment added successfully" });
+  
+      // Fetch the updated payments data
+      fetchLedgerTransactions();
     } catch (error) {
       toast({ title: "Error", description: error.message, variant: "destructive" });
     }
   };
+  
 
   const fetchInvoices = async () => {
     try {
