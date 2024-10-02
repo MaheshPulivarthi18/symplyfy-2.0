@@ -168,7 +168,8 @@ export default function Schedule() {
           }
         });
   
-        const allEvents = [...updatedBookings, ...formattedVisits];
+        let allEvents = [...updatedBookings, ...formattedVisits];
+        allEvents = allEvents.filter(event => event.status_patient !== 'R' && event.status_employee !== 'R');
         setEvents(allEvents);
         updateAppointmentCounts(allEvents);
       } catch (error) {
@@ -308,7 +309,7 @@ export default function Schedule() {
   
       const data = await response.json();
   
-      const formattedEvents = data.map(booking => ({
+      let formattedEvents = data.map(booking => ({
         id: booking.id,
         title: `${booking.patient.first_name} ${booking.patient.last_name}`,
         start: new Date(booking.start),
@@ -325,7 +326,7 @@ export default function Schedule() {
         attended: booking.attended,
         eventType: 'booking', // Add eventType for consistency
       }));      
-      
+      formattedEvents = formattedEvents.filter(event => event.status_patient !== 'R' && event.status_employee !== 'R');
       setEvents(formattedEvents);
       updateAppointmentCounts(formattedEvents);
       setEvents(formattedEvents);
