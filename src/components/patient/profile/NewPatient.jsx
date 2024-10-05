@@ -35,7 +35,7 @@ const patientSchema = z.object({
     .optional()
     .or(z.literal('')),  
   guardian_name: z.string().optional(),
-  therapist_primary: z.string().uuid("Invalid therapist ID").optional().or(z.literal('')),
+  therapist_primary: z.string().uuid("Invalid therapist ID").optional().or(z.literal('')).or(z.null()),
   priority: z.number().int().min(1).max(10),
 });
 
@@ -93,6 +93,8 @@ const NewPatient = () => {
       has_app_access: true,
       is_active: true,
       email_alternate: null,
+      therapist_primary: values.therapist_primary ? values.therapist_primary : null,
+      
       priority: 9,
     };
 
@@ -104,12 +106,15 @@ const NewPatient = () => {
         },
         body: JSON.stringify(submitData),
       });
-
+      console.log(response);
       if (!response.ok) {
         let err
         const errData = await response.json()
         if(errData.mobile){
           err = errData.mobile[0]
+        }
+        if(errData.email){
+          err=errData.email[0]
         }
         throw new Error(err || "Failed to add patient");
       }
