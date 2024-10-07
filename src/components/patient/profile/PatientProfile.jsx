@@ -47,6 +47,7 @@ import { Filter } from "lucide-react";
 import { DateRangePicker } from "@/components/ui/date-range-picker";
 import TherapistCountsDialog from './TherapistCounts';
 import VisitCountsDialog from './VisitCountsDialog';
+import SellableCountsDialog from './SellableCount';
 import { countryCodes } from '@/lib/countryCodes';
 import axios from 'axios';
 
@@ -80,7 +81,7 @@ const PatientProfile = () => {
   const [newGoal, setNewGoal] = useState({ title: '', description: '', complete_by: '' });
   const [newTask, setNewTask] = useState({ name: '', description: '', repetitions: 0, goal: '' });
   const [newAppointment, setNewAppointment] = useState({
-    date: '',
+    date: new Date().toISOString().split('T')[0],
     time: '09:00',
     employee: '',
     sellable: '',
@@ -114,7 +115,7 @@ const PatientProfile = () => {
   const [allVisits, setAllVisits] = useState([]);
   const [filteredVisits, setFilteredVisits] = useState([]);
   const [isVisitCountsDialogOpen, setIsVisitCountsDialogOpen] = useState(false);
-
+  const [isSellableCountsDialogOpen, setIsSellableCountsDialogOpen] = useState(false);
   const [payments, setPayments] = useState([]);
   const [paymentChannels, setPaymentChannels] = useState([]);
   const [isPaymentDialogOpen, setIsPaymentDialogOpen] = useState(false);
@@ -140,6 +141,17 @@ const PatientProfile = () => {
   const [fileDetails, setFileDetails] = useState(null)
 
   const [imageViewerUrl, setImageViewerUrl] = useState(null);
+  const dateRangeOptions = {
+    'all': 'All',
+    'today': 'Today',
+    'yesterday': 'Yesterday',
+    'thisWeek': 'This Week',
+    'thisMonth': 'This Month',
+    'thisYear': 'This Year',
+    'custom': 'Custom Range',
+  };
+  const dateRangeDisplay = dateRangeOptions[dateRange];
+
 
   const openImageViewer = (url) => {
     setImageViewerUrl(url);
@@ -545,10 +557,9 @@ const AppointmentsDataTable = ({ data }) => {
       header: "Service",
       cell: ({ row }) => {
         const sellableId = row.original.sellable;
-        console.log(sellableDetails[sellableId]?.name)
         return sellableDetails[sellableId]
           ? sellableDetails[sellableId].name
-          : 'N/A';
+          : "-";
       },
     },
   ];
@@ -820,13 +831,23 @@ const AppointmentsDataTable = ({ data }) => {
 
   const fetchSellables = async () => {
     try {
-      const data = await fetchWithTokenHandling(`${import.meta.env.VITE_BASE_URL}/api/emp/clinic/${clinic_id}/sellable/`);
+      const data = await fetchWithTokenHandling(
+        `${import.meta.env.VITE_BASE_URL}/api/emp/clinic/${clinic_id}/sellable/`
+      );
       setSellables(data);
+
+      // Populate sellableDetails as an object with sellable IDs as keys
+      const details = {};
+      data.forEach((sellable) => {
+        details[sellable.id] = sellable;
+      });
+      setSellableDetails(details);
     } catch (error) {
       console.error("Failed to fetch sellables:", error);
       setSellables([]);
     }
   };
+
 
   const handleFileChange = (event) => {
     const file = event.target.files[0];
@@ -1177,13 +1198,30 @@ const AppointmentsDataTable = ({ data }) => {
   const fetchAppointments = async () => {
     try {
       const { start, end } = getDateRange();
-      if(start === ""){
-        const response = await fetchWithTokenHandling(`${import.meta.env.VITE_BASE_URL}/api/emp/clinic/${clinic_id}/patient/${patient_id}/booking`);
-        setAppointments(response);
-      }else {
-        const response = await fetchWithTokenHandling(`${import.meta.env.VITE_BASE_URL}/api/emp/clinic/${clinic_id}/patient/${patient_id}/booking/?time_from=${start.toISOString().replace(/\.\d{3}Z$/, '')}&time_to=${end.toISOString().replace(/\.\d{3}Z$/, '')}`);
-        setAppointments(response);
+      let response;
+      if (start === "") {
+        response = await fetchWithTokenHandling(
+          `${import.meta.env.VITE_BASE_URL}/api/emp/clinic/${clinic_id}/patient/${patient_id}/booking`
+        );
+      } else {
+        response = await fetchWithTokenHandling(
+          `${import.meta.env.VITE_BASE_URL}/api/emp/clinic/${clinic_id}/patient/${patient_id}/booking/?time_from=${start.toISOString().replace(/\.\d{3}Z$/, "")}&time_to=${end.toISOString().replace(/\.\d{3}Z$/, "")}`
+        );
       }
+      setAppointments(response);
+  
+      const sellableIds = new Set(
+        response.map((appointment) => appointment.sellable).filter(Boolean)
+      );
+  
+      const missingSellableIds = Array.from(sellableIds).filter(
+        (id) => !sellableDetails[id]
+      );
+      const fetchPromises = missingSellableIds.map((id) =>
+        fetchSellableDetails(id)
+      );
+  
+      await Promise.all(fetchPromises);
     } catch (error) {
       console.error("Failed to fetch appointments:", error);
       toast({
@@ -1203,56 +1241,38 @@ const AppointmentsDataTable = ({ data }) => {
     try {
       console.log("New Appointment Data:", newAppointment);
   
-      // Ensure newAppointment.time is a valid time string
+      // Validate time format (HH:mm)
       const timeRegex = /^([01]\d|2[0-3]):([0-5]\d)$/;
       if (!timeRegex.test(newAppointment.time)) {
-        console.log("Time regex test failed");
         throw new Error("Invalid time format");
       }
   
-      // Ensure newAppointment.date is a valid date string
-      if (!newAppointment.date || isNaN(new Date(newAppointment.date).getTime())) {
-        console.log("Invalid date");
+      // Validate date format
+      if (!newAppointment.date) {
         throw new Error("Invalid date");
       }
   
-      // Create a Date object in the local time zone and add one day
-      const [year, month, day] = newAppointment.date.split('-');
-      const [hours, minutes] = newAppointment.time.split(':');
-      let localDate = new Date(year, month - 1, day, hours, minutes);
-      localDate = addDays(localDate, 1); // Add one day
-      console.log("Local Date (adjusted):", localDate);
-  
-      if (isNaN(localDate.getTime())) {
-        console.log("Invalid Date object created");
-        throw new Error("Invalid Date object created");
+      // Combine date and time into a Date object
+      const dateTimeString = `${newAppointment.date}T${newAppointment.time}`;
+      const startDateTime = parseISO(dateTimeString);
+      if (isNaN(startDateTime.getTime())) {
+        throw new Error("Invalid date and time");
       }
   
-      // Convert to UTC
-      const utcDate = new Date(localDate.getTime() - localDate.getTimezoneOffset() * 60000);
-      console.log("UTC Date:", utcDate);
-      
-      // Convert UTC to Indian Standard Time (IST)
-      const istDate = new Date(utcDate.getTime() - (5.5 * 60 * 60 * 1000));
-      console.log("IST Date:", istDate);
+      // Calculate end time by adding duration to start time
+      const endDateTime = addMinutes(startDateTime, newAppointment.duration);
   
-      const startDateTime = istDate;
-      const endDateTime = new Date(startDateTime.getTime() + newAppointment.duration * 60000);
-      
-      console.log("Start Date Time:", startDateTime);
-      console.log("End Date Time:", endDateTime);
-      
-      const weekdayMap = {
-        'Mon': 'MO', 'Tue': 'TU', 'Wed': 'WE', 'Thu': 'TH', 'Fri': 'FR', 'Sat': 'SA', 'Sun': 'SU'
-      };
-      const formattedWeekdays = newAppointment.weekdays.map(day => weekdayMap[day]).join(',');
-
+      // Prepare recurrence rule if needed
       let recurrenceRule = null;
       if (newAppointment.frequency === 'weekly') {
+        const weekdayMap = {
+          'Mon': 'MO', 'Tue': 'TU', 'Wed': 'WE', 'Thu': 'TH', 'Fri': 'FR', 'Sat': 'SA', 'Sun': 'SU'
+        };
+        const formattedWeekdays = newAppointment.weekdays.map(day => weekdayMap[day]).join(',');
+  
         recurrenceRule = `RRULE:FREQ=WEEKLY;BYDAY=${formattedWeekdays}`;
         if (newAppointment.endsOn) {
           const endDate = parseISO(newAppointment.endsOn);
-          // console.log(endDate)
           recurrenceRule += `;UNTIL=${format(endDate, "yyyyMMdd'T'HHmmss'Z'")}`;
         } else if (newAppointment.sessions) {
           recurrenceRule += `;COUNT=${newAppointment.sessions}`;
@@ -1271,18 +1291,14 @@ const AppointmentsDataTable = ({ data }) => {
       console.log("Booking Data:", bookingData);
   
       const response = await createBooking(bookingData);
-    
-      // Format the new appointment data
-      const formattedAppointment = {
-        ...response,
-        employee: therapists.find(t => t.id === response.employee) || { id: response.employee, first_name: '', last_name: '' },
-        sellable: sellables.find(s => s.id === response.sellable) || { id: response.sellable, name: '' }
-      };
-
-      setAppointments(prevAppointments => [...prevAppointments, formattedAppointment]);
+  
+      // Update appointments state
+      setAppointments(prevAppointments => [...prevAppointments, response]);
+  
+      // Reset newAppointment to default values
       setNewAppointment({
         date: '',
-        time: '',
+        time: '09:00',
         employee: '',
         sellable: '',
         duration: 30,
@@ -1291,17 +1307,17 @@ const AppointmentsDataTable = ({ data }) => {
         endsOn: '',
         sessions: '',
       });
+  
       setIsAppointmentDialogOpen(false);
       toast({ title: "Success", description: "Appointment booked successfully" });
-      
-      // Trigger a re-fetch of appointments
+  
+      // Re-fetch appointments to update the list
       fetchAppointments();
     } catch (error) {
-      console.log(error.message, "ERROR MESSAGE AT HANDLEADDAPPOINTMENT");
-      console.log("Error stack:", error.stack);
+      console.error("Error in handleAddAppointment:", error);
       toast({ title: "Error", description: error.message, variant: "destructive" });
     }
-  };
+  };  
 
   const handleAddVisit = async (e) => {
     e.preventDefault();
@@ -2319,7 +2335,7 @@ const exportLedgerTransactionsToExcel = async () => {
             <div className="flex justify-end mb-4 space-x-2">
               <Popover>
                 <PopoverTrigger asChild>
-                  <Button variant="outline"><Filter className="mr-2 h-4 w-4" /> Filter</Button>
+                  <Button variant="outline"><Filter className="mr-2 h-4 w-4" /> {dateRangeDisplay}</Button>
                 </PopoverTrigger>
                 <PopoverContent className="">
                   <Select value={dateRange} onValueChange={(value) => {
@@ -2356,6 +2372,9 @@ const exportLedgerTransactionsToExcel = async () => {
                   )}
                 </PopoverContent>
               </Popover>
+              <Button onClick={() => setIsSellableCountsDialogOpen(true)} className="ml-2">
+                View Sellable Counts
+              </Button>
               <Button onClick={() => setIsTherapistCountsDialogOpen(true)} className="ml-2">
                 View Therapist Counts
               </Button>
@@ -2538,6 +2557,13 @@ const exportLedgerTransactionsToExcel = async () => {
               onClose={() => setIsTherapistCountsDialogOpen(false)}
               appointments={appointments}
             />
+            
+            <SellableCountsDialog
+              isOpen={isSellableCountsDialogOpen}
+              onClose={() => setIsSellableCountsDialogOpen(false)}
+              appointments={appointments}
+              sellableDetails={sellableDetails}
+            />
           </TabsContent>
           
           <TabsContent value="transactions" className="relative min-h-[300px] h-[90%] overflow-scroll p-4">
@@ -2696,7 +2722,7 @@ const exportLedgerTransactionsToExcel = async () => {
             <div className="flex justify-end mb-4 space-x-2">
               <Popover>
                 <PopoverTrigger asChild>
-                  <Button variant="outline"><Filter className="mr-2 h-4 w-4" /> Filter</Button>
+                  <Button variant="outline"><Filter className="mr-2 h-4 w-4" />{dateRangeDisplay}</Button>
                 </PopoverTrigger>
                 <PopoverContent className="w-80">
                   <Select value={dateRange} onValueChange={(value) => {
