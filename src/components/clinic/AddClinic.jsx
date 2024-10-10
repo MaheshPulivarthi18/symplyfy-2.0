@@ -251,18 +251,21 @@ const AddClinic = () => {
               )}
             />
             <FormField
-              control={form.control}
-              name="prefix_patient_id" // New field for prefix_patient_id
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Prefix Patient ID</FormLabel>
-                  <FormControl>
-                    <Input {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+  control={form.control}
+  name="prefix_patient_id"
+  render={({ field }) => (
+    <FormItem>
+      <FormLabel>Prefix Patient ID</FormLabel>
+      <FormControl>
+        <Input 
+          {...field} 
+          placeholder={"Prefix Patient ID set and cannot be changed"} 
+        />
+      </FormControl>
+      <FormMessage />
+    </FormItem>
+  )}
+/>
             <Button type="submit">Add Clinic</Button>
           </form>
         </Form>
