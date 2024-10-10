@@ -12,7 +12,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Progress } from '@/components/ui/progress';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from '@/components/ui/dialog';
 import { Textarea } from '@/components/ui/textarea';
-import { PlusCircle, Check, FileDownIcon, AlignCenter } from "lucide-react"
+import { PlusCircle, Check, FileDownIcon } from "lucide-react"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
 import { DatePicker } from '@/components/ui/datepicker';
@@ -1825,16 +1825,7 @@ const exportLedgerTransactionsToExcel = async () => {
     <div className="flex w-full h-full gap-8 shadow-xl">
       <Card className="w-[40%]">
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle style={{ 
-    fontSize: '20px', 
-    fontWeight: 'bold', 
-    color: '#333', 
-    margin: '10px 0', 
-    textAlign: 'center' 
-}}>
-    Patient_Id :  {formData.patient_id}
-</CardTitle>
-
+          <CardTitle>Patient Information</CardTitle>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" className="h-8 w-8 p-0">
