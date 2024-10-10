@@ -1809,15 +1809,9 @@ const exportLedgerTransactionsToExcel = async () => {
     <div className="flex w-full h-full gap-8 shadow-xl">
       <Card className="w-[40%]">
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle style={{ 
-    fontSize: '20px', 
-    fontWeight: 'bold', 
-    color: '#333', 
-    margin: '10px 0', 
-    textAlign: 'center' 
-}}>
-    Patient_Id :  {formData.patient_id}
-</CardTitle>
+         <CardTitle className="text-center flex-1">
+          Patient Information
+        </CardTitle>
 
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
@@ -1858,6 +1852,9 @@ const exportLedgerTransactionsToExcel = async () => {
                 <AvatarImage src={`https://api.dicebear.com/6.x/initials/svg?seed=${formData.first_name} ${formData.last_name}`} />
                 <AvatarFallback>{formData.first_name}{formData.last_name}</AvatarFallback>
               </Avatar>
+              <CardTitle className="text-center flex-1">
+                {formData.patient_id}
+              </CardTitle>
               <div className="w-full space-y-4">
                 {/* Add form fields for all patient properties */}
                 <div>

@@ -274,22 +274,32 @@ const ClinicInformation = () => {
                 </FormItem>
               )}
             />
-            {!isPrefixPatientEditable && form.getValues('prefix_patient_id') ? (
-              <FormField
-                control={form.control}
-                name="prefix_patient_id"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Prefix Patient ID</FormLabel>
-                    <FormControl>
-                      <Input {...field} value={field.value ?? ''} readOnly placeholder="Prefix Patient ID set and cannot be changed" />
-                    </FormControl>
-                  </FormItem>
-                )}
-              />
-            ) : (
-              <Button onClick={handleEditPrefixPatientId}>Add Prefix Patient ID</Button>
-            )}
+            <FormField
+  control={form.control}
+  name="prefix_patient_id"
+  render={({ field }) => (
+    <FormItem>
+      <FormLabel>Prefix Patient ID</FormLabel>
+      {!isPrefixPatientEditable && field.value ? (
+        <FormControl>
+          <Input {...field} value={field.value ?? ''} readOnly placeholder="Prefix Patient ID set and cannot be changed" />
+        </FormControl>
+      ) : (
+        <>
+          {isPrefixPatientEditable ? (
+            <FormControl>
+              <Input {...field} value={field.value ?? ''} placeholder="Enter Prefix Patient ID" />
+            </FormControl>
+          ) : (
+            <Button type="button" onClick={handleEditPrefixPatientId}>
+              Add Prefix Patient ID
+            </Button>
+          )}
+        </>
+      )}
+    </FormItem>
+  )}
+/>
             <Button type="submit" className="mt-6">Update Clinic Information</Button>
           </form>
         </Form>
