@@ -36,7 +36,7 @@ const formSchema = z.object({
   address_line_1: z.string().min(5, {
     message: "Address must be at least 5 characters.",
   }),
-  address_line_2: z.string().optional(),  
+  address_line_2: z.string().optional(),
   city: z.string().min(2, {
     message: "City must be at least 2 characters.",
   }),
@@ -52,11 +52,7 @@ const formSchema = z.object({
   type: z.enum(["ph", "cl", "ho"], {
     required_error: "Please select a clinic type.",
   }),
-  prefix_patient_id: z.string().min(1, {
-    message: "Prefix Patient ID is required.",
-  }), 
 });
-
 
 const AddClinic = () => {
   const navigate = useNavigate();
@@ -69,52 +65,47 @@ const AddClinic = () => {
       name: "",
       display_name: "",
       address_line_1: "",
-      address_line_2: "", 
+      address_line_2: "",
       city: "",
       pincode: "",
       phone1: "",
       email1: "",
       type: "ph",
-      prefix_patient_id: "", 
     },
   });
 
   const onSubmit = async (values) => {
- 
-  const submitData = {
-    ...values,
-    address_line_2: values.address_line_2 ? values.address_line_2 : null,  
-    type: 'ph',
-  };
+    const submitData = {
+      ...values,
+      type: 'ph'
+    };
+    try {
+      const response = await authenticatedFetch(`${import.meta.env.VITE_BASE_URL}/api/emp/clinic/`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(submitData),
+      });
 
-  try {
-    const response = await authenticatedFetch(`${import.meta.env.VITE_BASE_URL}/api/emp/clinic/`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(submitData),
-    });
+      if (!response.ok) {
+        throw new Error('Failed to add clinic');
+      }
 
-    if (!response.ok) {
-      throw new Error('Failed to add clinic');
+      const data = await response.json();
+      toast({
+        title: "Success",
+        description: "Clinic added successfully.",
+      });
+      navigate('/clinic');  // Redirect to the clinics list
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to add clinic. Please try again.",
+        variant: "destructive",
+      });
     }
-
-    const data = await response.json();
-    toast({
-      title: "Success",
-      description: "Clinic added successfully.",
-    });
-    navigate('/clinic');  // Redirect to the clinics list
-  } catch (error) {
-    toast({
-      title: "Error",
-      description: error.message || "Failed to add clinic. Please try again.",
-      variant: "destructive",
-    });
-  }
-};
-
+  };
 
   return (
     <Card className="w-full max-w-4xl max-h-[90%] mx-auto mt-8 overflow-scroll">
@@ -246,19 +237,6 @@ const AddClinic = () => {
                       <SelectItem value="ho">Hospital</SelectItem>
                     </SelectContent>
                   </Select>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="prefix_patient_id" // New field for prefix_patient_id
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Prefix Patient ID</FormLabel>
-                  <FormControl>
-                    <Input {...field} />
-                  </FormControl>
                   <FormMessage />
                 </FormItem>
               )}
