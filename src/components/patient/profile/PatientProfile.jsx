@@ -1807,148 +1807,161 @@ const exportLedgerTransactionsToExcel = async () => {
 
   return (
     <div className="flex w-full h-full gap-8 shadow-xl">
-      <Card className="w-[40%]">
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-         <CardTitle className="text-center flex-1">
-          Patient Information
+     <Card className="w-[40%] mx-auto shadow-lg">
+  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
+    <CardTitle className="text-center flex-1 text-lg font-semibold">
+      Patient Information
+    </CardTitle>
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button variant="ghost" className="h-8 w-8 p-0">
+          <span className="sr-only">Open menu</span>
+          <MoreVertical className="h-4 w-4" />
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end">
+        <DropdownMenuItem onClick={() => setIsInvoiceDialogOpen(true)}>
+          <FileText className="mr-2 h-4 w-4" />
+          <span>Generate Invoice</span>
+        </DropdownMenuItem>
+        <DropdownMenuItem onClick={() => setIsVisitDialogOpen(true)}>
+          <PlusCircle className="mr-2 h-4 w-4" />
+          <span>Mark New Visit</span>
+        </DropdownMenuItem>
+        <DropdownMenuItem onClick={() => setIsEditing(true)}>
+          <Edit className="mr-2 h-4 w-4" />
+          <span>Edit Patient Details</span>
+        </DropdownMenuItem>
+        <DropdownMenuSeparator />
+        <DropdownMenuItem onClick={() => window.location.href = `tel:${patient.mobile}`}>
+          <Phone className="mr-2 h-4 w-4" />
+          <span>Call {patient.mobile}</span>
+        </DropdownMenuItem>
+        <DropdownMenuItem onClick={() => window.location.href = `mailto:${patient.email}`}>
+          <Mail className="mr-2 h-4 w-4" />
+          <span>Email {patient.email}</span>
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  </CardHeader>
+
+  <CardContent>
+    <form onSubmit={handleSubmit}>
+      <div className="flex flex-col items-center space-y-6">
+        <Avatar className="w-24 h-24 shadow-md rounded-full">
+          <AvatarImage src={`https://api.dicebear.com/6.x/initials/svg?seed=${formData.first_name} ${formData.last_name}`} />
+          <AvatarFallback>{formData.first_name.charAt(0)}{formData.last_name.charAt(0)}</AvatarFallback>
+        </Avatar>
+
+        <CardTitle className="text-center text-lg font-medium text-gray-700">
+          {formData.patient_id}
         </CardTitle>
 
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" className="h-8 w-8 p-0">
-                <span className="sr-only">Open menu</span>
-                <MoreVertical className="h-4 w-4" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuItem onClick={() => setIsInvoiceDialogOpen(true)}>
-                <FileText className="mr-2 h-4 w-4" />
-                <span>Generate Invoice</span>
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => setIsVisitDialogOpen(true)}>
-                <PlusCircle className="mr-2 h-4 w-4" />
-                <span>Mark New Visit</span>
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => setIsEditing(true)}>
-                <Edit className="mr-2 h-4 w-4" />
-                <span>Edit Patient Details</span>
-              </DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={() => window.location.href = `tel:${patient.mobile}`}>
-                <Phone className="mr-2 h-4 w-4" />
-                <span>Call {patient.mobile}</span>
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => window.location.href = `mailto:${patient.email}`}>
-                <Mail className="mr-2 h-4 w-4" />
-                <span>Email {patient.email}</span>
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={handleSubmit}>
-            <div className="flex flex-col items-center space-y-4">
-              <Avatar className="w-24 h-24">
-                <AvatarImage src={`https://api.dicebear.com/6.x/initials/svg?seed=${formData.first_name} ${formData.last_name}`} />
-                <AvatarFallback>{formData.first_name}{formData.last_name}</AvatarFallback>
-              </Avatar>
-              <CardTitle className="text-center flex-1">
-                {formData.patient_id}
-              </CardTitle>
-              <div className="w-full space-y-4">
-                {/* Add form fields for all patient properties */}
-                <div>
-                  <Label htmlFor="first_name">First Name</Label>
-                  <Input
-                    id="first_name"
-                    name="first_name"
-                    value={formData.first_name}
-                    onChange={handleChange}
-                    disabled={!isEditing}
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="last_name">Last Name</Label>
-                  <Input
-                    id="last_name"
-                    name="last_name"
-                    value={formData.last_name}
-                    onChange={handleChange}
-                    disabled={!isEditing}
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="email">E-mail</Label>
-                  <Input
-                    id="email"
-                    name="email"
-                    value={formData.email}
-                    onChange={handleChange}
-                    disabled={!isEditing}
-                  />
-                </div>
-                <div className='flex gap-4'>
-                  <div>
-                    <Label htmlFor="country_code">Country Code</Label>
-                    <Select
-                      id="country_code"
-                      name="country_code"
-                      value={formData.country_code}
-                      onValueChange={(value) => setFormData({ ...formData, country_code: value })}
-                      disabled={!isEditing}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select country code" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {countryCodes.map((code, index) => (
-                          <SelectItem key={`${code.code}-${index}`} value={code.code}>
-                            {code.name} ({code.code})
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div>
-                    <Label htmlFor="mobile">Mobile Number</Label>
-                    <Input
-                      id="mobile"
-                      name="mobile"
-                      value={formData.mobile}
-                      onChange={handleChange}
-                      disabled={!isEditing}
-                    />
-                  </div>
-                </div>
-                <div>
-                  <Label htmlFor="dob">Date of Birth</Label>
-                  <Input
-                    id="dob"
-                    name="dob"
-                    value={formData.dob}
-                    onChange={handleChange}
-                    disabled={!isEditing}
-                  />
-                </div>
-                {/* Add more fields for email, mobile, sex, dob, etc. */}
-              </div>
-              <div className='w-full flex justify-between'>
-                {isEditing ? (
-                  <div className="space-x-2">
-                    <Button type="submit">Save Changes</Button>
-                    <Button type="button" variant="outline" onClick={() => setIsEditing(false)}>Cancel</Button>
-                  </div>
-                ) : (
-                  <Button type="button" onClick={() => setIsEditing(true)}>Edit Patient</Button>
-                )}
-                <Link to={`/clinic/${clinic_id}/patients/${patient_id}/schedule`}>
-                  <Button variant="outline">View Schedule</Button>
-                </Link>
-              </div>
+        <div className="w-full space-y-4">
+          <div>
+            <Label htmlFor="first_name">First Name</Label>
+            <Input
+              id="first_name"
+              name="first_name"
+              value={formData.first_name}
+              onChange={handleChange}
+              disabled={!isEditing}
+              className="border-gray-300 focus:ring-primary"
+            />
+          </div>
+
+          <div>
+            <Label htmlFor="last_name">Last Name</Label>
+            <Input
+              id="last_name"
+              name="last_name"
+              value={formData.last_name}
+              onChange={handleChange}
+              disabled={!isEditing}
+              className="border-gray-300 focus:ring-primary"
+            />
+          </div>
+
+          <div>
+            <Label htmlFor="email">E-mail</Label>
+            <Input
+              id="email"
+              name="email"
+              value={formData.email}
+              onChange={handleChange}
+              disabled={!isEditing}
+              className="border-gray-300 focus:ring-primary"
+            />
+          </div>
+
+          {/* Country Code and Mobile Number aligned on the same vertical level */}
+          <div className="flex gap-4">
+            <div className="flex-1">
+              <Label htmlFor="country_code">Country Code</Label>
+              <Select
+                id="country_code"
+                name="country_code"
+                value={formData.country_code}
+                onValueChange={(value) => setFormData({ ...formData, country_code: value })}
+                disabled={!isEditing}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select country code" />
+                </SelectTrigger>
+                <SelectContent>
+                  {countryCodes.map((code, index) => (
+                    <SelectItem key={`${code.code}-${index}`} value={code.code}>
+                      {code.name} ({code.code})
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
-          </form>
-        </CardContent>
-      </Card>
+
+            <div className="flex-1">
+              <Label htmlFor="mobile">Mobile Number</Label>
+              <Input
+                id="mobile"
+                name="mobile"
+                value={formData.mobile}
+                onChange={handleChange}
+                disabled={!isEditing}
+                className="border-gray-300 focus:ring-primary"
+              />
+            </div>
+          </div>
+
+          <div>
+            <Label htmlFor="dob">Date of Birth</Label>
+            <Input
+              id="dob"
+              name="dob"
+              value={formData.dob}
+              onChange={handleChange}
+              disabled={!isEditing}
+              className="border-gray-300 focus:ring-primary"
+            />
+          </div>
+        </div>
+
+        <div className="w-full flex justify-between items-center">
+          {isEditing ? (
+            <div className="space-x-2">
+              <Button type="submit" className="bg-primary text-white">Save Changes</Button>
+              <Button type="button" variant="outline" onClick={() => setIsEditing(false)}>Cancel</Button>
+            </div>
+          ) : (
+            <Button type="button" onClick={() => setIsEditing(true)}>Edit Patient</Button>
+          )}
+          <Link to={`/clinic/${clinic_id}/patients/${patient_id}/schedule`}>
+            <Button variant="outline">View Schedule</Button>
+          </Link>
+        </div>
+      </div>
+    </form>
+  </CardContent>
+</Card>
+
       <Dialog open={isInvoiceDialogOpen} onOpenChange={setIsInvoiceDialogOpen}>
         <DialogContent className="max-w-2xl w-full max-h-[100vh] overflow-y-auto">
           <DialogHeader>
