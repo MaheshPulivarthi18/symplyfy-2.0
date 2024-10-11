@@ -35,6 +35,7 @@ const ClinicInformation = () => {
   const [selectedFile, setSelectedFile] = useState(null);
   const [presentImg, setPresentImg] = useState(null);
   const [isPrefixPatientEditable, setIsPrefixPatientEditable] = useState(false); // For showing button/input
+  const [submitting, setSubmitting] = useState(false); // Track form submission status
 
   const form = useForm({
     resolver: zodResolver(clinicInformationSchema),
@@ -79,9 +80,7 @@ const ClinicInformation = () => {
       });
 
       // Check if prefix_patient_id is null to manage the button state
-      if (!data.prefix_patient_id) {
-        setIsPrefixPatientEditable(false);
-      }
+      setIsPrefixPatientEditable(!data.prefix_patient_id);
     } catch (error) {
       toast({
         title: "Error",
@@ -94,10 +93,14 @@ const ClinicInformation = () => {
   };
 
   const onSubmit = async (values) => {
+    if (submitting) return; // Prevent multiple submissions
+    setSubmitting(true);
+
     const submitData = {
       ...values,
       address_line_2: values.address_line_2 ? values.address_line_2 : null,
     };
+
     try {
       const response = await authenticatedFetch(`${import.meta.env.VITE_BASE_URL}/api/emp/clinic/${clinic_id}/`, {
         method: 'PATCH',
@@ -119,6 +122,8 @@ const ClinicInformation = () => {
         description: error.message || "Failed to update clinic information. Please try again.",
         variant: "destructive",
       });
+    } finally {
+      setSubmitting(false); // Re-enable form submission after completion
     }
   };
 
@@ -144,10 +149,9 @@ const ClinicInformation = () => {
             <>No logo uploaded yet</>
           )}
         </div>
-
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-           <FormField
+            <FormField
               control={form.control}
               name="name"
               render={({ field }) => (
@@ -275,32 +279,34 @@ const ClinicInformation = () => {
               )}
             />
             <FormField
-  control={form.control}
-  name="prefix_patient_id"
-  render={({ field }) => (
-    <FormItem>
-      <FormLabel>Prefix Patient ID</FormLabel>
-      {!isPrefixPatientEditable && field.value ? (
-        <FormControl>
-          <Input {...field} value={field.value ?? ''} readOnly placeholder="Prefix Patient ID set and cannot be changed" />
-        </FormControl>
-      ) : (
-        <>
-          {isPrefixPatientEditable ? (
-            <FormControl>
-              <Input {...field} value={field.value ?? ''} placeholder="Enter Prefix Patient ID" />
-            </FormControl>
-          ) : (
-            <Button type="button" onClick={handleEditPrefixPatientId}>
-              Add Prefix Patient ID
+              control={form.control}
+              name="prefix_patient_id"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Prefix Patient ID</FormLabel>
+                  {!isPrefixPatientEditable && field.value ? (
+                    <FormControl>
+                      <Input {...field} value={field.value ?? ''} readOnly placeholder="Prefix Patient ID set and cannot be changed" />
+                    </FormControl>
+                  ) : (
+                    <>
+                      {isPrefixPatientEditable ? (
+                        <FormControl>
+                          <Input {...field} value={field.value ?? ''} placeholder="Enter Prefix Patient ID" />
+                        </FormControl>
+                      ) : (
+                        <Button type="button" onClick={handleEditPrefixPatientId}>
+                          Add Prefix Patient ID
+                        </Button>
+                      )}
+                    </>
+                  )}
+                </FormItem>
+              )}
+            />
+            <Button type="submit" className="mt-6" disabled={submitting}>
+              {submitting ? "Submitting..." : "Update Clinic Information"}
             </Button>
-          )}
-        </>
-      )}
-    </FormItem>
-  )}
-/>
-            <Button type="submit" className="mt-6">Update Clinic Information</Button>
           </form>
         </Form>
       </CardContent>
