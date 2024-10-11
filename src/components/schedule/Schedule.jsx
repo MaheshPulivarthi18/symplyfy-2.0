@@ -107,6 +107,8 @@ export default function Schedule() {
   const [dateRange, setDateRange] = useState('today');
   const [selectedFilters, setSelectedFilters] = useState([]);
   const [isVisible, setIsVisible] = useState(false);
+  const [bookedVisits, setBookedVisits] = useState([])
+  const [visits, setVisits] = useState([])
 
 
   const filteredTherapists = therapists.filter(therapist => 
@@ -677,6 +679,62 @@ export default function Schedule() {
     }
   };
 
+  const handleRevoke = async (bookingId, reason) => {
+    try {
+      const bookedVisitEvent = bookedVisits.find(event => event.booking === bookingId);
+      // console.log(bookedVisitEvent, bookingId, bookedVisits)
+      const visitEvent = visits.find(visit => visit.id === bookedVisitEvent.id)
+      // console.log(visitEvent)
+      if (!visitEvent) {
+        throw new Error('Visit not found');
+      }
+
+      const revokeData = {
+        reason: reason
+      };
+
+      const response = await authenticatedFetch(`${import.meta.env.VITE_BASE_URL}/api/emp/clinic/${clinic_id}/visit/${visitEvent.id}/cancel`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(revokeData),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to Revoke visit');
+      }
+
+      const newVisit = await response.json();
+      
+      // Update the local state to mark the event as not attended
+      setEvents(prevEvents => prevEvents.map(event => 
+        event.id === bookingId 
+          ? { ...event, attended: false }
+          : event
+      ));
+      
+      toast({
+        title: "Success",
+        description: "Visit revoked successfully.",
+        variant: "default",
+      });
+
+      // refresh the bookings or visits data
+      await fetchBookings();
+      await fetchVisits();
+    } catch (error) {
+      console.error('Error revoking visit:', error);
+      toast({
+        title: "Error",
+        description: error.message || "Failed to revoke visit. Please try again.",
+        variant: "destructive",
+      });
+    }
+
+  }
+
   const addVisit = async () => {
     try {
       // Use the date from newVisit.date and combine it with the time
@@ -1048,11 +1106,13 @@ export default function Schedule() {
         `${import.meta.env.VITE_BASE_URL}/api/emp/clinic/${clinic_id}/visit/?date_from=${dateFrom}&date_to=${dateTo}`
       );
       const data = await response.json();
+      setVisits(data)
   
       // Create a set to track bookings that have been attended
       const attendedBookingIds = new Set();
 
       const formattedVisits = []
+      const visitsBooked =[]
   
       // Process visits
       data.forEach(visit => {
@@ -1079,10 +1139,12 @@ export default function Schedule() {
           });
         } else {
           // Scheduled visit - mark the booking as attended
+          visitsBooked.push(visit)
           attendedBookingIds.add(visit.booking);
+          setBookedVisits(visitsBooked)
         }
       });
-  
+      console.log(bookedVisits)
       return { formattedVisits, attendedBookingIds };
     } catch (error) {
       console.error('Failed to fetch visits:', error);
@@ -1556,6 +1618,7 @@ export default function Schedule() {
           onCancel={handleCancel}
           onDelete={handleDelete}
           onMarkVisit={handleMarkVisit}
+          onRevoke={handleRevoke}
           sellables={sellables}  // Pass sellables to AppointmentPopup
           onCopyRecurringAppointments={onCopyRecurringAppointments}
           workingHours={workingHours}
