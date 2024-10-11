@@ -74,7 +74,7 @@ const PatientProfile = () => {
   const [sellables, setSellables] = useState([]);
   const [employeeDetails, setEmployeeDetails] = useState({});
   const [sellableDetails, setSellableDetails] = useState({});
-  
+  const [paymentadd,setpaymentadd]=useState(false);
   const [progress, setProgress] = useState(0);
   const [newNote, setNewNote] = useState({ description: '', visible_to_patient: false });
   const [newGoal, setNewGoal] = useState({ title: '', description: '', complete_by: '' });
@@ -1410,6 +1410,7 @@ const AppointmentsDataTable = ({ data }) => {
 
   const handleAddPayment = async (e) => {
     e.preventDefault();
+    setpaymentadd(true);
     try {
       console.log('Original newPayment date:', newPayment.date);
   
@@ -1480,6 +1481,9 @@ const AppointmentsDataTable = ({ data }) => {
       fetchLedgerTransactions();
     } catch (error) {
       toast({ title: "Error", description: error.message, variant: "destructive" });
+    }
+    finally{
+        setpaymentadd(false); 
     }
   };
   
@@ -2629,7 +2633,7 @@ const exportLedgerTransactionsToExcel = async () => {
                           <Label htmlFor="channel">Payment Channel</Label>
                           <Select onValueChange={(value) => setNewPayment({...newPayment, channel: value})}>
                             <SelectTrigger>
-                              <SelectValue placeholder="Select payment channel" />
+                              <SelectValue placeholder="Select payment channel required" />
                             </SelectTrigger>
                             <SelectContent>
                               {paymentChannels.map(channel => (
@@ -2641,8 +2645,11 @@ const exportLedgerTransactionsToExcel = async () => {
                           </Select>
                         </div>
                       </div>
+                      <br />
                       <DialogFooter>
-                        <Button type="submit" className="mt-4">Add Payment</Button>
+                        <Button type="submit" disabled={paymentadd}>
+                             {paymentadd? "Adding Payment..." : "Add Payment"}
+                       </Button>
                       </DialogFooter>
                     </form>
                   </DialogContent>
