@@ -1936,6 +1936,7 @@ const exportLedgerTransactionsToExcel = async () => {
             <Input
               id="dob"
               name="dob"
+              type="date"
               value={formData.dob}
               onChange={handleChange}
               disabled={!isEditing}
