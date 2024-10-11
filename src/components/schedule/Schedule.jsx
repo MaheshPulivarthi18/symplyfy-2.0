@@ -654,21 +654,32 @@ export default function Schedule() {
       const newVisit = await response.json();
       
       // Update the local state to mark the event as attended
-      setEvents(prevEvents => prevEvents.map(event => 
-        event.id === bookingId 
-          ? { ...event, attended: true }
-          : event
-      ));
-      
-      toast({
-        title: "Success",
-        description: "Visit marked successfully.",
-        variant: "default",
-      });
-
-      // Optionally, you might want to refresh the bookings or visits data
-      await fetchBookings();
-      await fetchVisits();
+      const fetchAllEvents = async () => {
+        setLoading(true);
+        try {
+          const [bookings, visitsData] = await Promise.all([fetchBookings(), fetchVisits()]);
+          const { formattedVisits, attendedBookingIds } = visitsData;
+  
+          const updatedBookings = bookings.map(booking => {
+            if (attendedBookingIds.has(booking.id)) {
+              return { ...booking, attended: true };
+            } else {
+              return booking;
+            }
+          });
+  
+          let allEvents = [...updatedBookings, ...formattedVisits];
+          allEvents = allEvents.filter(event => event.status_patient !== 'R' && event.status_employee !== 'R');
+          setEvents(allEvents);
+          updateAppointmentCounts(allEvents);
+        } catch (error) {
+          console.error('Error fetching events:', error);
+        } finally {
+          setLoading(false);
+        }
+      };
+  
+      await fetchAllEvents();
     } catch (error) {
       console.error('Error marking visit:', error);
       toast({
@@ -682,48 +693,61 @@ export default function Schedule() {
   const handleRevoke = async (bookingId, reason) => {
     try {
       const bookedVisitEvent = bookedVisits.find(event => event.booking === bookingId);
-      // console.log(bookedVisitEvent, bookingId, bookedVisits)
-      const visitEvent = visits.find(visit => visit.id === bookedVisitEvent.id)
-      // console.log(visitEvent)
-      if (!visitEvent) {
+      const nonBookedVisit = visits.find(visit => `visit-${visit.id}` === bookingId);
+      if (!bookedVisitEvent && !nonBookedVisit) {
         throw new Error('Visit not found');
       }
-
-      const revokeData = {
-        reason: reason
-      };
-
-      const response = await authenticatedFetch(`${import.meta.env.VITE_BASE_URL}/api/emp/clinic/${clinic_id}/visit/${visitEvent.id}/cancel`, {
-        method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(revokeData),
-      });
-
+  
+      const visitEvent = bookedVisitEvent || nonBookedVisit;
+      const revokeData = { reason: reason };
+  
+      const response = await authenticatedFetch(
+        `${import.meta.env.VITE_BASE_URL}/api/emp/clinic/${clinic_id}/visit/${visitEvent.id}/cancel/`,
+        {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(revokeData),
+        }
+      );
+  
       if (!response.ok) {
         const errorData = await response.json();
         throw new Error(errorData.message || 'Failed to Revoke visit');
       }
-
-      const newVisit = await response.json();
-      
-      // Update the local state to mark the event as not attended
-      setEvents(prevEvents => prevEvents.map(event => 
-        event.id === bookingId 
-          ? { ...event, attended: false }
-          : event
-      ));
-      
+  
+      // Refresh events to include the updated (canceled) visit
+      const fetchAllEvents = async () => {
+        setLoading(true);
+        try {
+          const [bookings, visitsData] = await Promise.all([fetchBookings(), fetchVisits()]);
+          const { formattedVisits, attendedBookingIds } = visitsData;
+  
+          const updatedBookings = bookings.map(booking => {
+            if (attendedBookingIds.has(booking.id)) {
+              return { ...booking, attended: true };
+            } else {
+              return booking;
+            }
+          });
+  
+          let allEvents = [...updatedBookings, ...formattedVisits];
+          allEvents = allEvents.filter(event => event.status_patient !== 'R' && event.status_employee !== 'R');
+          setEvents(allEvents);
+          updateAppointmentCounts(allEvents);
+        } catch (error) {
+          console.error('Error fetching events:', error);
+        } finally {
+          setLoading(false);
+        }
+      };
+  
+      await fetchAllEvents();
+  
       toast({
         title: "Success",
         description: "Visit revoked successfully.",
         variant: "default",
       });
-
-      // refresh the bookings or visits data
-      await fetchBookings();
-      await fetchVisits();
     } catch (error) {
       console.error('Error revoking visit:', error);
       toast({
@@ -732,8 +756,7 @@ export default function Schedule() {
         variant: "destructive",
       });
     }
-
-  }
+  };  
 
   const addVisit = async () => {
     try {

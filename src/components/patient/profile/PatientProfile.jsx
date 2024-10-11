@@ -1322,7 +1322,9 @@ const AppointmentsDataTable = ({ data }) => {
       let formattedDate
       const currentMonth = new Date().getMonth()
       const selectedMonth = selectedDate.getMonth()
-      if(currentMonth === selectedMonth){
+      let currentDay = new Date().getDay()
+      const selectedDay = selectedDate.getDay()
+      if(currentMonth === selectedMonth && currentDay === selectedDay){
         formattedDate = utcDate.toISOString().split('T')[0];
       } else {
         formattedDate = addDays(utcDate, 1).toISOString().split('T')[0];
