@@ -61,7 +61,9 @@ const AppointmentPopup = ({
   const [editDetails, setEditDetails] = useState(false);
   const [isRevokeOpen, setIsRevokeOpen] = useState(false);
   const [reason, setReason] = useState('')
-
+  const handleaddpayment =()=>{
+    navigate(`/clinic/${clinic_id}/patients/${event.patientId}`);
+  }
   useEffect(() => {
     setIsSheetOpen(true);
     setVisitDetails({
@@ -250,7 +252,7 @@ const AppointmentPopup = ({
             >
               View Patient Details
             </Button>
-            <Button className="w-full mb-2" variant="outline">
+            <Button className="w-full mb-2" variant="outline" onClick={handleaddpayment}>
               Record New Payment
             </Button>
             <Button className="w-full" variant="outline">

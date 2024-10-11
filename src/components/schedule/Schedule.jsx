@@ -20,7 +20,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { PlusCircle, Search, EyeOff, Eye, X } from "lucide-react";
 import { Card } from '../ui/card';
 import { useToast } from "@/components/ui/use-toast";
-import { useParams } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { parseISO, addMinutes, addDays, addMonths } from 'date-fns';
 import { DatePicker } from '@/components/ui/datepicker';
@@ -1413,7 +1413,9 @@ export default function Schedule() {
       </div>
     );
   };  
-  
+  const handleaddpayment=()=>{
+       navigate(`clinic/${clinic_id}/patients/${patient_id}`);
+  }
 
   return (
     // className={`mx-auto flex flex-col gap-4 p-4 w-full h-full shadow-xl transition-all duration-500 ease-out ${isVisible ? 'opacity-100 scale-100' : 'opacity-0 scale-90'}`}
@@ -1645,6 +1647,7 @@ export default function Schedule() {
           sellables={sellables}  // Pass sellables to AppointmentPopup
           onCopyRecurringAppointments={onCopyRecurringAppointments}
           workingHours={workingHours}
+          handleaddpayment={handleaddpayment}
         />
       )}
       {/* add appointment */}
