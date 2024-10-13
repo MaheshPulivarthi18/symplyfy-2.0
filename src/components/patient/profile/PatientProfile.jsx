@@ -1740,7 +1740,9 @@ const exportLedgerTransactionsToExcel = async () => {
       calculateFinalAmount([...invoiceItems, newItem]);
     }
   };
-  
+   const handleedit =()=>{
+    navigate(`/clinic/${clinic_id}/patient/${patient_id}/update`);
+  }
   const handleItemChange = (index, field, value) => {
     const updatedItems = [...invoiceItems];
     updatedItems[index][field] = value;
@@ -1954,14 +1956,7 @@ const exportLedgerTransactionsToExcel = async () => {
         </div>
 
         <div className="w-full flex justify-between items-center">
-          {isEditing ? (
-            <div className="space-x-2">
-              <Button type="submit" className="bg-primary text-white">Save Changes</Button>
-              <Button type="button" variant="outline" onClick={() => setIsEditing(false)}>Cancel</Button>
-            </div>
-          ) : (
-            <Button type="button" onClick={() => setIsEditing(true)}>Edit Patient</Button>
-          )}
+            <Button type="button" onClick={handleedit}>Edit Patient</Button>
           <Link to={`/clinic/${clinic_id}/patients/${patient_id}/schedule`}>
             <Button variant="outline">View Schedule</Button>
           </Link>
