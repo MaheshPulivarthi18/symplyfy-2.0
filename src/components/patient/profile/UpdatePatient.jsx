@@ -383,7 +383,7 @@ const UpdatePatient = () => {
               </div>
             </div>
             <Button type="submit" disabled={isSubmitting}>
-                   {isSubmitting ? "Adding Ptaient..." : "Add Patient"}
+                   {isSubmitting ? "Updating Ptaient..." : "Update Patient"}
             </Button>
           </form>
         </Form>
