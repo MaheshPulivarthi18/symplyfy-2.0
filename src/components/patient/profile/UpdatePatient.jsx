@@ -14,8 +14,11 @@ import * as z from 'zod';
 import { Form, FormControl, FormField, FormItem, FormLabel } from '@/components/ui/form';
 import { format } from 'date-fns';
 import { countryCodes } from '@/lib/countryCodes';
+import { useLocation } from 'react-router-dom';
 
 const UpdatePatient = () => {
+  const location = useLocation();
+  const { PatientData } = location.state || {};  
   const patientSchema = z.object({
   first_name: z.string().min(2, "First name is required"),
   last_name: z.string().optional(),
@@ -46,7 +49,7 @@ const UpdatePatient = () => {
   const { toast } = useToast();
   const { authenticatedFetch } = useAuth();
   const [therapists, setTherapists] = useState([]);
-  const [isSubmitting, setIsSubmitting] = useState(false); // Track submission state
+  const [isSubmitting, setIsSubmitting] = useState(false); 
 
   const form = useForm({
     resolver: zodResolver(patientSchema),
@@ -72,18 +75,15 @@ const UpdatePatient = () => {
  }, []);
  const fetchPatient = async () => {
   try {
-    const response = await authenticatedFetch(`${import.meta.env.VITE_BASE_URL}/api/emp/clinic/${clinic_id}/patient/${patient_id}`);
-    if (!response.ok) throw new Error('Failed to fetch patient details');
-    const patientData = await response.json();
     form.reset({
-      ...patientData,
-      country_code: patientData.mobile?.slice(0, 3) || "+91",
-      mobile: patientData.mobile?.slice(3) || "",
-      country_code_alternate: patientData.mobile_alternate?.slice(0, 3) || "+91",
-      mobile_alternate: patientData.mobile_alternate?.slice(3) || "",
-      therapist_primary: patientData.therapist_primary || "",
-      dob: patientData.dob || "",
-      is_patient_active: patientData.is_patient_active !== undefined ? patientData.is_patient_active : false,
+      ...PatientData,
+      country_code: PatientData.mobile?.slice(0, 3) || "+91",
+      mobile: PatientData.mobile?.slice(3) || "",
+      country_code_alternate: PatientData.mobile_alternate?.slice(0, 3) || "+91",
+      mobile_alternate: PatientData.mobile_alternate?.slice(3) || "",
+      therapist_primary: PatientData.therapist_primary || "",
+      dob: PatientData.dob || "",
+      is_patient_active: PatientData.is_patient_active !== undefined ? PatientData.is_patient_active : false,
     });
   } catch (error) {
     toast({
@@ -93,7 +93,7 @@ const UpdatePatient = () => {
     });
   }
 };
-  const fetchTherapists = async () => {
+const fetchTherapists = async () => {
     try {
       const response = await authenticatedFetch(`${import.meta.env.VITE_BASE_URL}/api/emp/clinic/${clinic_id}/employee/`);
       if (!response.ok) throw new Error('Failed to fetch therapists');
@@ -108,7 +108,6 @@ const UpdatePatient = () => {
       });
     }
   };
-  
   const onSubmit = async (values) => {
     setIsSubmitting(true);
     const submitData = {
@@ -121,7 +120,6 @@ const UpdatePatient = () => {
       therapist_primary: values.therapist_primary ? values.therapist_primary : null,
       priority: 9,
     };
-
     try {
       const response = await authenticatedFetch(`${import.meta.env.VITE_BASE_URL}/api/emp/clinic/${clinic_id}/patient/${patient_id}`, {
         method: 'PATCH',

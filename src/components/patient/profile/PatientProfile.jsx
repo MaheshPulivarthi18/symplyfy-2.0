@@ -1740,9 +1740,13 @@ const exportLedgerTransactionsToExcel = async () => {
       calculateFinalAmount([...invoiceItems, newItem]);
     }
   };
-   const handleedit =()=>{
-    navigate(`/clinic/${clinic_id}/patient/${patient_id}/update`);
-  }
+  const handleedit = () => {
+    navigate(`/clinic/${clinic_id}/patient/${patient_id}/update`, {
+    state: { PatientData: patient,
+      therapists:therapists,
+    },
+    });
+  };
   const handleItemChange = (index, field, value) => {
     const updatedItems = [...invoiceItems];
     updatedItems[index][field] = value;
