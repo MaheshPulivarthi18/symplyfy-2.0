@@ -167,30 +167,26 @@ const PatientList = () => {
             <TableHeader>
               <TableRow>
                 <TableHead className='text-center'>
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button variant="ghost">Name <SortIcon field="last_name" /></Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent>
-                      <DropdownMenuItem onClick={() => handleSort('last_name')}>Sort by Last Name</DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => handleSort('first_name')}>Sort by First Name</DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
+                      <Button variant="ghost" onClick={() => handleSort('first_name')}>Name 
+                        <SortIcon field="first_name" /></Button>
                 </TableHead>
                 <TableHead className='text-center'>
+                        status
+                 </TableHead>
+                <TableHead className='text-center'>
                   <Button variant="ghost" 
-                    // onClick={() => handleSort('email')}
+                     onClick={() => handleSort('email')}
                   >
                     Email 
-                    {/* <SortIcon field="email" /> */}
+                    { <SortIcon field="email" /> }
                   </Button>
                 </TableHead>
                 <TableHead className='text-center'>
                   <Button variant="ghost" 
-                    // onClick={() => handleSort('mobile')}
+                    onClick={() => handleSort('mobile')}
                     >
                     Mobile
-                    {/* <SortIcon field="email" /> */}
+                    <SortIcon field="email" />
                   </Button>
                 </TableHead>
                 <TableHead>
@@ -213,6 +209,17 @@ const PatientList = () => {
                       {patient.first_name} {patient.last_name}
                     </div>
                   </TableCell>
+                  <TableCell>
+                       {patient.is_active ? (
+                         <div className="inline-block px-2 py-1 text-green-800 bg-green-300 rounded-full border border-green-600">
+                          Active
+                        </div>
+                         ) : (
+                          <div className="inline-block px-2 py-1 text-red-600 bg-red-100 rounded-full border border-red-600">
+                             Not Active
+                      </div>
+                      )}
+                   </TableCell>
                   <TableCell>{patient.email}</TableCell>
                   <TableCell>{patient.mobile}</TableCell>
                   <TableCell>{getTherapistName(patient.therapist_primary)}</TableCell>
