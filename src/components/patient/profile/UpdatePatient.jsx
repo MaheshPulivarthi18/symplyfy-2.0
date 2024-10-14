@@ -142,8 +142,6 @@ const UpdatePatient = () => {
         }
         throw new Error(err || "Failed to update patient");
       }
-
-      const newPatient = await response.json();
       toast({
         title: "Success",
         description: `updation of  patient Done scuccesfully.`,
