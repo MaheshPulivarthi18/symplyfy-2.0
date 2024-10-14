@@ -210,15 +210,15 @@ const PatientList = () => {
                     </div>
                   </TableCell>
                   <TableCell>
-                       {patient.is_active ? (
-                         <div className="inline-block px-2 py-1 text-green-800 bg-green-300 rounded-full border border-green-600">
-                          Active
-                        </div>
-                         ) : (
-                          <div className="inline-block px-2 py-1 text-red-600 bg-red-100 rounded-full border border-red-600">
-                             Not Active
-                      </div>
-                      )}
+                       {patient.is_patient_active ? (
+  <div className="inline-block px-2 py-1 text-green-800 bg-green-300 rounded-full border border-green-600">
+    Active
+  </div>
+) : (
+  <div className="inline-block px-2 py-1 text-sm text-red-600 bg-red-100 rounded-full border border-red-600">
+    NotActive
+  </div>
+)}
                    </TableCell>
                   <TableCell>{patient.email}</TableCell>
                   <TableCell>{patient.mobile}</TableCell>

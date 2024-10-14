@@ -3,6 +3,7 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate, useParams, Link } from 'react-router-dom';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
+import { Switch } from '@/components/ui/switch';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/components/ui/use-toast';
@@ -38,6 +39,7 @@ const UpdatePatient = () => {
   guardian_name: z.string().optional(),
   therapist_primary: z.string().uuid("Invalid therapist ID").optional().or(z.literal('')).or(z.null()),
   priority: z.number().int().min(1).max(10),
+  is_patient_active:z.boolean(),
 });
   const navigate = useNavigate();
   const { clinic_id,patient_id } = useParams();
@@ -61,6 +63,7 @@ const UpdatePatient = () => {
       guardian_name: "",
       therapist_primary: "",
       priority: 9,
+      is_patient_active:true,
     },
   });
   useEffect(() => {
@@ -80,6 +83,7 @@ const UpdatePatient = () => {
       mobile_alternate: patientData.mobile_alternate?.slice(3) || "",
       therapist_primary: patientData.therapist_primary || "",
       dob: patientData.dob || "",
+      is_patient_active:patientData.is_active && true,
     });
   } catch (error) {
     toast({
@@ -104,7 +108,7 @@ const UpdatePatient = () => {
       });
     }
   };
-
+  
   const onSubmit = async (values) => {
     setIsSubmitting(true);
     const submitData = {
@@ -113,10 +117,8 @@ const UpdatePatient = () => {
       mobile_alternate: values.mobile_alternate ? `${values.country_code_alternate}${values.mobile_alternate}` : null,
       dob: values.dob || null,
       has_app_access: true,
-      is_active: true,
       email_alternate: null,
       therapist_primary: values.therapist_primary ? values.therapist_primary : null,
-      
       priority: 9,
     };
 
@@ -163,7 +165,22 @@ const UpdatePatient = () => {
       <CardContent className="pt-6">
         <h2 className="text-2xl font-bold mb-6 text-center">Update Patient</h2>
         <Form {...form}>
+   
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
+            <FormField
+              control={form.control}
+              name="is_patient_active"
+              render={({ field }) => (
+            <FormItem>
+            <FormLabel></FormLabel>
+            <Switch
+             checked={field.value}
+             onCheckedChange={field.onChange}
+           />
+          <span className="ml-2">{field.value ? "Active" : "Inactive"}</span>
+          </FormItem>
+          )}
+          />
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               <div className="space-y-6">
                 <h3 className="font-semibold">Personal details</h3>
