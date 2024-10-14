@@ -228,7 +228,8 @@ export default function Schedule() {
       const response = await authenticatedFetch(`${import.meta.env.VITE_BASE_URL}/api/emp/clinic/${clinic_id}/patient/`);
       if (!response.ok) throw new Error('Failed to fetch patients');
       const data = await response.json();
-      setPatients(data);
+      const active= data.filter(p => p.is_patient_active);
+      setPatients(active);
     } catch (error) {
       toast({
         title: "Error",
