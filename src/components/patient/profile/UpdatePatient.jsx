@@ -83,7 +83,7 @@ const UpdatePatient = () => {
       mobile_alternate: patientData.mobile_alternate?.slice(3) || "",
       therapist_primary: patientData.therapist_primary || "",
       dob: patientData.dob || "",
-      is_patient_active:patientData.is_active && true,
+      is_patient_active: patientData.is_patient_active !== undefined ? patientData.is_patient_active : false,
     });
   } catch (error) {
     toast({
