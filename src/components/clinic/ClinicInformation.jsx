@@ -351,7 +351,9 @@ const ClinicInformation = () => {
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      <SelectItem value="ph">PH</SelectItem>
+                     <SelectItem value="ph">Pharmacy</SelectItem>
+                      <SelectItem value="cl">Clinic</SelectItem>
+                      <SelectItem value="ho">Hospital</SelectItem>
                     </SelectContent>
                   </Select>
                 </FormItem>
