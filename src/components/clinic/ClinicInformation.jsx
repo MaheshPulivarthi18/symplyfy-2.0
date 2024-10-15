@@ -390,6 +390,7 @@ const ClinicInformation = () => {
         <p className="text-sm text-gray-700">
           Example: If your Patient ID Prefix is "ABC", your patients will have IDs like ABC_0001, ABC_0002, and so on.
         </p>
+        Patient ID Prefix is set. If you need to change it, please contact support.
       </div>
                   {!isPrefixPatientEditable && field.value ? (
                     <FormControl>
