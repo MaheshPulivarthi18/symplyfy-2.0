@@ -394,8 +394,8 @@ const Employees = () => {
                   <h3 className="font-semibold">{employee.first_name} {employee.last_name}</h3>
                   <p className="text-sm text-gray-500">{employee.email}</p>
                   <p className="text-xs text-gray-400">
-                    {employee.is_therapist ? 'Therapist' : 'Staff'} | 
-                    {employee.is_active ? ' Active' : ' Inactive'}
+                    {/* {employee.is_therapist ? 'Therapist' : 'Staff'}  */}
+                    {employee.is_therapist ? ' Active' : ' Inactive'}
                   </p>
                 </div>
               </li>
