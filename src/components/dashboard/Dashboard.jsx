@@ -169,8 +169,8 @@ const Dashboard = () => {
       setVisits(response);
       setSummary(prevSummary => ({ ...prevSummary, visits: response.length }));
       
-      // const uniqueEmployeeIds = [...new Set(response.map(visit => visit.employee))];
-      // await Promise.all(uniqueEmployeeIds.map(fetchEmployeeDetails));
+      const uniqueEmployeeIds = [...new Set(response.map(visit => visit.employee))];
+      await Promise.all(uniqueEmployeeIds.map(fetchEmployeeDetails));
       
       const uniqueSellableIds = [...new Set(response.map(visit => visit.sellable))];
       await Promise.all(uniqueSellableIds.map(fetchSellableDetails));

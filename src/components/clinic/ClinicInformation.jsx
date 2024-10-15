@@ -12,7 +12,6 @@ import { Form, FormControl, FormField, FormItem, FormLabel } from '@/components/
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import axios from 'axios';
 
-// Schema validation with Zod
 const clinicInformationSchema = z.object({
   name: z.string().min(1, "Name is required"),
   display_name: z.string().min(1, "Display name is required"),
@@ -24,7 +23,6 @@ const clinicInformationSchema = z.object({
   email1: z.string().email("Invalid email address"),
   type: z.enum(["ph","mu","ot","oh","se","st","ab","ay","da","py","cd"]), 
   prefix_invoice: z.string().min(1, "Invoice prefix is required"),
-  prefix_patient_id: z.string().optional(),
 });
 
 const ClinicInformation = () => {
@@ -37,20 +35,20 @@ const ClinicInformation = () => {
   const [isPrefixPatientEditable, setIsPrefixPatientEditable] = useState(false); // For showing button/input
   const [submitting, setSubmitting] = useState(false); // Track form submission status
   const [type,settype]=useState('');
+
   const form = useForm({
     resolver: zodResolver(clinicInformationSchema),
     defaultValues: {
       name: '',
       display_name: '',
       address_line_1: '',
-      address_line_2: null,
+      address_line_2: '',
       city: '',
       pincode: '',
       phone1: '',
       email1: '',
       type: 'ph',
       prefix_invoice: '',
-      prefix_patient_id: null, // Initialize as null
     },
   });
 
@@ -64,7 +62,8 @@ const ClinicInformation = () => {
       const response = await authenticatedFetch(`${import.meta.env.VITE_BASE_URL}/api/emp/clinic/${clinic_id}/`);
       if (!response.ok) throw new Error('Failed to fetch clinic data');
       const data = await response.json();
-      setPresentImg(data.logo_long);
+      console.log(data)
+      setPresentImg(data.logo_long)
       form.reset({
         name: data.name ?? '',
         display_name: data.display_name ?? '',
@@ -76,7 +75,6 @@ const ClinicInformation = () => {
         email1: data.email1 ?? '',
         type: data.type,
         prefix_invoice: data.prefix_invoice ?? '',
-        prefix_patient_id: data.prefix_patient_id ?? null,
       });
       settype(data.type);
       // Check if prefix_patient_id is null to manage the button state
@@ -93,6 +91,7 @@ const ClinicInformation = () => {
   };
 
   const onSubmit = async (values) => {
+
     if (submitting) return; // Prevent multiple submissions
     setSubmitting(true);
 
@@ -100,14 +99,13 @@ const ClinicInformation = () => {
       ...values,
       address_line_2: values.address_line_2 ? values.address_line_2 : null,
     };
-
     try {
       const response = await authenticatedFetch(`${import.meta.env.VITE_BASE_URL}/api/emp/clinic/${clinic_id}/`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(submitData),
+        body: JSON.stringify(values),
       });
 
       if (!response.ok) throw new Error('Failed to update clinic information');
@@ -125,10 +123,6 @@ const ClinicInformation = () => {
     } finally {
       setSubmitting(false); // Re-enable form submission after completion
     }
-  };
-
-  const handleEditPrefixPatientId = () => {
-    setIsPrefixPatientEditable(true);
   };
 
   const fetchWithTokenHandling = async (url, options = {}) => {
@@ -158,7 +152,33 @@ const ClinicInformation = () => {
       event.target.value = null; // Reset the input
     }
   };
+  const fetchWithTokenHandling = async (url, options = {}) => {
+    try {
+      const response = await authenticatedFetch(url, options);
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.detail || 'An error occurred');
+      }
+      return response.json();
+    } catch (error) {
+      if (error.message === 'Token is blacklisted' || error.message === 'Token is invalid or expired') {
+        navigate('/login');
+        throw new Error('Session expired. Please log in again.');
+      }
+      throw error;
+    }
+  };
 
+  const handleFileChange = (event) => {
+    const file = event.target.files[0];
+    // setSelectedFile(file);
+    if (file && file.type.startsWith('image/')) {
+      setSelectedFile(file);
+    } else {
+      toast({ title: "Error", description: "Please select a valid image file.", variant: "destructive" });
+      event.target.value = null; // Reset the input
+    }
+  };
   const uploadLogo = async () => {
     if (!selectedFile) {
       toast({ title: "Error", description: "Please select a file to upload.", variant: "destructive" });
@@ -219,7 +239,8 @@ const ClinicInformation = () => {
         <CardTitle className="text-2xl font-bold">Clinic Information</CardTitle>
       </CardHeader>
       <CardContent>
-      <p className=' font-semibold'>
+
+        <p className=' font-semibold'>
           Invoice Logo
         </p>
         <div className='flex justify-center'>
@@ -429,6 +450,7 @@ const ClinicInformation = () => {
             <Button type="submit" className="mt-6" disabled={submitting}>
               {submitting ? "Submitting..." : "Update Clinic Information"}
             </Button>
+
           </form>
         </Form>
       </CardContent>

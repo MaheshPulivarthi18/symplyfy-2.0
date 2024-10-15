@@ -35,7 +35,7 @@ const formSchema = z.object({
   address_line_1: z.string().min(5, {
     message: "Address must be at least 5 characters.",
   }),
-  address_line_2: z.string().optional(),  
+  address_line_2: z.string().optional(),
   city: z.string().min(2, {
     message: "City must be at least 2 characters.",
   }),
@@ -55,6 +55,7 @@ const formSchema = z.object({
     message: "Prefix Patient ID is required.",
   }), 
   prefix_invoice: z.string().min(1, "Invoice prefix is required"),
+
 });
 
 const AddClinic = () => {
@@ -69,7 +70,7 @@ const AddClinic = () => {
       name: "",
       display_name: "",
       address_line_1: "",
-      address_line_2: "", 
+      address_line_2: "",
       city: "",
       pincode: "",
       phone1: "",
@@ -81,6 +82,7 @@ const AddClinic = () => {
   });
 
   const onSubmit = async (values) => {
+
     setLoading(true); // Start loading
     const submitData = {
       ...values,
@@ -99,6 +101,24 @@ const AddClinic = () => {
       if (!response.ok) {
         throw new Error('Failed to add clinic');
       }
+
+
+    const submitData = {
+      ...values,
+    };
+    try {
+      const response = await authenticatedFetch(`${import.meta.env.VITE_BASE_URL}/api/emp/clinic/`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(submitData),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to add clinic');
+      }
+
 
       const data = await response.json();
       toast({
@@ -305,6 +325,8 @@ const AddClinic = () => {
             <Button type="submit" disabled={loading}>
               {loading ? 'Adding Clinic...' : 'Add Clinic'}
             </Button>
+            <Button type="submit">Add Clinic</Button>
+
           </form>
         </Form>
       </CardContent>
