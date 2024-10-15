@@ -152,33 +152,6 @@ const ClinicInformation = () => {
       event.target.value = null; // Reset the input
     }
   };
-  const fetchWithTokenHandling = async (url, options = {}) => {
-    try {
-      const response = await authenticatedFetch(url, options);
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.detail || 'An error occurred');
-      }
-      return response.json();
-    } catch (error) {
-      if (error.message === 'Token is blacklisted' || error.message === 'Token is invalid or expired') {
-        navigate('/login');
-        throw new Error('Session expired. Please log in again.');
-      }
-      throw error;
-    }
-  };
-
-  const handleFileChange = (event) => {
-    const file = event.target.files[0];
-    // setSelectedFile(file);
-    if (file && file.type.startsWith('image/')) {
-      setSelectedFile(file);
-    } else {
-      toast({ title: "Error", description: "Please select a valid image file.", variant: "destructive" });
-      event.target.value = null; // Reset the input
-    }
-  };
   const uploadLogo = async () => {
     if (!selectedFile) {
       toast({ title: "Error", description: "Please select a file to upload.", variant: "destructive" });
