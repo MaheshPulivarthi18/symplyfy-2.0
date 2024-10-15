@@ -48,7 +48,7 @@ const formSchema = z.object({
   email1: z.string().email({
     message: "Please enter a valid email address.",
   }),
-  type: z.enum(["ph", "cl", "ho"], {
+  type: z.enum(["ph","mu","ot","oh","se","st","ab","ay","da","py","cd"], {
     required_error: "Please select a clinic type.",
   }),
   prefix_patient_id: z.string().min(1, {
@@ -242,9 +242,17 @@ const AddClinic = () => {
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      <SelectItem value="ph">Pharmacy</SelectItem>
-                      <SelectItem value="cl">Clinic</SelectItem>
-                      <SelectItem value="ho">Hospital</SelectItem>
+                      <SelectItem value="ph">Physiotherapy</SelectItem>
+          <SelectItem value="mu">Multi</SelectItem>
+          <SelectItem value="ab">ABA therapy</SelectItem>
+          <SelectItem value="se">Special Education</SelectItem>
+          <SelectItem value="cd">Child devlopement</SelectItem>
+          <SelectItem value="ay">Ayurvedic Therapy</SelectItem>
+          <SelectItem value="da">Deaddiction Center</SelectItem>
+          <SelectItem value="py">Psychiology</SelectItem>
+          <SelectItem value="st">Speech Therapy</SelectItem>
+          <SelectItem value="ot">occupational therapy</SelectItem>
+          <SelectItem value="oh">Others</SelectItem>
                     </SelectContent>
                   </Select>
                   <FormMessage />

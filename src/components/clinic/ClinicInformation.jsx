@@ -22,7 +22,7 @@ const clinicInformationSchema = z.object({
   pincode: z.string().regex(/^\d+$/, "Invalid pincode"),
   phone1: z.string().regex(/^\d+$/, "Invalid phone number"),
   email1: z.string().email("Invalid email address"),
-  type: z.enum(["ph", "other"]), // Clinic types
+  type: z.enum(["ph","mu","ot","oh","se","st","ab","ay","da","py","cd"]), 
   prefix_invoice: z.string().min(1, "Invoice prefix is required"),
   prefix_patient_id: z.string().optional(),
 });
@@ -36,7 +36,7 @@ const ClinicInformation = () => {
   const [presentImg, setPresentImg] = useState(null);
   const [isPrefixPatientEditable, setIsPrefixPatientEditable] = useState(false); // For showing button/input
   const [submitting, setSubmitting] = useState(false); // Track form submission status
-
+  const [type,settype]=useState('');
   const form = useForm({
     resolver: zodResolver(clinicInformationSchema),
     defaultValues: {
@@ -74,11 +74,11 @@ const ClinicInformation = () => {
         pincode: data.pincode ?? '',
         phone1: data.phone1 ?? '',
         email1: data.email1 ?? '',
-        type: data.type ?? 'ph',
+        type: data.type,
         prefix_invoice: data.prefix_invoice ?? '',
         prefix_patient_id: data.prefix_patient_id ?? null,
       });
-
+      settype(data.type);
       // Check if prefix_patient_id is null to manage the button state
       setIsPrefixPatientEditable(!data.prefix_patient_id);
     } catch (error) {
@@ -339,26 +339,38 @@ const ClinicInformation = () => {
               )}
             />
             <FormField
-              control={form.control}
-              name="type"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Clinic Type</FormLabel>
-                  <Select onValueChange={field.onChange} value={field.value ?? 'ph'}>
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue value="ph" placeholder="Select clinic type" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                     <SelectItem value="ph">Pharmacy</SelectItem>
-                      <SelectItem value="cl">Clinic</SelectItem>
-                      <SelectItem value="ho">Hospital</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </FormItem>
-              )}
-            />
+  control={form.control}
+  name="type"
+  render={({ field }) => (
+    <FormItem>
+      <FormLabel>Clinic Type</FormLabel>
+      <Select onValueChange={(value) => { 
+          field.onChange(value); 
+          settype(value); 
+      }} value={field.value || type}> 
+        <FormControl>
+          <SelectTrigger>
+            <SelectValue placeholder="Select clinic type" />
+          </SelectTrigger>
+        </FormControl>
+        <SelectContent>
+          <SelectItem value="ph">Physiotherapy</SelectItem>
+          <SelectItem value="mu">Multi</SelectItem>
+          <SelectItem value="ab">ABA therapy</SelectItem>
+          <SelectItem value="se">Special Education</SelectItem>
+          <SelectItem value="cd">Child devlopement</SelectItem>
+          <SelectItem value="ay">Ayurvedic Therapy</SelectItem>
+          <SelectItem value="da">Deaddiction Center</SelectItem>
+          <SelectItem value="py">Psychiology</SelectItem>
+          <SelectItem value="st">Speech Therapy</SelectItem>
+          <SelectItem value="ot">occupational therapy</SelectItem>
+          <SelectItem value="oh">Others</SelectItem>
+        </SelectContent>
+      </Select>
+    </FormItem>
+  )}
+/>
+
             <FormField
               control={form.control}
               name="prefix_invoice"
