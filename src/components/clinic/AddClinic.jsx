@@ -1,5 +1,4 @@
-// AddClinic.jsx
-import React from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -55,13 +54,14 @@ const formSchema = z.object({
   prefix_patient_id: z.string().min(1, {
     message: "Prefix Patient ID is required.",
   }), 
+  prefix_invoice: z.string().min(1, "Invoice prefix is required"),
 });
-
 
 const AddClinic = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { authenticatedFetch } = useAuth();
+  const [loading, setLoading] = useState(false); // Loading state
 
   const form = useForm({
     resolver: zodResolver(formSchema),
@@ -75,46 +75,47 @@ const AddClinic = () => {
       phone1: "",
       email1: "",
       type: "ph",
+      prefix_invoice: '',
       prefix_patient_id: "", 
     },
   });
 
   const onSubmit = async (values) => {
- 
-  const submitData = {
-    ...values,
-    address_line_2: values.address_line_2 ? values.address_line_2 : null,  
-    type: 'ph',
-  };
+    setLoading(true); // Start loading
+    const submitData = {
+      ...values,
+      address_line_2: values.address_line_2 ? values.address_line_2 : null,  
+    };
 
-  try {
-    const response = await authenticatedFetch(`${import.meta.env.VITE_BASE_URL}/api/emp/clinic/`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(submitData),
-    });
+    try {
+      const response = await authenticatedFetch(`${import.meta.env.VITE_BASE_URL}/api/emp/clinic/`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(submitData),
+      });
 
-    if (!response.ok) {
-      throw new Error('Failed to add clinic');
+      if (!response.ok) {
+        throw new Error('Failed to add clinic');
+      }
+
+      const data = await response.json();
+      toast({
+        title: "Success",
+        description: "Clinic added successfully.",
+      });
+      navigate('/clinic');  // Redirect to the clinics list
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to add clinic. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false); // End loading
     }
-
-    const data = await response.json();
-    toast({
-      title: "Success",
-      description: "Clinic added successfully.",
-    });
-    navigate('/clinic');  // Redirect to the clinics list
-  } catch (error) {
-    toast({
-      title: "Error",
-      description: error.message || "Failed to add clinic. Please try again.",
-      variant: "destructive",
-    });
-  }
-};
-
+  };
 
   return (
     <Card className="w-full max-w-4xl max-h-[90%] mx-auto mt-8 overflow-scroll">
@@ -251,22 +252,51 @@ const AddClinic = () => {
               )}
             />
             <FormField
+              control={form.control}
+              name="prefix_invoice"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Invoice Prefix</FormLabel>
+                  <div className="bg-gray-100 border border-gray-300 rounded p-4 mb-4">
+        <p className="text-sm text-gray-700">
+          Once the Invoice Prefix is set, each invoice generated in your clinic will have this prefix appended to it. 
+        </p>
+        <p className="text-sm text-gray-700">
+         Example: If your Invoice Prefix is "INV", your invoices will be labeled as INV_0001, INV_0002, and so on.
+        </p>
+      </div>
+                  <FormControl>
+                    <Input {...field} value={field.value ?? ''} />
+                  </FormControl>
+                </FormItem>
+              )}
+            />
+            <FormField
   control={form.control}
   name="prefix_patient_id"
   render={({ field }) => (
     <FormItem>
       <FormLabel>Prefix Patient ID</FormLabel>
+      <div className="bg-gray-100 border border-gray-300 rounded p-4 mb-4">
+        <p className="text-sm text-gray-700">
+          Once the Patient ID Prefix is set, each patient in your clinic will be assigned a unique serial number under this prefix. Please note, this prefix is permanent and cannot be modified after being set.
+        </p>
+        <p className="text-sm text-gray-700">
+          Example: If your Patient ID Prefix is "ABC", your patients will have IDs like ABC_0001, ABC_0002, and so on.
+        </p>
+      </div>
       <FormControl>
         <Input 
           {...field} 
-          placeholder={"Prefix Patient ID set and cannot be changed"} 
         />
       </FormControl>
       <FormMessage />
     </FormItem>
   )}
 />
-            <Button type="submit">Add Clinic</Button>
+            <Button type="submit" disabled={loading}>
+              {loading ? 'Adding Clinic...' : 'Add Clinic'}
+            </Button>
           </form>
         </Form>
       </CardContent>
