@@ -101,25 +101,7 @@ const AddClinic = () => {
       if (!response.ok) {
         throw new Error('Failed to add clinic');
       }
-
-
-    const submitData = {
-      ...values,
-    };
-    try {
-      const response = await authenticatedFetch(`${import.meta.env.VITE_BASE_URL}/api/emp/clinic/`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(submitData),
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to add clinic');
-      }
-
-
+      
       const data = await response.json();
       toast({
         title: "Success",
