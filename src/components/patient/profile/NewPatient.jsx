@@ -94,6 +94,7 @@ const NewPatient = () => {
       dob: values.dob || null,
       has_app_access: true,
       is_active: true,
+      is_patient_active: true,
       email_alternate: null,
       priority: 9,
     };

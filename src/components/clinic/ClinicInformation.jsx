@@ -23,6 +23,9 @@ const clinicInformationSchema = z.object({
   email1: z.string().email("Invalid email address"),
   type: z.enum(["ph","mu","ot","oh","se","st","ab","ay","da","py","cd"]), 
   prefix_invoice: z.string().min(1, "Invoice prefix is required"),
+  prefix_patient_id: z.string().min(1, {
+    message: "Prefix Patient ID is required.",
+  }),
 });
 
 const ClinicInformation = () => {
@@ -49,6 +52,7 @@ const ClinicInformation = () => {
       email1: '',
       type: 'ph',
       prefix_invoice: '',
+      prefix_patient_id: null,
     },
   });
 
@@ -75,7 +79,13 @@ const ClinicInformation = () => {
         email1: data.email1 ?? '',
         type: data.type,
         prefix_invoice: data.prefix_invoice ?? '',
+        prefix_patient_id: data.prefix_patient_id ?? null,
       });
+
+      if (!data.prefix_patient_id) {
+        setIsPrefixPatientEditable(false);
+      }
+
       settype(data.type);
       // Check if prefix_patient_id is null to manage the button state
       setIsPrefixPatientEditable(!data.prefix_patient_id);
@@ -105,7 +115,7 @@ const ClinicInformation = () => {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(values),
+        body: JSON.stringify(submitData),
       });
 
       if (!response.ok) throw new Error('Failed to update clinic information');
@@ -200,6 +210,10 @@ const ClinicInformation = () => {
     return true;
 
   }
+
+  const handleEditPrefixPatientId = () => {
+    setIsPrefixPatientEditable(true);
+  };
 
   if (isLoading) {
     return <div>Loading...</div>;
@@ -333,37 +347,37 @@ const ClinicInformation = () => {
               )}
             />
             <FormField
-  control={form.control}
-  name="type"
-  render={({ field }) => (
-    <FormItem>
-      <FormLabel>Clinic Type</FormLabel>
-      <Select onValueChange={(value) => { 
-          field.onChange(value); 
-          settype(value); 
-      }} value={field.value || type}> 
-        <FormControl>
-          <SelectTrigger>
-            <SelectValue placeholder="Select clinic type" />
-          </SelectTrigger>
-        </FormControl>
-        <SelectContent>
-          <SelectItem value="ph">Physiotherapy</SelectItem>
-          <SelectItem value="mu">Multi</SelectItem>
-          <SelectItem value="ab">ABA therapy</SelectItem>
-          <SelectItem value="se">Special Education</SelectItem>
-          <SelectItem value="cd">Child devlopement</SelectItem>
-          <SelectItem value="ay">Ayurvedic Therapy</SelectItem>
-          <SelectItem value="da">Deaddiction Center</SelectItem>
-          <SelectItem value="py">Psychiology</SelectItem>
-          <SelectItem value="st">Speech Therapy</SelectItem>
-          <SelectItem value="ot">occupational therapy</SelectItem>
-          <SelectItem value="oh">Others</SelectItem>
-        </SelectContent>
-      </Select>
-    </FormItem>
-  )}
-/>
+              control={form.control}
+              name="type"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Clinic Type</FormLabel>
+                  <Select onValueChange={(value) => { 
+                      field.onChange(value); 
+                      settype(value); 
+                  }} value={field.value || type}> 
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select clinic type" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      <SelectItem value="ph">Physiotherapy</SelectItem>
+                      <SelectItem value="mu">Multi</SelectItem>
+                      <SelectItem value="ab">ABA therapy</SelectItem>
+                      <SelectItem value="se">Special Education</SelectItem>
+                      <SelectItem value="cd">Child devlopement</SelectItem>
+                      <SelectItem value="ay">Ayurvedic Therapy</SelectItem>
+                      <SelectItem value="da">Deaddiction Center</SelectItem>
+                      <SelectItem value="py">Psychiology</SelectItem>
+                      <SelectItem value="st">Speech Therapy</SelectItem>
+                      <SelectItem value="ot">occupational therapy</SelectItem>
+                      <SelectItem value="oh">Others</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </FormItem>
+              )}
+            />
 
             <FormField
               control={form.control}
@@ -371,14 +385,14 @@ const ClinicInformation = () => {
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Invoice Prefix</FormLabel>
-                  <div className="bg-gray-100 border border-gray-300 rounded p-4 mb-4">
-        <p className="text-sm text-gray-700">
-          Once the Invoice Prefix is set, each invoice generated in your clinic will have this prefix appended to it. 
-        </p>
-        <p className="text-sm text-gray-700">
-         Example: If your Invoice Prefix is "INV", your invoices will be labeled as INV_0001, INV_0002, and so on.
-        </p>
-      </div>
+                    <div className="bg-gray-100 border border-gray-300 rounded p-4 mb-4">
+                      <p className="text-sm text-gray-700">
+                        Once the Invoice Prefix is set, each invoice generated in your clinic will have this prefix appended to it. 
+                      </p>
+                      <p className="text-sm text-gray-700">
+                      Example: If your Invoice Prefix is "INV", your invoices will be labeled as INV_0001, INV_0002, and so on.
+                      </p>
+                    </div>
                   <FormControl>
                     <Input {...field} value={field.value ?? ''} />
                   </FormControl>
@@ -391,32 +405,32 @@ const ClinicInformation = () => {
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Prefix Patient ID</FormLabel>
-                  <div className="bg-gray-100 border border-gray-300 rounded p-4 mb-4">
-        <p className="text-sm text-gray-700">
-          Once the Patient ID Prefix is set, each patient in your clinic will be assigned a unique serial number under this prefix. Please note, this prefix is permanent and cannot be modified after being set.
-        </p>
-        <p className="text-sm text-gray-700">
-          Example: If your Patient ID Prefix is "ABC", your patients will have IDs like ABC_0001, ABC_0002, and so on.
-        </p>
-        Patient ID Prefix is set. If you need to change it, please contact support.
-      </div>
-                  {!isPrefixPatientEditable && field.value ? (
-                    <FormControl>
-                      <Input {...field} value={field.value ?? ''} readOnly placeholder="Prefix Patient ID set and cannot be changed" />
-                    </FormControl>
-                  ) : (
-                    <>
-                      {isPrefixPatientEditable ? (
-                        <FormControl>
-                          <Input {...field} value={field.value ?? ''} placeholder="Enter Prefix Patient ID" />
-                        </FormControl>
-                      ) : (
-                        <Button type="button" onClick={handleEditPrefixPatientId}>
-                          Add Prefix Patient ID
-                        </Button>
-                      )}
-                    </>
-                  )}
+                    <div className="bg-gray-100 border border-gray-300 rounded p-4 mb-4">
+                      <p className="text-sm text-gray-700">
+                        Once the Patient ID Prefix is set, each patient in your clinic will be assigned a unique serial number under this prefix. Please note, this prefix is permanent and cannot be modified after being set.
+                      </p>
+                      <p className="text-sm text-gray-700">
+                        Example: If your Patient ID Prefix is "ABC", your patients will have IDs like ABC_0001, ABC_0002, and so on.
+                      </p>
+                      Patient ID Prefix is set. If you need to change it, please contact support.
+                    </div>
+                    {!isPrefixPatientEditable && field.value ? (
+                      <FormControl>
+                        <Input {...field} value={field.value ?? ''} readOnly placeholder="Prefix Patient ID set and cannot be changed" />
+                      </FormControl>
+                    ) : (
+                      <>
+                        {isPrefixPatientEditable ? (
+                          <FormControl>
+                            <Input {...field} value={field.value ?? ''} placeholder="Enter Prefix Patient ID" />
+                          </FormControl>
+                        ) : (
+                          <Button type="button" onClick={handleEditPrefixPatientId}>
+                            Add Prefix Patient ID
+                          </Button>
+                        )}
+                      </>
+                    )}
                 </FormItem>
               )}
             />

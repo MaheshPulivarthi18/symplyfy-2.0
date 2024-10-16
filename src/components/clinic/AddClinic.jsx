@@ -53,8 +53,8 @@ const formSchema = z.object({
   }),
   prefix_patient_id: z.string().min(1, {
     message: "Prefix Patient ID is required.",
-  }), 
-  prefix_invoice: z.string().min(1, "Invoice prefix is required"),
+  }).optional().or(z.literal('')), 
+  prefix_invoice: z.string().min(1, "Invoice prefix is required").optional().or(z.literal('')),
 
 });
 
@@ -77,7 +77,7 @@ const AddClinic = () => {
       email1: "",
       type: "ph",
       prefix_invoice: '',
-      prefix_patient_id: "", 
+      prefix_patient_id: '', 
     },
   });
 
@@ -86,7 +86,9 @@ const AddClinic = () => {
     setLoading(true); // Start loading
     const submitData = {
       ...values,
-      address_line_2: values.address_line_2 ? values.address_line_2 : null,  
+      address_line_2: values.address_line_2 ? values.address_line_2 : null,
+      prefix_invoice: values.prefix_invoice !== '' ? values.prefix_invoice : null,
+      prefix_patient_id: values.prefix_patient_id !== '' ? values.prefix_patient_id : null,
     };
 
     try {
