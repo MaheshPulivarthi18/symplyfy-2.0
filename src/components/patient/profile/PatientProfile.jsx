@@ -3045,10 +3045,13 @@ const exportLedgerTransactionsToExcel = async () => {
 
       <InvoiceDetailsDialog 
         invoice={selectedInvoice}
+        fetchName={formData}
         isOpen={isInvoiceDetailDialogOpen}
         onClose={() => setIsInvoiceDetailDialogOpen(false)}
         onUpdateStatus={updateInvoiceStatus}
         isLoading={isConfirmingInvoice}
+        clinicid={clinic_id}
+        patientid={patient_id}
       />
     </div>
   );

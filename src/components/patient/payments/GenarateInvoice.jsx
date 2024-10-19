@@ -7,6 +7,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { format } from 'date-fns';
 import { Loader2, ExternalLink, FileDown } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 
 // Invoice Dialog
 const InvoiceDialog = ({ isOpen, onClose, onGenerate, invoiceItems, setInvoiceItems, finalAmount, setFinalAmount, sellables, isLoading }) => {
@@ -30,6 +32,7 @@ const InvoiceDialog = ({ isOpen, onClose, onGenerate, invoiceItems, setInvoiceIt
       calculateFinalAmount([...invoiceItems, newItem]);
     }
   };
+
 
   const handleItemChange = (index, field, value) => {
     const updatedItems = [...invoiceItems];
@@ -185,7 +188,7 @@ const InvoiceStatusDialog = ({ isOpen, onClose, onUpdateStatus, isLoading }) => 
 };
 
 // Invoice Details Dialog
-const InvoiceDetailsDialog = ({ invoice, isOpen, onClose, onUpdateStatus, isLoading }) => {
+const InvoiceDetailsDialog = ({ invoice, fetchName, isOpen, onClose, onUpdateStatus, isLoading, clinic_id, patient_id }) => {
   const handleViewInvoiceHtml = () => {
     if (invoice && invoice.html) {
       window.open(invoice.html, '_blank');
@@ -208,6 +211,9 @@ const InvoiceDetailsDialog = ({ invoice, isOpen, onClose, onUpdateStatus, isLoad
         {invoice && (
           <div className="space-y-4">
             <p><strong>Invoice Number:</strong> {invoice.number}</p>
+            <p><strong>Patient Name:</strong> {fetchName.first_name} {fetchName.last_name} 
+                        
+                    </p>
             <p><strong>Date:</strong> {format(new Date(invoice.date), 'EEEE dd MMMM yyyy')}</p>
             <p><strong>Status:</strong> {invoice.status === 'd' ? 'Draft' : invoice.status === 'c' ? 'Confirmed' : 'Cancelled'}</p>
             <p><strong>Gross Amount:</strong> {invoice.gross_amount}</p>

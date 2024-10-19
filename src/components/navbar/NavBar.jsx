@@ -1,6 +1,6 @@
 // components/Navbar.jsx
 import React, { useState, useEffect } from 'react';
-import { useNavigate, useLocation, Link } from 'react-router-dom';
+import { useNavigate, useLocation, Link, useParams } from 'react-router-dom';
 import { Button } from "../ui/button";
 import { Avatar, AvatarFallback } from "../ui/avatar";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "../ui/dropdown-menu";
@@ -17,6 +17,8 @@ const Navbar = () => {
   const [clinicName, setClinicName] = useState('');
   const [employeeName, setEmployeeName] = useState('');
   const [patientName, setPatientName] = useState('');
+
+  const { clinic_Id } = useParams();
 
   useEffect(() => {
     generateBreadcrumbs();
