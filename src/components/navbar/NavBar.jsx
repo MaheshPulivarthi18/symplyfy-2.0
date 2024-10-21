@@ -108,12 +108,13 @@ const Navbar = () => {
 
   return (
     <Card className="flex flex-col p-4 bg-white shadow-md w-full mt-2">
-      <div className="flex justify-between items-center">
+      <div className="flex justify-between items-center w-full">
         <div className="flex items-center space-x-2" onClick={() => navigate('/clinic')} style={{cursor: 'pointer'}}>
           <img src={logo} alt="Symplify Logo" className="h-8 w-8" />
           <span className="font-bold text-xl">Symplify</span>
         </div>
-        <div className="flex items-center mt-2 text-sm text-gray-500">
+
+        <div className="flex items-center mt-2 text-sm text-gray-500 mx-auto px-4">
           {breadcrumbs.map((breadcrumb, index) => (
             <React.Fragment key={breadcrumb.routeTo}>
               {index > 0 && <ChevronRight className="h-4 w-4 mx-1" />}
@@ -127,6 +128,17 @@ const Navbar = () => {
             </React.Fragment>
           ))}
         </div>
+        
+        {clinicId && (
+          <div className="flex items-center ml-auto ">
+          <Button onClick={() => navigate(`/clinic/${clinicId}/schedule`)} className="ml-4">
+            View Schedule/Calendar
+          </Button>
+          </div>
+        )}
+
+
+        <div className="ml-4">
         {pathName.endsWith('/clinic') ? (
             <Button onClick={logout}> Logout <LogOut className='w-4 h-4 ml-2' /> </Button>
           ) : (
@@ -149,7 +161,7 @@ const Navbar = () => {
               </DropdownMenuContent>
             </DropdownMenu>
           )}
-
+         </div>
       </div>
     </Card>
   );

@@ -30,6 +30,7 @@ import { CalendarIcon } from "lucide-react";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Progress } from '@/components/ui/progress';
 import ClockPicker from '@/components/ui/clock';
+import SearchDropdown from '@/components/ui/SearchDropdown';
 
 const locales = {
   'en-US': enUS,
@@ -1497,6 +1498,15 @@ export default function Schedule() {
             >
               {selectedDoctorId === "" && selectedPatientId === "" ? "Apply Filter" : "Clear All Filters" }
             </Toggle>
+            <Toggle 
+              pressed={showCancelled} 
+              onPressedChange={handleCancelledToggle} 
+              className="w-full"
+            >
+                {showCancelled ? "Hide Cancelled" : "View Cancelled"}
+
+            </Toggle>
+            
               <h1 className='font-bold text-lg mb-2'>Doctors</h1>
               <div className="relative mb-2">
                 <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
@@ -1543,14 +1553,6 @@ export default function Schedule() {
                 ))}
               </div>
 
-
-            <Toggle 
-            pressed={showCancelled} 
-            onPressedChange={handleCancelledToggle} 
-            className="w-full"
-            >
-              {showCancelled ? "Hide Cancelled" : "View Cancelled"}
-            </Toggle>
           </ScrollArea>
         </div>
           <button 

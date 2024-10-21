@@ -52,6 +52,8 @@ const InvoiceDialog = ({ isOpen, onClose, onGenerate, invoiceItems, setInvoiceIt
     setFinalAmount(total);
   };
 
+  
+
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-5xl w-full max-h-[100vh] overflow-y-auto">
@@ -188,7 +190,7 @@ const InvoiceStatusDialog = ({ isOpen, onClose, onUpdateStatus, isLoading }) => 
 };
 
 // Invoice Details Dialog
-const InvoiceDetailsDialog = ({ invoice, fetchName, isOpen, onClose, onUpdateStatus, isLoading, clinic_id, patient_id }) => {
+const InvoiceDetailsDialog = ({ invoice, fetchName, isOpen, onClose, onUpdateStatus, isLoading, clinicid, patientid }) => {
   const handleViewInvoiceHtml = () => {
     if (invoice && invoice.html) {
       window.open(invoice.html, '_blank');
@@ -196,10 +198,18 @@ const InvoiceDetailsDialog = ({ invoice, fetchName, isOpen, onClose, onUpdateSta
   };
   console.log(invoice)
 
+
   const handleDownloadInvoicePdf = () => {
     if (invoice && invoice.pdf) {
       window.open(invoice.pdf, '_blank');
     }
+  };
+
+  const navigate = useNavigate();
+
+  const handlePatientClick = () => {
+    navigate(`/clinic/${clinicid}/patients/${patientid}`); 
+    onClose(); 
   };
 
   return (
@@ -211,9 +221,7 @@ const InvoiceDetailsDialog = ({ invoice, fetchName, isOpen, onClose, onUpdateSta
         {invoice && (
           <div className="space-y-4">
             <p><strong>Invoice Number:</strong> {invoice.number}</p>
-            <p><strong>Patient Name:</strong> {fetchName.first_name} {fetchName.last_name} 
-                        
-                    </p>
+            <p><strong>Patient Name:</strong> <span onClick={handlePatientClick} className="text-blue-600 hover:underline cursor-pointer">{fetchName.first_name} {fetchName.last_name}</span></p>
             <p><strong>Date:</strong> {format(new Date(invoice.date), 'EEEE dd MMMM yyyy')}</p>
             <p><strong>Status:</strong> {invoice.status === 'd' ? 'Draft' : invoice.status === 'c' ? 'Confirmed' : 'Cancelled'}</p>
             <p><strong>Gross Amount:</strong> {invoice.gross_amount}</p>
