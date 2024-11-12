@@ -106,6 +106,13 @@ const Navbar = () => {
     setBreadcrumbs(breadcrumbs);
   };
 
+ 
+  const isClinicHome = location.pathname === `/clinic` || location.pathname === `/clinic/${clinicId}`;
+
+  const isSchedulePage = location.pathname === `/clinic/${clinicId}/schedule`;
+  
+
+
   return (
     <Card className="flex flex-col p-4 bg-white shadow-md w-full mt-2">
       <div className="flex justify-between items-center w-full">
@@ -129,13 +136,16 @@ const Navbar = () => {
           ))}
         </div>
         
-        {clinicId && (
-          <div className="flex items-center ml-auto ">
-          <Button onClick={() => navigate(`/clinic/${clinicId}/schedule`)} className="ml-4">
-            View Schedule/Calendar
-          </Button>
-          </div>
+        {isClinicHome ? null : isSchedulePage ? (
+          <Button onClick={() => navigate(`/clinic/${clinicId}`)} className="ml-4">Home</Button>
+        ) : (
+          <Button onClick={() => navigate(`/clinic/${clinicId}/schedule`)} className="ml-4">View/Schedule Calendar</Button>
         )}
+
+
+
+
+
 
 
         <div className="ml-4">
