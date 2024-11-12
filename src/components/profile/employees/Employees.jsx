@@ -438,10 +438,10 @@ const Employees = () => {
                 <td className="px-6 py-4 whitespace-nowrap">
                   <span
                     className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                      employee.is_active ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"
+                      employee.is_therapist ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"
                     }`}
                   >
-                    {employee.is_active ? "Active" : "Inactive"}
+                    {employee.is_therapist ? "Active" : "Inactive"}
                   </span>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
