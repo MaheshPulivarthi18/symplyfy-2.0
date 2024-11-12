@@ -298,7 +298,7 @@ const Employees = () => {
               </FormControl>
               <div className="space-y-1 leading-none">
                 <FormLabel>
-                  Is Therapist
+                Is Therapist  <span className="mt-4 text-sm text-gray-500"> (You will be able schedule appointments to the Employee)</span>
                 </FormLabel>
               </div>
             </FormItem>
@@ -317,13 +317,13 @@ const Employees = () => {
               </FormControl>
               <div className="space-y-1 leading-none">
                 <FormLabel>
-                  Has App Access
+                  Has App Access  <span className="mt-4 text-sm text-gray-500"> (The Employee will be given access to both web and Mobil)</span>
                 </FormLabel>
               </div>
             </FormItem>
           )}
         />
-        <FormField
+        {/* <FormField
           control={form.control}
           name="is_active"
           render={({ field }) => (
@@ -341,7 +341,7 @@ const Employees = () => {
               </div>
             </FormItem>
           )}
-        />
+        /> */}
         <Button type="submit">Add Employee</Button>
       </form>
     </Form>
