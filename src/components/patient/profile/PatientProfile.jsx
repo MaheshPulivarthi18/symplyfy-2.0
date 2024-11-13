@@ -2205,98 +2205,122 @@ const exportLedgerTransactionsToExcel = async () => {
               </DialogContent>
             </Dialog>
           </TabsContent>
-          <TabsContent value="goals" className="relative min-h-[300px] h-[90%] overflow-scroll p-4 ">
-          {goals.length === 0 ? (
-                <p>No goals set for this patient.</p>
-              ) : (
-                goals.map(goal => (
-                  <Dialog 
-                    key={goal.id} 
-                    open={openGoalDialogs[goal.id]} 
-                    onOpenChange={(open) => setOpenGoalDialogs(prev => ({ ...prev, [goal.id]: open }))}
+  <TabsContent value="goals" className="relative min-h-[300px] h-[90%] overflow-scroll p-4">
+  {goals.length === 0 ? (
+    <p>No goals set for this patient.</p>
+  ) : (
+    <div className="space-y-2">
+      {goals.map((goal) => (
+        <Dialog 
+          key={goal.id} 
+          open={openGoalDialogs[goal.id]} 
+          onOpenChange={(open) => {
+            setOpenGoalDialogs((prev) => ({ ...prev, [goal.id]: open }));
+            if (open) fetchGoalDetails(goal.id); // Fetch and set selectedGoal data when dialog opens
+          }}
+        >
+          <DialogTrigger asChild>
+            <div 
+              className={`p-4 rounded cursor-pointer ${
+                goal.is_completed ? 'bg-green-100' : 'bg-gray-100'
+              }`}
+              onClick={() => setOpenGoalDialogs((prev) => ({ ...prev, [goal.id]: true }))}
+            >
+              <div className="grid grid-cols-3 gap-4 items-center">
+                <div>
+                  <h3 className="font-semibold">{goal.title}</h3>
+                  <p className="text-sm text-gray-600">{goal.description}</p>
+                </div>
+                <div className="text-sm text-gray-500">
+                  Complete by: <strong>{goal.complete_by}</strong>
+                </div>
+                <div className="text-right">
+                  <span
+                    className={`px-2 py-1 text-xs font-semibold rounded-full ${
+                      goal.is_completed ? 'text-green-800 bg-green-200' : 'text-gray-800 bg-gray-200'
+                    }`}
                   >
-                    <DialogTrigger asChild>
-                      <div 
-                          className="p-2 bg-gray-100 rounded mb-2 cursor-pointer" 
-                          onClick={() => {
-                            fetchGoalDetails(goal.id);
-                            setOpenGoalDialogs(prev => ({ ...prev, [goal.id]: true }));
-                          }}
-                        >
-                        <h3>{goal.title}</h3>
-                        <p>{goal.description}</p>
-                        <small>Complete by: {goal.complete_by}</small>
-                      </div>
-                    </DialogTrigger>
-                    <DialogContent className="max-w-2xl w-full max-h-[100vh] overflow-y-auto">
-                      <DialogHeader>
-                        <DialogTitle>Goal Details</DialogTitle>
-                      </DialogHeader>
-                      {selectedGoal && (
-                        <>
-                          <Input 
-                            value={selectedGoal.title}
-                            onChange={(e) => setSelectedGoal({...selectedGoal, title: e.target.value})}
-                            placeholder="Goal title"
-                          />
-                          <Textarea 
-                            value={selectedGoal.description}
-                            onChange={(e) => setSelectedGoal({...selectedGoal, description: e.target.value})}
-                            placeholder="Goal description"
-                          />
-                          <DatePicker
-                            selected={selectedGoal.complete_by ? new Date(selectedGoal.complete_by) : null}
-                            onChange={(date) => setSelectedGoal({...selectedGoal, complete_by: date.toISOString().split('T')[0]})}
-                            placeholderText="Complete by"
-                          />
-                          <div className="flex items-center space-x-2">
-                            <Checkbox
-                              id="is-completed"
-                              checked={selectedGoal.is_completed}
-                              onCheckedChange={(checked) => setSelectedGoal({...selectedGoal, is_completed: checked})}
-                            />
-                            <Label htmlFor="is-completed">Is completed</Label>
-                          </div>
-                          <Button onClick={() => updateGoal(selectedGoal.id, {
-                            title: selectedGoal.title,
-                            description: selectedGoal.description,
-                            complete_by: selectedGoal.complete_by,
-                            is_completed: selectedGoal.is_completed
-                          })}>Update Goal</Button>
-                        </>
-                      )}
-                    </DialogContent>
-                  </Dialog>
-                ))
-              )}
-            <Dialog open={isGoalDialogOpen} onOpenChange={setIsGoalDialogOpen}>
-              <DialogTrigger asChild>
-                <Button className="absolute bottom-0 right-0">
-                <PlusCircle className="h-4 w-4" /></Button>
-              </DialogTrigger>
-              <DialogContent className="max-w-2xl w-full max-h-[100vh] overflow-y-auto">
-                <DialogHeader>
-                  <DialogTitle>Add New Goal</DialogTitle>
-                </DialogHeader>
+                    {goal.is_completed ? 'Completed' : 'Pending'}
+                  </span>
+                </div>
+              </div>
+            </div>
+          </DialogTrigger>
+
+          <DialogContent className="max-w-2xl w-full max-h-[100vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>Goal Details</DialogTitle>
+            </DialogHeader>
+            {selectedGoal && selectedGoal.id === goal.id && (
+              <>
                 <Input 
-                  value={newGoal.title}
-                  onChange={(e) => setNewGoal({...newGoal, title: e.target.value})}
+                  value={selectedGoal.title}
+                  onChange={(e) => setSelectedGoal({ ...selectedGoal, title: e.target.value })}
                   placeholder="Goal title"
                 />
                 <Textarea 
-                  value={newGoal.description}
-                  onChange={(e) => setNewGoal({...newGoal, description: e.target.value})}
+                  value={selectedGoal.description}
+                  onChange={(e) => setSelectedGoal({ ...selectedGoal, description: e.target.value })}
                   placeholder="Goal description"
                 />
                 <DatePicker
-                  selected={newGoal.complete_by ? new Date(newGoal.complete_by) : null}
-                  onChange={(date) => setNewGoal({...newGoal, complete_by: date.toISOString().split('T')[0]})}
+                  selected={selectedGoal.complete_by ? new Date(selectedGoal.complete_by) : null}
+                  onChange={(date) => setSelectedGoal({ ...selectedGoal, complete_by: date.toISOString().split('T')[0] })}
                   placeholderText="Complete by"
                 />
-                <Button onClick={addGoal}>Save Goal</Button>
-              </DialogContent>
-            </Dialog>
-          </TabsContent>
+                <div className="flex items-center space-x-2">
+                  <Checkbox
+                    id="is-completed"
+                    checked={selectedGoal.is_completed}
+                    onCheckedChange={(checked) => setSelectedGoal({ ...selectedGoal, is_completed: checked })}
+                  />
+                  <Label htmlFor="is-completed">Is completed</Label>
+                </div>
+                <Button onClick={() => updateGoal(selectedGoal.id, {
+                  title: selectedGoal.title,
+                  description: selectedGoal.description,
+                  complete_by: selectedGoal.complete_by,
+                  is_completed: selectedGoal.is_completed,
+                })}>Update Goal</Button>
+              </>
+            )}
+          </DialogContent>
+        </Dialog>
+      ))}
+    </div>
+  )}
+
+  {/* Dialog for adding a new goal */}
+  <Dialog open={isGoalDialogOpen} onOpenChange={setIsGoalDialogOpen}>
+    <DialogTrigger asChild>
+      <Button className="absolute bottom-0 right-0">
+        <PlusCircle className="h-4 w-4" />
+      </Button>
+    </DialogTrigger>
+    <DialogContent className="max-w-2xl w-full max-h-[100vh] overflow-y-auto">
+      <DialogHeader>
+        <DialogTitle>Add New Goal</DialogTitle>
+      </DialogHeader>
+      <Input 
+        value={newGoal.title}
+        onChange={(e) => setNewGoal({ ...newGoal, title: e.target.value })}
+        placeholder="Goal title"
+      />
+      <Textarea 
+        value={newGoal.description}
+        onChange={(e) => setNewGoal({ ...newGoal, description: e.target.value })}
+        placeholder="Goal description"
+      />
+      <DatePicker
+        selected={newGoal.complete_by ? new Date(newGoal.complete_by) : null}
+        onChange={(date) => setNewGoal({ ...newGoal, complete_by: date.toISOString().split('T')[0] })}
+        placeholderText="Complete by"
+      />
+      <Button onClick={addGoal}>Save Goal</Button>
+    </DialogContent>
+  </Dialog>
+</TabsContent>
+
           <TabsContent value="tasks" className="relative min-h-[300px] h-[90%] p-4 ">
             {tasks.length === 0 ? (
                 <p>No tasks assigned to this patient.</p>
