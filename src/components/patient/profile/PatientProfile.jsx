@@ -2122,6 +2122,8 @@ const exportLedgerTransactionsToExcel = async () => {
                     >
                       <p>{note.description}</p>
                       <small>{new Date(note.created_on).toLocaleString()}</small>
+                      <h4>-Dr.{note.employee.first_name} {note.employee.last_name}</h4>
+
                       {note.files && note.files.map(file => (
                         <div key={file.id} className="flex items-center mt-2">
                           <FileIcon className="h-4 w-4 mr-2" />
@@ -2237,7 +2239,7 @@ const exportLedgerTransactionsToExcel = async () => {
                 <div className="text-right">
                   <span
                     className={`px-2 py-1 text-xs font-semibold rounded-full ${
-                      goal.is_completed ? 'text-green-800 bg-green-200' : 'text-gray-800 bg-gray-200'
+                      goal.is_completed ? 'text-green-800 bg-green-200' : 'text-red-800 bg-gray-200'
                     }`}
                   >
                     {goal.is_completed ? 'Completed' : 'Pending'}
